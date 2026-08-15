@@ -1,0 +1,48 @@
+{
+  "conclusion": "Do not buy more data yet. The first supervised neural pilot does not clear the next-data-purchase gate.",
+  "gate": "Require positive March holdout PnL, >=20 trades, profit_factor > 1.05, and drawdown acceptable versus baselines.",
+  "rows": [
+    {
+      "policy": "policy0_stop35_target60_hold10m",
+      "neural_trades": 35,
+      "neural_total_pnl": -60.0,
+      "neural_profit_factor": 0.93717277486911,
+      "neural_max_drawdown": -464.0,
+      "random_mean_pnl": -18490.5,
+      "atm_call_pnl": -36264.0,
+      "atm_put_pnl": -11149.0,
+      "vwap_omar_pnl": -26308.0,
+      "clears_gate": false
+    },
+    {
+      "policy": "policy1_stop50_target100_hold25m",
+      "neural_trades": 38,
+      "neural_total_pnl": -401.0,
+      "neural_profit_factor": 0.7733182589033352,
+      "neural_max_drawdown": -1146.0,
+      "random_mean_pnl": -13248.5,
+      "atm_call_pnl": -25455.0,
+      "atm_put_pnl": -3220.0,
+      "vwap_omar_pnl": -5752.0,
+      "clears_gate": false
+    },
+    {
+      "policy": "policy2_stop65_target150_hold45m",
+      "neural_trades": 13,
+      "neural_total_pnl": -541.0,
+      "neural_profit_factor": 0.040780141843971635,
+      "neural_max_drawdown": -564.0,
+      "random_mean_pnl": -11556.75,
+      "atm_call_pnl": -24682.0,
+      "atm_put_pnl": 4968.0,
+      "vwap_omar_pnl": -1465.0,
+      "clears_gate": false
+    }
+  ],
+  "next_recommended_work": [
+    "Diagnose why policy2 ATM puts work in March while the neural scorer misses them.",
+    "Add side-conditional and regime-conditional baselines before training a larger model.",
+    "Move from candidate-level independent scoring to a decision-level action model with no-trade/call/put outputs.",
+    "Add stricter drawdown and per-day concentration gates before any more paid data."
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "q3_2025": {
+    "start": "2025-07-01",
+    "end": "2025-09-30",
+    "expected_sessions": 64,
+    "first_expected": "2025-07-01",
+    "last_expected": "2025-09-30",
+    "holidays_excluded": [
+      "2025-07-04",
+      "2025-09-01"
+    ],
+    "missing": {
+      "definition": [],
+      "cbbo-1m": [],
+      "ohlcv-1m": [],
+      "statistics": []
+    },
+    "zero_or_unreadable": {
+      "definition": [],
+      "cbbo-1m": [],
+      "ohlcv-1m": [],
+      "statistics": []
+    },
+    "counts": {
+      "definition": {
+        "sessions": 64,
+        "rows": 1017830,
+        "min_rows": 15052,
+        "max_rows": 17002
+      },
+      "cbbo-1m": {
+        "sessions": 64,
+        "rows": 10069430,
+        "min_rows": 98055,
+        "max_rows": 338452
+      },
+      "ohlcv-1m": {
+        "sessions": 64,
+        "rows": 1607059,
+        "min_rows": 14631,
+        "max_rows": 38179
+      },
+      "statistics": {
+        "sessions": 64,
+        "rows": 174114,
+        "min_rows": 2228,
+        "max_rows": 4296
+      }
+    },
+    "complete": true
+  },
+  "q4_2025": {
+    "start": "2025-10-01",
+    "end": "2025-12-31",
+    "expected_sessions": 64,
+    "first_expected": "2025-10-01",
+    "last_expected": "2025-12-31",
+    "holidays_excluded": [
+      "2025-11-27",
+      "2025-12-25"
+    ],
+    "missing": {
+      "definition": [],
+      "cbbo-1m": [],
+      "ohlcv-1m": [],
+      "statistics": []
+    },
+    "zero_or_unreadable": {
+      "definition": [],
+      "cbbo-1m": [],
+      "ohlcv-1m": [],
+      "statistics": []
+    },
+    "counts": {
+      "definition": {
+        "sessions": 64,
+        "rows": 1103280,
+        "min_rows": 16172,
+        "max_rows": 18554
+      },
+      "cbbo-1m": {
+        "sessions": 64,
+        "rows": 11594235,
+        "min_rows": 86039,
+        "max_rows": 370332
+      },
+      "ohlcv-1m": {
+        "sessions": 64,
+        "rows": 1901889,
+        "min_rows": 10318,
+        "max_rows": 49059
+      },
+      "statistics": {
+        "sessions": 64,
+        "rows": 186590,
+        "min_rows": 2196,
+        "max_rows": 4926
+      }
+    },
+    "complete": true
+  },
+  "q1_2026": {
+    "start": "2026-01-02",
+    "end": "2026-03-31",
+    "expected_sessions": 61,
+    "first_expected": "2026-01-02",
+    "last_expected": "2026-03-31",
+    "holidays_excluded": [
+      "2026-01-19",
+      "2026-02-16"
+    ],
+    "missing": {
+      "definition": [],
+      "cbbo-1m": [],
+      "ohlcv-1m": [],
+      "statistics": []
+    },
+    "zero_or_unreadable": {
+      "definition": [],
+      "cbbo-1m": [],
+      "ohlcv-1m": [],
+      "statistics": []
+    },
+    "counts": {
+      "definition": {
+        "sessions": 61,
+        "rows": 1088932,
+        "min_rows": 17020,
+        "max_rows": 20030
+      },
+      "cbbo-1m": {
+        "sessions": 61,
+        "rows": 11140845,
+        "min_rows": 144681,
+        "max_rows": 433530
+      },
+      "ohlcv-1m": {
+        "sessions": 61,
+        "rows": 2026868,
+        "min_rows": 22899,
+        "max_rows": 48362
+      },
+      "statistics": {
+        "sessions": 61,
+        "rows": 181526,
+        "min_rows": 2278,
+        "max_rows": 5444
+      }
+    },
+    "complete": true
+  },
+  "combined_collected": {
+    "start": "2025-07-01",
+    "end": "2026-03-31",
+    "expected_sessions": 189,
+    "first_expected": "2025-07-01",
+    "last_expected": "2026-03-31",
+    "holidays_excluded": [
+      "2025-07-04",
+      "2025-09-01",
+      "2025-11-27",
+      "2025-12-25",
+      "2026-01-01",
+      "2026-01-19",
+      "2026-02-16"
+    ],
+    "missing": {
+      "definition": [],
+      "cbbo-1m": [],
+      "ohlcv-1m": [],
+      "statistics": []
+    },
+    "zero_or_unreadable": {
+      "definition": [],
+      "cbbo-1m": [],
+      "ohlcv-1m": [],
+      "statistics": []
+    },
+    "counts": {
+      "definition": {
+        "sessions": 189,
+        "rows": 3210042,
+        "min_rows": 15052,
+        "max_rows": 20030
+      },
+      "cbbo-1m": {
+        "sessions": 189,
+        "rows": 32804510,
+        "min_rows": 86039,
+        "max_rows": 433530
+      },
+      "ohlcv-1m": {
+        "sessions": 189,
+        "rows": 5535816,
+        "min_rows": 10318,
+        "max_rows": 49059
+      },
+      "statistics": {
+        "sessions": 189,
+        "rows": 542230,
+        "min_rows": 2196,
+        "max_rows": 5444
+      }
+    },
+    "complete": true
+  },
+  "q3_2025_download": {
+    "records": 256,
+    "sessions": 64,
+    "cost_total_usd": 26.788994833834003,
+    "cost_by_schema_usd": {
+      "definition": 1.7062705010230002,
+      "cbbo-1m": 1.5004619956020007,
+      "ohlcv-1m": 23.468104302886,
+      "statistics": 0.11415803432300001
+    }
+  }
+}

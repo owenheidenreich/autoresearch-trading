@@ -1,0 +1,507 @@
+{
+  "input_dir": "data/processed/spxw_0dte_neural_q2_2025",
+  "output_dir": "data/processed/spxw_0dte_neural_q2_2025_nofee",
+  "removed_roundtrip_fee": 2.0,
+  "sessions": 62,
+  "total_rows": 21991,
+  "total_finite_net_labels": 1904451,
+  "total_finite_mid_labels": 1904327,
+  "records": [
+    {
+      "session": "2025-04-01",
+      "rows": 359,
+      "finite_net_labels": 33765,
+      "finite_mid_labels": 33765,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-01.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-01.pkl"
+    },
+    {
+      "session": "2025-04-02",
+      "rows": 360,
+      "finite_net_labels": 34215,
+      "finite_mid_labels": 34215,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-02.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-02.pkl"
+    },
+    {
+      "session": "2025-04-03",
+      "rows": 359,
+      "finite_net_labels": 31509,
+      "finite_mid_labels": 31509,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-03.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-03.pkl"
+    },
+    {
+      "session": "2025-04-04",
+      "rows": 358,
+      "finite_net_labels": 22842,
+      "finite_mid_labels": 22842,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-04.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-04.pkl"
+    },
+    {
+      "session": "2025-04-07",
+      "rows": 199,
+      "finite_net_labels": 7281,
+      "finite_mid_labels": 7281,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-07.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-07.pkl"
+    },
+    {
+      "session": "2025-04-08",
+      "rows": 355,
+      "finite_net_labels": 19893,
+      "finite_mid_labels": 19893,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-08.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-08.pkl"
+    },
+    {
+      "session": "2025-04-09",
+      "rows": 255,
+      "finite_net_labels": 7635,
+      "finite_mid_labels": 7511,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-09.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-09.pkl"
+    },
+    {
+      "session": "2025-04-10",
+      "rows": 332,
+      "finite_net_labels": 12531,
+      "finite_mid_labels": 12531,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-10.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-10.pkl"
+    },
+    {
+      "session": "2025-04-11",
+      "rows": 341,
+      "finite_net_labels": 18669,
+      "finite_mid_labels": 18669,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-11.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-11.pkl"
+    },
+    {
+      "session": "2025-04-14",
+      "rows": 360,
+      "finite_net_labels": 30582,
+      "finite_mid_labels": 30582,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-14.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-14.pkl"
+    },
+    {
+      "session": "2025-04-15",
+      "rows": 360,
+      "finite_net_labels": 33372,
+      "finite_mid_labels": 33372,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-15.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-15.pkl"
+    },
+    {
+      "session": "2025-04-16",
+      "rows": 360,
+      "finite_net_labels": 31770,
+      "finite_mid_labels": 31770,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-16.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-16.pkl"
+    },
+    {
+      "session": "2025-04-17",
+      "rows": 360,
+      "finite_net_labels": 32004,
+      "finite_mid_labels": 32004,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-17.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-17.pkl"
+    },
+    {
+      "session": "2025-04-21",
+      "rows": 360,
+      "finite_net_labels": 33171,
+      "finite_mid_labels": 33171,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-21.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-21.pkl"
+    },
+    {
+      "session": "2025-04-22",
+      "rows": 360,
+      "finite_net_labels": 33156,
+      "finite_mid_labels": 33156,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-22.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-22.pkl"
+    },
+    {
+      "session": "2025-04-23",
+      "rows": 356,
+      "finite_net_labels": 29547,
+      "finite_mid_labels": 29547,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-23.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-23.pkl"
+    },
+    {
+      "session": "2025-04-24",
+      "rows": 360,
+      "finite_net_labels": 32826,
+      "finite_mid_labels": 32826,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-24.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-24.pkl"
+    },
+    {
+      "session": "2025-04-25",
+      "rows": 360,
+      "finite_net_labels": 33351,
+      "finite_mid_labels": 33351,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-25.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-25.pkl"
+    },
+    {
+      "session": "2025-04-28",
+      "rows": 360,
+      "finite_net_labels": 34029,
+      "finite_mid_labels": 34029,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-28.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-28.pkl"
+    },
+    {
+      "session": "2025-04-29",
+      "rows": 359,
+      "finite_net_labels": 34053,
+      "finite_mid_labels": 34053,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-29.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-29.pkl"
+    },
+    {
+      "session": "2025-04-30",
+      "rows": 360,
+      "finite_net_labels": 33450,
+      "finite_mid_labels": 33450,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-04-30.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-04-30.pkl"
+    },
+    {
+      "session": "2025-05-01",
+      "rows": 359,
+      "finite_net_labels": 33936,
+      "finite_mid_labels": 33936,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-01.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-01.pkl"
+    },
+    {
+      "session": "2025-05-02",
+      "rows": 360,
+      "finite_net_labels": 34530,
+      "finite_mid_labels": 34530,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-02.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-02.pkl"
+    },
+    {
+      "session": "2025-05-05",
+      "rows": 360,
+      "finite_net_labels": 32346,
+      "finite_mid_labels": 32346,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-05.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-05.pkl"
+    },
+    {
+      "session": "2025-05-06",
+      "rows": 360,
+      "finite_net_labels": 33972,
+      "finite_mid_labels": 33972,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-06.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-06.pkl"
+    },
+    {
+      "session": "2025-05-07",
+      "rows": 359,
+      "finite_net_labels": 31902,
+      "finite_mid_labels": 31902,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-07.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-07.pkl"
+    },
+    {
+      "session": "2025-05-08",
+      "rows": 360,
+      "finite_net_labels": 33261,
+      "finite_mid_labels": 33261,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-08.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-08.pkl"
+    },
+    {
+      "session": "2025-05-09",
+      "rows": 360,
+      "finite_net_labels": 33852,
+      "finite_mid_labels": 33852,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-09.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-09.pkl"
+    },
+    {
+      "session": "2025-05-12",
+      "rows": 360,
+      "finite_net_labels": 28422,
+      "finite_mid_labels": 28422,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-12.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-12.pkl"
+    },
+    {
+      "session": "2025-05-13",
+      "rows": 360,
+      "finite_net_labels": 33015,
+      "finite_mid_labels": 33015,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-13.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-13.pkl"
+    },
+    {
+      "session": "2025-05-14",
+      "rows": 360,
+      "finite_net_labels": 32823,
+      "finite_mid_labels": 32823,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-14.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-14.pkl"
+    },
+    {
+      "session": "2025-05-15",
+      "rows": 360,
+      "finite_net_labels": 33330,
+      "finite_mid_labels": 33330,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-15.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-15.pkl"
+    },
+    {
+      "session": "2025-05-16",
+      "rows": 360,
+      "finite_net_labels": 32685,
+      "finite_mid_labels": 32685,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-16.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-16.pkl"
+    },
+    {
+      "session": "2025-05-19",
+      "rows": 360,
+      "finite_net_labels": 32244,
+      "finite_mid_labels": 32244,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-19.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-19.pkl"
+    },
+    {
+      "session": "2025-05-20",
+      "rows": 360,
+      "finite_net_labels": 32802,
+      "finite_mid_labels": 32802,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-20.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-20.pkl"
+    },
+    {
+      "session": "2025-05-21",
+      "rows": 360,
+      "finite_net_labels": 34425,
+      "finite_mid_labels": 34425,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-21.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-21.pkl"
+    },
+    {
+      "session": "2025-05-22",
+      "rows": 360,
+      "finite_net_labels": 33729,
+      "finite_mid_labels": 33729,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-22.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-22.pkl"
+    },
+    {
+      "session": "2025-05-23",
+      "rows": 360,
+      "finite_net_labels": 34050,
+      "finite_mid_labels": 34050,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-23.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-23.pkl"
+    },
+    {
+      "session": "2025-05-27",
+      "rows": 360,
+      "finite_net_labels": 32481,
+      "finite_mid_labels": 32481,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-27.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-27.pkl"
+    },
+    {
+      "session": "2025-05-28",
+      "rows": 360,
+      "finite_net_labels": 32487,
+      "finite_mid_labels": 32487,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-28.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-28.pkl"
+    },
+    {
+      "session": "2025-05-29",
+      "rows": 360,
+      "finite_net_labels": 33354,
+      "finite_mid_labels": 33354,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-29.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-29.pkl"
+    },
+    {
+      "session": "2025-05-30",
+      "rows": 360,
+      "finite_net_labels": 35475,
+      "finite_mid_labels": 35475,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-05-30.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-05-30.pkl"
+    },
+    {
+      "session": "2025-06-02",
+      "rows": 360,
+      "finite_net_labels": 32103,
+      "finite_mid_labels": 32103,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-02.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-02.pkl"
+    },
+    {
+      "session": "2025-06-03",
+      "rows": 360,
+      "finite_net_labels": 30810,
+      "finite_mid_labels": 30810,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-03.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-03.pkl"
+    },
+    {
+      "session": "2025-06-04",
+      "rows": 360,
+      "finite_net_labels": 31665,
+      "finite_mid_labels": 31665,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-04.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-04.pkl"
+    },
+    {
+      "session": "2025-06-05",
+      "rows": 360,
+      "finite_net_labels": 32346,
+      "finite_mid_labels": 32346,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-05.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-05.pkl"
+    },
+    {
+      "session": "2025-06-06",
+      "rows": 360,
+      "finite_net_labels": 32136,
+      "finite_mid_labels": 32136,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-06.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-06.pkl"
+    },
+    {
+      "session": "2025-06-09",
+      "rows": 360,
+      "finite_net_labels": 31323,
+      "finite_mid_labels": 31323,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-09.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-09.pkl"
+    },
+    {
+      "session": "2025-06-10",
+      "rows": 360,
+      "finite_net_labels": 31356,
+      "finite_mid_labels": 31356,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-10.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-10.pkl"
+    },
+    {
+      "session": "2025-06-11",
+      "rows": 360,
+      "finite_net_labels": 33045,
+      "finite_mid_labels": 33045,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-11.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-11.pkl"
+    },
+    {
+      "session": "2025-06-12",
+      "rows": 360,
+      "finite_net_labels": 31455,
+      "finite_mid_labels": 31455,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-12.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-12.pkl"
+    },
+    {
+      "session": "2025-06-13",
+      "rows": 360,
+      "finite_net_labels": 33192,
+      "finite_mid_labels": 33192,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-13.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-13.pkl"
+    },
+    {
+      "session": "2025-06-16",
+      "rows": 360,
+      "finite_net_labels": 30375,
+      "finite_mid_labels": 30375,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-16.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-16.pkl"
+    },
+    {
+      "session": "2025-06-17",
+      "rows": 360,
+      "finite_net_labels": 31512,
+      "finite_mid_labels": 31512,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-17.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-17.pkl"
+    },
+    {
+      "session": "2025-06-18",
+      "rows": 360,
+      "finite_net_labels": 34296,
+      "finite_mid_labels": 34296,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-18.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-18.pkl"
+    },
+    {
+      "session": "2025-06-20",
+      "rows": 360,
+      "finite_net_labels": 33147,
+      "finite_mid_labels": 33147,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-20.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-20.pkl"
+    },
+    {
+      "session": "2025-06-23",
+      "rows": 360,
+      "finite_net_labels": 32352,
+      "finite_mid_labels": 32352,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-23.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-23.pkl"
+    },
+    {
+      "session": "2025-06-24",
+      "rows": 360,
+      "finite_net_labels": 29670,
+      "finite_mid_labels": 29670,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-24.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-24.pkl"
+    },
+    {
+      "session": "2025-06-25",
+      "rows": 360,
+      "finite_net_labels": 28413,
+      "finite_mid_labels": 28413,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-25.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-25.pkl"
+    },
+    {
+      "session": "2025-06-26",
+      "rows": 360,
+      "finite_net_labels": 27585,
+      "finite_mid_labels": 27585,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-26.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-26.pkl"
+    },
+    {
+      "session": "2025-06-27",
+      "rows": 360,
+      "finite_net_labels": 29571,
+      "finite_mid_labels": 29571,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-27.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-27.pkl"
+    },
+    {
+      "session": "2025-06-30",
+      "rows": 360,
+      "finite_net_labels": 33327,
+      "finite_mid_labels": 33327,
+      "input_path": "data/processed/spxw_0dte_neural_q2_2025/2025-06-30.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_q2_2025_nofee/2025-06-30.pkl"
+    }
+  ]
+}

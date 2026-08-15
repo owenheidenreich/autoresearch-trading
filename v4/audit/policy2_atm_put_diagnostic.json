@@ -1,0 +1,2239 @@
+{
+  "policy": "ask_to_bid_stop65_target150_hold45m",
+  "cooldown_minutes": 45,
+  "regime_caveat": "Treat Jan-Mar 2026 as real market truth, but only one environment slice. These diagnostics identify hypotheses, not generalizable rules.",
+  "splits": {
+    "train": {
+      "atm_call": {
+        "metrics": {
+          "trades": 160,
+          "total_pnl": -8920.0,
+          "avg_pnl": -55.75,
+          "median_pnl": -147.0,
+          "win_rate": 0.4,
+          "profit_factor": 0.7644075854418678,
+          "max_drawdown": -12454.0,
+          "sessions_traded": 20,
+          "mean_daily_pnl": -446.0,
+          "median_daily_pnl": -561.0,
+          "positive_day_fraction": 0.3
+        },
+        "by_day": [
+          {
+            "session": "2026-01-02",
+            "trades": 8,
+            "total_pnl": -1461.0,
+            "avg_pnl": -182.625,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-01-05",
+            "trades": 8,
+            "total_pnl": -96.0,
+            "avg_pnl": -12.0,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-06",
+            "trades": 8,
+            "total_pnl": 2174.0,
+            "avg_pnl": 271.75,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-01-07",
+            "trades": 8,
+            "total_pnl": -376.0,
+            "avg_pnl": -47.0,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-01-08",
+            "trades": 8,
+            "total_pnl": -306.0,
+            "avg_pnl": -38.25,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-01-09",
+            "trades": 8,
+            "total_pnl": 1054.0,
+            "avg_pnl": 131.75,
+            "win_rate": 0.75
+          },
+          {
+            "session": "2026-01-12",
+            "trades": 8,
+            "total_pnl": 1564.0,
+            "avg_pnl": 195.5,
+            "win_rate": 0.75
+          },
+          {
+            "session": "2026-01-13",
+            "trades": 8,
+            "total_pnl": -1816.0,
+            "avg_pnl": -227.0,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-14",
+            "trades": 8,
+            "total_pnl": -866.0,
+            "avg_pnl": -108.25,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-15",
+            "trades": 8,
+            "total_pnl": -1186.0,
+            "avg_pnl": -148.25,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-01-16",
+            "trades": 8,
+            "total_pnl": -1941.0,
+            "avg_pnl": -242.625,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-01-20",
+            "trades": 8,
+            "total_pnl": -3366.0,
+            "avg_pnl": -420.75,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-21",
+            "trades": 8,
+            "total_pnl": 1244.0,
+            "avg_pnl": 155.5,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-01-22",
+            "trades": 8,
+            "total_pnl": -791.0,
+            "avg_pnl": -98.875,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-23",
+            "trades": 8,
+            "total_pnl": -106.0,
+            "avg_pnl": -13.25,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-01-26",
+            "trades": 8,
+            "total_pnl": 1469.0,
+            "avg_pnl": 183.625,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-01-27",
+            "trades": 8,
+            "total_pnl": 389.0,
+            "avg_pnl": 48.625,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-01-28",
+            "trades": 8,
+            "total_pnl": -2036.0,
+            "avg_pnl": -254.5,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-29",
+            "trades": 8,
+            "total_pnl": -746.0,
+            "avg_pnl": -93.25,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-30",
+            "trades": 8,
+            "total_pnl": -1721.0,
+            "avg_pnl": -215.125,
+            "win_rate": 0.125
+          }
+        ],
+        "by_time_bucket": [
+          {
+            "time_bucket": "09:30-10:29",
+            "trades": 40,
+            "total_pnl": -2500.0,
+            "avg_pnl": -62.5,
+            "win_rate": 0.45,
+            "profit_factor": 0.818630295995357
+          },
+          {
+            "time_bucket": "10:30-11:59",
+            "trades": 40,
+            "total_pnl": 560.0,
+            "avg_pnl": 14.0,
+            "win_rate": 0.425,
+            "profit_factor": 1.0751072961373391
+          },
+          {
+            "time_bucket": "12:00-13:59",
+            "trades": 40,
+            "total_pnl": -3010.0,
+            "avg_pnl": -75.25,
+            "win_rate": 0.425,
+            "profit_factor": 0.6134086822501926
+          },
+          {
+            "time_bucket": "14:00-15:30",
+            "trades": 40,
+            "total_pnl": -3970.0,
+            "avg_pnl": -99.25,
+            "win_rate": 0.3,
+            "profit_factor": 0.5507016749660479
+          }
+        ],
+        "by_above_vwap": [
+          {
+            "above_vwap": "False",
+            "trades": 82,
+            "total_pnl": -4149.0,
+            "avg_pnl": -50.59756097560975,
+            "win_rate": 0.3780487804878049,
+            "profit_factor": 0.8216787725104225
+          },
+          {
+            "above_vwap": "True",
+            "trades": 78,
+            "total_pnl": -4771.0,
+            "avg_pnl": -61.166666666666664,
+            "win_rate": 0.4230769230769231,
+            "profit_factor": 0.6731072285029119
+          }
+        ],
+        "by_omar_positive": [
+          {
+            "omar_positive": "False",
+            "trades": 81,
+            "total_pnl": -7237.0,
+            "avg_pnl": -89.34567901234568,
+            "win_rate": 0.3333333333333333,
+            "profit_factor": 0.7156720229442501
+          },
+          {
+            "omar_positive": "True",
+            "trades": 79,
+            "total_pnl": -1683.0,
+            "avg_pnl": -21.303797468354432,
+            "win_rate": 0.46835443037974683,
+            "profit_factor": 0.8643726327665404
+          }
+        ],
+        "by_momentum_15m_positive": [
+          {
+            "momentum_15m_positive": "False",
+            "trades": 85,
+            "total_pnl": -2880.0,
+            "avg_pnl": -33.88235294117647,
+            "win_rate": 0.38823529411764707,
+            "profit_factor": 0.870176703930761
+          },
+          {
+            "momentum_15m_positive": "True",
+            "trades": 75,
+            "total_pnl": -6040.0,
+            "avg_pnl": -80.53333333333333,
+            "win_rate": 0.41333333333333333,
+            "profit_factor": 0.6147467789258834
+          }
+        ]
+      },
+      "atm_put": {
+        "metrics": {
+          "trades": 160,
+          "total_pnl": 3040.0,
+          "avg_pnl": 19.0,
+          "median_pnl": -159.5,
+          "win_rate": 0.38125,
+          "profit_factor": 1.0768977816001821,
+          "max_drawdown": -8735.0,
+          "sessions_traded": 20,
+          "mean_daily_pnl": 152.0,
+          "median_daily_pnl": 189.0,
+          "positive_day_fraction": 0.55
+        },
+        "by_day": [
+          {
+            "session": "2026-01-02",
+            "trades": 8,
+            "total_pnl": 2534.0,
+            "avg_pnl": 316.75,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-01-05",
+            "trades": 8,
+            "total_pnl": -831.0,
+            "avg_pnl": -103.875,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-06",
+            "trades": 8,
+            "total_pnl": -1136.0,
+            "avg_pnl": -142.0,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-07",
+            "trades": 8,
+            "total_pnl": 729.0,
+            "avg_pnl": 91.125,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-01-08",
+            "trades": 8,
+            "total_pnl": -1231.0,
+            "avg_pnl": -153.875,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-01-09",
+            "trades": 8,
+            "total_pnl": -3186.0,
+            "avg_pnl": -398.25,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-12",
+            "trades": 8,
+            "total_pnl": -2301.0,
+            "avg_pnl": -287.625,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-13",
+            "trades": 8,
+            "total_pnl": 2174.0,
+            "avg_pnl": 271.75,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-01-14",
+            "trades": 8,
+            "total_pnl": 244.0,
+            "avg_pnl": 30.5,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-15",
+            "trades": 8,
+            "total_pnl": 1454.0,
+            "avg_pnl": 181.75,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-16",
+            "trades": 8,
+            "total_pnl": 134.0,
+            "avg_pnl": 16.75,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-01-20",
+            "trades": 8,
+            "total_pnl": 2754.0,
+            "avg_pnl": 344.25,
+            "win_rate": 0.75
+          },
+          {
+            "session": "2026-01-21",
+            "trades": 8,
+            "total_pnl": 1549.0,
+            "avg_pnl": 193.625,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-22",
+            "trades": 8,
+            "total_pnl": 684.0,
+            "avg_pnl": 85.5,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-01-23",
+            "trades": 8,
+            "total_pnl": -206.0,
+            "avg_pnl": -25.75,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-26",
+            "trades": 8,
+            "total_pnl": -2056.0,
+            "avg_pnl": -257.0,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-27",
+            "trades": 8,
+            "total_pnl": -1391.0,
+            "avg_pnl": -173.875,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-28",
+            "trades": 8,
+            "total_pnl": -66.0,
+            "avg_pnl": -8.25,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-29",
+            "trades": 8,
+            "total_pnl": 2154.0,
+            "avg_pnl": 269.25,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-30",
+            "trades": 8,
+            "total_pnl": 1034.0,
+            "avg_pnl": 129.25,
+            "win_rate": 0.625
+          }
+        ],
+        "by_time_bucket": [
+          {
+            "time_bucket": "09:30-10:29",
+            "trades": 40,
+            "total_pnl": 1200.0,
+            "avg_pnl": 30.0,
+            "win_rate": 0.375,
+            "profit_factor": 1.0786885245901638
+          },
+          {
+            "time_bucket": "10:30-11:59",
+            "trades": 40,
+            "total_pnl": -4110.0,
+            "avg_pnl": -102.75,
+            "win_rate": 0.325,
+            "profit_factor": 0.6206387299243123
+          },
+          {
+            "time_bucket": "12:00-13:59",
+            "trades": 40,
+            "total_pnl": 1710.0,
+            "avg_pnl": 42.75,
+            "win_rate": 0.375,
+            "profit_factor": 1.22007722007722
+          },
+          {
+            "time_bucket": "14:00-15:30",
+            "trades": 40,
+            "total_pnl": 4240.0,
+            "avg_pnl": 106.0,
+            "win_rate": 0.45,
+            "profit_factor": 1.7466103187180841
+          }
+        ],
+        "by_above_vwap": [
+          {
+            "above_vwap": "False",
+            "trades": 82,
+            "total_pnl": 1376.0,
+            "avg_pnl": 16.78048780487805,
+            "win_rate": 0.36585365853658536,
+            "profit_factor": 1.0538256923799092
+          },
+          {
+            "above_vwap": "True",
+            "trades": 78,
+            "total_pnl": 1664.0,
+            "avg_pnl": 21.333333333333332,
+            "win_rate": 0.3974358974358974,
+            "profit_factor": 1.11912091058773
+          }
+        ],
+        "by_omar_positive": [
+          {
+            "omar_positive": "False",
+            "trades": 81,
+            "total_pnl": 2508.0,
+            "avg_pnl": 30.962962962962962,
+            "win_rate": 0.4074074074074074,
+            "profit_factor": 1.102677474821911
+          },
+          {
+            "omar_positive": "True",
+            "trades": 79,
+            "total_pnl": 532.0,
+            "avg_pnl": 6.734177215189874,
+            "win_rate": 0.35443037974683544,
+            "profit_factor": 1.0352154630303834
+          }
+        ],
+        "by_momentum_15m_positive": [
+          {
+            "momentum_15m_positive": "False",
+            "trades": 85,
+            "total_pnl": 1085.0,
+            "avg_pnl": 12.764705882352942,
+            "win_rate": 0.38823529411764707,
+            "profit_factor": 1.043436486648785
+          },
+          {
+            "momentum_15m_positive": "True",
+            "trades": 75,
+            "total_pnl": 1955.0,
+            "avg_pnl": 26.066666666666666,
+            "win_rate": 0.37333333333333335,
+            "profit_factor": 1.1343273326920433
+          }
+        ]
+      },
+      "vwap_omar": {
+        "metrics": {
+          "trades": 152,
+          "total_pnl": -1084.0,
+          "avg_pnl": -7.131578947368421,
+          "median_pnl": -137.0,
+          "win_rate": 0.3684210526315789,
+          "profit_factor": 0.9716764214046822,
+          "max_drawdown": -11627.0,
+          "sessions_traded": 20,
+          "mean_daily_pnl": -54.2,
+          "median_daily_pnl": -465.0,
+          "positive_day_fraction": 0.4
+        },
+        "by_day": [
+          {
+            "session": "2026-01-02",
+            "trades": 7,
+            "total_pnl": 2081.0,
+            "avg_pnl": 297.2857142857143,
+            "win_rate": 0.5714285714285714
+          },
+          {
+            "session": "2026-01-05",
+            "trades": 7,
+            "total_pnl": -419.0,
+            "avg_pnl": -59.857142857142854,
+            "win_rate": 0.2857142857142857
+          },
+          {
+            "session": "2026-01-06",
+            "trades": 7,
+            "total_pnl": 2236.0,
+            "avg_pnl": 319.42857142857144,
+            "win_rate": 0.42857142857142855
+          },
+          {
+            "session": "2026-01-07",
+            "trades": 8,
+            "total_pnl": -746.0,
+            "avg_pnl": -93.25,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-08",
+            "trades": 8,
+            "total_pnl": -686.0,
+            "avg_pnl": -85.75,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-01-09",
+            "trades": 8,
+            "total_pnl": 564.0,
+            "avg_pnl": 70.5,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-01-12",
+            "trades": 8,
+            "total_pnl": 1334.0,
+            "avg_pnl": 166.75,
+            "win_rate": 0.75
+          },
+          {
+            "session": "2026-01-13",
+            "trades": 8,
+            "total_pnl": 1719.0,
+            "avg_pnl": 214.875,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-01-14",
+            "trades": 8,
+            "total_pnl": -1016.0,
+            "avg_pnl": -127.0,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-15",
+            "trades": 8,
+            "total_pnl": -1301.0,
+            "avg_pnl": -162.625,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-16",
+            "trades": 7,
+            "total_pnl": -2284.0,
+            "avg_pnl": -326.2857142857143,
+            "win_rate": 0.14285714285714285
+          },
+          {
+            "session": "2026-01-20",
+            "trades": 8,
+            "total_pnl": -806.0,
+            "avg_pnl": -100.75,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-21",
+            "trades": 8,
+            "total_pnl": -1341.0,
+            "avg_pnl": -167.625,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-01-22",
+            "trades": 8,
+            "total_pnl": -2196.0,
+            "avg_pnl": -274.5,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-01-23",
+            "trades": 7,
+            "total_pnl": -324.0,
+            "avg_pnl": -46.285714285714285,
+            "win_rate": 0.14285714285714285
+          },
+          {
+            "session": "2026-01-26",
+            "trades": 8,
+            "total_pnl": 714.0,
+            "avg_pnl": 89.25,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-01-27",
+            "trades": 8,
+            "total_pnl": -511.0,
+            "avg_pnl": -63.875,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-01-28",
+            "trades": 8,
+            "total_pnl": -956.0,
+            "avg_pnl": -119.5,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-01-29",
+            "trades": 5,
+            "total_pnl": 2320.0,
+            "avg_pnl": 464.0,
+            "win_rate": 0.4
+          },
+          {
+            "session": "2026-01-30",
+            "trades": 8,
+            "total_pnl": 534.0,
+            "avg_pnl": 66.75,
+            "win_rate": 0.375
+          }
+        ],
+        "by_time_bucket": [
+          {
+            "time_bucket": "09:30-10:29",
+            "trades": 40,
+            "total_pnl": 4670.0,
+            "avg_pnl": 116.75,
+            "win_rate": 0.45,
+            "profit_factor": 1.3534130467685788
+          },
+          {
+            "time_bucket": "10:30-11:59",
+            "trades": 36,
+            "total_pnl": -5247.0,
+            "avg_pnl": -145.75,
+            "win_rate": 0.3055555555555556,
+            "profit_factor": 0.4903351141330743
+          },
+          {
+            "time_bucket": "12:00-13:59",
+            "trades": 40,
+            "total_pnl": 40.0,
+            "avg_pnl": 1.0,
+            "win_rate": 0.375,
+            "profit_factor": 1.0046082949308757
+          },
+          {
+            "time_bucket": "14:00-15:30",
+            "trades": 36,
+            "total_pnl": -547.0,
+            "avg_pnl": -15.194444444444445,
+            "win_rate": 0.3333333333333333,
+            "profit_factor": 0.9100772645076443
+          }
+        ],
+        "by_above_vwap": [
+          {
+            "above_vwap": "False",
+            "trades": 68,
+            "total_pnl": 204.0,
+            "avg_pnl": 3.0,
+            "win_rate": 0.38235294117647056,
+            "profit_factor": 1.0088334632372045
+          },
+          {
+            "above_vwap": "True",
+            "trades": 84,
+            "total_pnl": -1288.0,
+            "avg_pnl": -15.333333333333334,
+            "win_rate": 0.35714285714285715,
+            "profit_factor": 0.9151403346949533
+          }
+        ],
+        "by_omar_positive": [
+          {
+            "omar_positive": "False",
+            "trades": 68,
+            "total_pnl": 204.0,
+            "avg_pnl": 3.0,
+            "win_rate": 0.38235294117647056,
+            "profit_factor": 1.0088334632372045
+          },
+          {
+            "omar_positive": "True",
+            "trades": 84,
+            "total_pnl": -1288.0,
+            "avg_pnl": -15.333333333333334,
+            "win_rate": 0.35714285714285715,
+            "profit_factor": 0.9151403346949533
+          }
+        ],
+        "by_momentum_15m_positive": [
+          {
+            "momentum_15m_positive": "False",
+            "trades": 91,
+            "total_pnl": -3602.0,
+            "avg_pnl": -39.582417582417584,
+            "win_rate": 0.3626373626373626,
+            "profit_factor": 0.8678940805398665
+          },
+          {
+            "momentum_15m_positive": "True",
+            "trades": 61,
+            "total_pnl": 2518.0,
+            "avg_pnl": 41.278688524590166,
+            "win_rate": 0.3770491803278688,
+            "profit_factor": 1.2287842994730147
+          }
+        ]
+      }
+    },
+    "validation": {
+      "atm_call": {
+        "metrics": {
+          "trades": 152,
+          "total_pnl": 476.0,
+          "avg_pnl": 3.1315789473684212,
+          "median_pnl": -142.0,
+          "win_rate": 0.40131578947368424,
+          "profit_factor": 1.010385756676558,
+          "max_drawdown": -10779.0,
+          "sessions_traded": 19,
+          "mean_daily_pnl": 25.05263157894737,
+          "median_daily_pnl": -806.0,
+          "positive_day_fraction": 0.42105263157894735
+        },
+        "by_day": [
+          {
+            "session": "2026-02-02",
+            "trades": 8,
+            "total_pnl": 3224.0,
+            "avg_pnl": 403.0,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-03",
+            "trades": 8,
+            "total_pnl": -2676.0,
+            "avg_pnl": -334.5,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-04",
+            "trades": 8,
+            "total_pnl": -1616.0,
+            "avg_pnl": -202.0,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-05",
+            "trades": 8,
+            "total_pnl": -2796.0,
+            "avg_pnl": -349.5,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-06",
+            "trades": 8,
+            "total_pnl": 2904.0,
+            "avg_pnl": 363.0,
+            "win_rate": 0.75
+          },
+          {
+            "session": "2026-02-09",
+            "trades": 8,
+            "total_pnl": 3189.0,
+            "avg_pnl": 398.625,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-10",
+            "trades": 8,
+            "total_pnl": -1901.0,
+            "avg_pnl": -237.625,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-02-11",
+            "trades": 8,
+            "total_pnl": -1331.0,
+            "avg_pnl": -166.375,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-12",
+            "trades": 8,
+            "total_pnl": -3726.0,
+            "avg_pnl": -465.75,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-02-13",
+            "trades": 8,
+            "total_pnl": -976.0,
+            "avg_pnl": -122.0,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-17",
+            "trades": 8,
+            "total_pnl": 2529.0,
+            "avg_pnl": 316.125,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-18",
+            "trades": 8,
+            "total_pnl": 824.0,
+            "avg_pnl": 103.0,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-19",
+            "trades": 8,
+            "total_pnl": -1976.0,
+            "avg_pnl": -247.0,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-20",
+            "trades": 8,
+            "total_pnl": 7404.0,
+            "avg_pnl": 925.5,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-02-23",
+            "trades": 8,
+            "total_pnl": -3066.0,
+            "avg_pnl": -383.25,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-24",
+            "trades": 8,
+            "total_pnl": 1404.0,
+            "avg_pnl": 175.5,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-25",
+            "trades": 8,
+            "total_pnl": 94.0,
+            "avg_pnl": 11.75,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-02-26",
+            "trades": 8,
+            "total_pnl": -806.0,
+            "avg_pnl": -100.75,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-27",
+            "trades": 8,
+            "total_pnl": -226.0,
+            "avg_pnl": -28.25,
+            "win_rate": 0.25
+          }
+        ],
+        "by_time_bucket": [
+          {
+            "time_bucket": "09:30-10:29",
+            "trades": 38,
+            "total_pnl": 5944.0,
+            "avg_pnl": 156.42105263157896,
+            "win_rate": 0.5,
+            "profit_factor": 1.445644024591393
+          },
+          {
+            "time_bucket": "10:30-11:59",
+            "trades": 38,
+            "total_pnl": -1826.0,
+            "avg_pnl": -48.05263157894737,
+            "win_rate": 0.3684210526315789,
+            "profit_factor": 0.8418773813647384
+          },
+          {
+            "time_bucket": "12:00-13:59",
+            "trades": 38,
+            "total_pnl": -2351.0,
+            "avg_pnl": -61.86842105263158,
+            "win_rate": 0.3684210526315789,
+            "profit_factor": 0.8068676579314877
+          },
+          {
+            "time_bucket": "14:00-15:30",
+            "trades": 38,
+            "total_pnl": -1291.0,
+            "avg_pnl": -33.973684210526315,
+            "win_rate": 0.3684210526315789,
+            "profit_factor": 0.8528439530377294
+          }
+        ],
+        "by_above_vwap": [
+          {
+            "above_vwap": "False",
+            "trades": 82,
+            "total_pnl": -2554.0,
+            "avg_pnl": -31.146341463414632,
+            "win_rate": 0.3780487804878049,
+            "profit_factor": 0.9202921165969665
+          },
+          {
+            "above_vwap": "True",
+            "trades": 70,
+            "total_pnl": 3030.0,
+            "avg_pnl": 43.285714285714285,
+            "win_rate": 0.42857142857142855,
+            "profit_factor": 1.2197244379985497
+          }
+        ],
+        "by_omar_positive": [
+          {
+            "omar_positive": "False",
+            "trades": 79,
+            "total_pnl": 632.0,
+            "avg_pnl": 8.0,
+            "win_rate": 0.4050632911392405,
+            "profit_factor": 1.0206104878685103
+          },
+          {
+            "omar_positive": "True",
+            "trades": 73,
+            "total_pnl": -156.0,
+            "avg_pnl": -2.136986301369863,
+            "win_rate": 0.3972602739726027,
+            "profit_factor": 0.9897151898734177
+          }
+        ],
+        "by_momentum_15m_positive": [
+          {
+            "momentum_15m_positive": "False",
+            "trades": 86,
+            "total_pnl": 1723.0,
+            "avg_pnl": 20.03488372093023,
+            "win_rate": 0.4069767441860465,
+            "profit_factor": 1.0601669169256556
+          },
+          {
+            "momentum_15m_positive": "True",
+            "trades": 66,
+            "total_pnl": -1247.0,
+            "avg_pnl": -18.893939393939394,
+            "win_rate": 0.3939393939393939,
+            "profit_factor": 0.9274789182902007
+          }
+        ]
+      },
+      "atm_put": {
+        "metrics": {
+          "trades": 152,
+          "total_pnl": -8159.0,
+          "avg_pnl": -53.67763157894737,
+          "median_pnl": -242.0,
+          "win_rate": 0.375,
+          "profit_factor": 0.8552213645639252,
+          "max_drawdown": -14004.0,
+          "sessions_traded": 19,
+          "mean_daily_pnl": -429.42105263157896,
+          "median_daily_pnl": -926.0,
+          "positive_day_fraction": 0.3684210526315789
+        },
+        "by_day": [
+          {
+            "session": "2026-02-02",
+            "trades": 8,
+            "total_pnl": -1691.0,
+            "avg_pnl": -211.375,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-03",
+            "trades": 8,
+            "total_pnl": 4134.0,
+            "avg_pnl": 516.75,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-02-04",
+            "trades": 8,
+            "total_pnl": 824.0,
+            "avg_pnl": 103.0,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-05",
+            "trades": 8,
+            "total_pnl": -1956.0,
+            "avg_pnl": -244.5,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-06",
+            "trades": 8,
+            "total_pnl": -6101.0,
+            "avg_pnl": -762.625,
+            "win_rate": 0.0
+          },
+          {
+            "session": "2026-02-09",
+            "trades": 8,
+            "total_pnl": -2391.0,
+            "avg_pnl": -298.875,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-10",
+            "trades": 8,
+            "total_pnl": 184.0,
+            "avg_pnl": 23.0,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-11",
+            "trades": 8,
+            "total_pnl": 124.0,
+            "avg_pnl": 15.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-12",
+            "trades": 8,
+            "total_pnl": 5644.0,
+            "avg_pnl": 705.5,
+            "win_rate": 0.75
+          },
+          {
+            "session": "2026-02-13",
+            "trades": 8,
+            "total_pnl": -1626.0,
+            "avg_pnl": -203.25,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-17",
+            "trades": 8,
+            "total_pnl": -196.0,
+            "avg_pnl": -24.5,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-18",
+            "trades": 8,
+            "total_pnl": -206.0,
+            "avg_pnl": -25.75,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-19",
+            "trades": 8,
+            "total_pnl": -926.0,
+            "avg_pnl": -115.75,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-02-20",
+            "trades": 8,
+            "total_pnl": -2551.0,
+            "avg_pnl": -318.875,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-23",
+            "trades": 8,
+            "total_pnl": 3844.0,
+            "avg_pnl": 480.5,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-02-24",
+            "trades": 8,
+            "total_pnl": -3396.0,
+            "avg_pnl": -424.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-25",
+            "trades": 8,
+            "total_pnl": -1806.0,
+            "avg_pnl": -225.75,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-02-26",
+            "trades": 8,
+            "total_pnl": 2194.0,
+            "avg_pnl": 274.25,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-27",
+            "trades": 8,
+            "total_pnl": -2261.0,
+            "avg_pnl": -282.625,
+            "win_rate": 0.5
+          }
+        ],
+        "by_time_bucket": [
+          {
+            "time_bucket": "09:30-10:29",
+            "trades": 38,
+            "total_pnl": -6556.0,
+            "avg_pnl": -172.52631578947367,
+            "win_rate": 0.3157894736842105,
+            "profit_factor": 0.7222269299211931
+          },
+          {
+            "time_bucket": "10:30-11:59",
+            "trades": 38,
+            "total_pnl": 729.0,
+            "avg_pnl": 19.18421052631579,
+            "win_rate": 0.34210526315789475,
+            "profit_factor": 1.058436873747495
+          },
+          {
+            "time_bucket": "12:00-13:59",
+            "trades": 38,
+            "total_pnl": -646.0,
+            "avg_pnl": -17.0,
+            "win_rate": 0.42105263157894735,
+            "profit_factor": 0.9333608417577883
+          },
+          {
+            "time_bucket": "14:00-15:30",
+            "trades": 38,
+            "total_pnl": -1686.0,
+            "avg_pnl": -44.36842105263158,
+            "win_rate": 0.42105263157894735,
+            "profit_factor": 0.840702947845805
+          }
+        ],
+        "by_above_vwap": [
+          {
+            "above_vwap": "False",
+            "trades": 82,
+            "total_pnl": 1056.0,
+            "avg_pnl": 12.878048780487806,
+            "win_rate": 0.4146341463414634,
+            "profit_factor": 1.0312833274084607
+          },
+          {
+            "above_vwap": "True",
+            "trades": 70,
+            "total_pnl": -9215.0,
+            "avg_pnl": -131.64285714285714,
+            "win_rate": 0.32857142857142857,
+            "profit_factor": 0.5922385946280809
+          }
+        ],
+        "by_omar_positive": [
+          {
+            "omar_positive": "False",
+            "trades": 79,
+            "total_pnl": 222.0,
+            "avg_pnl": 2.810126582278481,
+            "win_rate": 0.3924050632911392,
+            "profit_factor": 1.0065110276865321
+          },
+          {
+            "omar_positive": "True",
+            "trades": 73,
+            "total_pnl": -8381.0,
+            "avg_pnl": -114.8082191780822,
+            "win_rate": 0.3561643835616438,
+            "profit_factor": 0.6234781436722224
+          }
+        ],
+        "by_momentum_15m_positive": [
+          {
+            "momentum_15m_positive": "False",
+            "trades": 86,
+            "total_pnl": -4977.0,
+            "avg_pnl": -57.872093023255815,
+            "win_rate": 0.37209302325581395,
+            "profit_factor": 0.8572412012735565
+          },
+          {
+            "momentum_15m_positive": "True",
+            "trades": 66,
+            "total_pnl": -3182.0,
+            "avg_pnl": -48.21212121212121,
+            "win_rate": 0.3787878787878788,
+            "profit_factor": 0.8519449097338545
+          }
+        ]
+      },
+      "vwap_omar": {
+        "metrics": {
+          "trades": 146,
+          "total_pnl": 3383.0,
+          "avg_pnl": 23.171232876712327,
+          "median_pnl": -154.5,
+          "win_rate": 0.3972602739726027,
+          "profit_factor": 1.0733346339771521,
+          "max_drawdown": -7607.0,
+          "sessions_traded": 19,
+          "mean_daily_pnl": 178.05263157894737,
+          "median_daily_pnl": -36.0,
+          "positive_day_fraction": 0.47368421052631576
+        },
+        "by_day": [
+          {
+            "session": "2026-02-02",
+            "trades": 8,
+            "total_pnl": -1116.0,
+            "avg_pnl": -139.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-03",
+            "trades": 8,
+            "total_pnl": 4564.0,
+            "avg_pnl": 570.5,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-02-04",
+            "trades": 7,
+            "total_pnl": 1366.0,
+            "avg_pnl": 195.14285714285714,
+            "win_rate": 0.7142857142857143
+          },
+          {
+            "session": "2026-02-05",
+            "trades": 8,
+            "total_pnl": -3396.0,
+            "avg_pnl": -424.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-06",
+            "trades": 8,
+            "total_pnl": 2414.0,
+            "avg_pnl": 301.75,
+            "win_rate": 0.75
+          },
+          {
+            "session": "2026-02-09",
+            "trades": 8,
+            "total_pnl": 3204.0,
+            "avg_pnl": 400.5,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-10",
+            "trades": 8,
+            "total_pnl": -36.0,
+            "avg_pnl": -4.5,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-11",
+            "trades": 7,
+            "total_pnl": -3839.0,
+            "avg_pnl": -548.4285714285714,
+            "win_rate": 0.0
+          },
+          {
+            "session": "2026-02-12",
+            "trades": 8,
+            "total_pnl": 4804.0,
+            "avg_pnl": 600.5,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-02-13",
+            "trades": 8,
+            "total_pnl": -3651.0,
+            "avg_pnl": -456.375,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-17",
+            "trades": 8,
+            "total_pnl": -3256.0,
+            "avg_pnl": -407.0,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-18",
+            "trades": 6,
+            "total_pnl": 1238.0,
+            "avg_pnl": 206.33333333333334,
+            "win_rate": 0.16666666666666666
+          },
+          {
+            "session": "2026-02-19",
+            "trades": 8,
+            "total_pnl": -1411.0,
+            "avg_pnl": -176.375,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-20",
+            "trades": 8,
+            "total_pnl": 5444.0,
+            "avg_pnl": 680.5,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-23",
+            "trades": 8,
+            "total_pnl": 3614.0,
+            "avg_pnl": 451.75,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-02-24",
+            "trades": 8,
+            "total_pnl": -636.0,
+            "avg_pnl": -79.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-02-25",
+            "trades": 8,
+            "total_pnl": 49.0,
+            "avg_pnl": 6.125,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-02-26",
+            "trades": 6,
+            "total_pnl": -1952.0,
+            "avg_pnl": -325.3333333333333,
+            "win_rate": 0.3333333333333333
+          },
+          {
+            "session": "2026-02-27",
+            "trades": 8,
+            "total_pnl": -4021.0,
+            "avg_pnl": -502.625,
+            "win_rate": 0.125
+          }
+        ],
+        "by_time_bucket": [
+          {
+            "time_bucket": "09:30-10:29",
+            "trades": 38,
+            "total_pnl": 6454.0,
+            "avg_pnl": 169.8421052631579,
+            "win_rate": 0.4473684210526316,
+            "profit_factor": 1.3971203544179178
+          },
+          {
+            "time_bucket": "10:30-11:59",
+            "trades": 38,
+            "total_pnl": 5344.0,
+            "avg_pnl": 140.6315789473684,
+            "win_rate": 0.47368421052631576,
+            "profit_factor": 1.6525030525030524
+          },
+          {
+            "time_bucket": "12:00-13:59",
+            "trades": 38,
+            "total_pnl": -1836.0,
+            "avg_pnl": -48.31578947368421,
+            "win_rate": 0.39473684210526316,
+            "profit_factor": 0.8304082763716978
+          },
+          {
+            "time_bucket": "14:00-15:30",
+            "trades": 32,
+            "total_pnl": -6579.0,
+            "avg_pnl": -205.59375,
+            "win_rate": 0.25,
+            "profit_factor": 0.39436619718309857
+          }
+        ],
+        "by_above_vwap": [
+          {
+            "above_vwap": "False",
+            "trades": 68,
+            "total_pnl": -986.0,
+            "avg_pnl": -14.5,
+            "win_rate": 0.4264705882352941,
+            "profit_factor": 0.9623922495995118
+          },
+          {
+            "above_vwap": "True",
+            "trades": 78,
+            "total_pnl": 4369.0,
+            "avg_pnl": 56.01282051282051,
+            "win_rate": 0.3717948717948718,
+            "profit_factor": 1.2194044091799328
+          }
+        ],
+        "by_omar_positive": [
+          {
+            "omar_positive": "False",
+            "trades": 68,
+            "total_pnl": -986.0,
+            "avg_pnl": -14.5,
+            "win_rate": 0.4264705882352941,
+            "profit_factor": 0.9623922495995118
+          },
+          {
+            "omar_positive": "True",
+            "trades": 78,
+            "total_pnl": 4369.0,
+            "avg_pnl": 56.01282051282051,
+            "win_rate": 0.3717948717948718,
+            "profit_factor": 1.2194044091799328
+          }
+        ],
+        "by_momentum_15m_positive": [
+          {
+            "momentum_15m_positive": "False",
+            "trades": 88,
+            "total_pnl": -3091.0,
+            "avg_pnl": -35.125,
+            "win_rate": 0.3522727272727273,
+            "profit_factor": 0.9043004427381652
+          },
+          {
+            "momentum_15m_positive": "True",
+            "trades": 58,
+            "total_pnl": 6474.0,
+            "avg_pnl": 111.62068965517241,
+            "win_rate": 0.46551724137931033,
+            "profit_factor": 1.468045112781955
+          }
+        ]
+      }
+    },
+    "test": {
+      "atm_call": {
+        "metrics": {
+          "trades": 176,
+          "total_pnl": -24682.0,
+          "avg_pnl": -140.23863636363637,
+          "median_pnl": -332.0,
+          "win_rate": 0.32386363636363635,
+          "profit_factor": 0.6775196634351563,
+          "max_drawdown": -36402.0,
+          "sessions_traded": 22,
+          "mean_daily_pnl": -1121.909090909091,
+          "median_daily_pnl": -1881.0,
+          "positive_day_fraction": 0.4090909090909091
+        },
+        "by_day": [
+          {
+            "session": "2026-03-02",
+            "trades": 8,
+            "total_pnl": 4184.0,
+            "avg_pnl": 523.0,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-03",
+            "trades": 8,
+            "total_pnl": 654.0,
+            "avg_pnl": 81.75,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-04",
+            "trades": 8,
+            "total_pnl": 474.0,
+            "avg_pnl": 59.25,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-05",
+            "trades": 8,
+            "total_pnl": -2846.0,
+            "avg_pnl": -355.75,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-06",
+            "trades": 8,
+            "total_pnl": -1586.0,
+            "avg_pnl": -198.25,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-09",
+            "trades": 8,
+            "total_pnl": 3534.0,
+            "avg_pnl": 441.75,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-03-10",
+            "trades": 8,
+            "total_pnl": 164.0,
+            "avg_pnl": 20.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-11",
+            "trades": 8,
+            "total_pnl": -2536.0,
+            "avg_pnl": -317.0,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-12",
+            "trades": 8,
+            "total_pnl": -2696.0,
+            "avg_pnl": -337.0,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-03-13",
+            "trades": 8,
+            "total_pnl": -4091.0,
+            "avg_pnl": -511.375,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-16",
+            "trades": 8,
+            "total_pnl": -286.0,
+            "avg_pnl": -35.75,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-17",
+            "trades": 8,
+            "total_pnl": -2176.0,
+            "avg_pnl": -272.0,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-03-18",
+            "trades": 8,
+            "total_pnl": -3256.0,
+            "avg_pnl": -407.0,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-03-19",
+            "trades": 8,
+            "total_pnl": 504.0,
+            "avg_pnl": 63.0,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-20",
+            "trades": 8,
+            "total_pnl": -4386.0,
+            "avg_pnl": -548.25,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-03-23",
+            "trades": 8,
+            "total_pnl": 199.0,
+            "avg_pnl": 24.875,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-24",
+            "trades": 8,
+            "total_pnl": 564.0,
+            "avg_pnl": 70.5,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-25",
+            "trades": 8,
+            "total_pnl": -3251.0,
+            "avg_pnl": -406.375,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-26",
+            "trades": 8,
+            "total_pnl": -3426.0,
+            "avg_pnl": -428.25,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-03-27",
+            "trades": 8,
+            "total_pnl": -4436.0,
+            "avg_pnl": -554.5,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-03-30",
+            "trades": 8,
+            "total_pnl": -4721.0,
+            "avg_pnl": -590.125,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-03-31",
+            "trades": 8,
+            "total_pnl": 4734.0,
+            "avg_pnl": 591.75,
+            "win_rate": 0.75
+          }
+        ],
+        "by_time_bucket": [
+          {
+            "time_bucket": "09:30-10:29",
+            "trades": 44,
+            "total_pnl": -5288.0,
+            "avg_pnl": -120.18181818181819,
+            "win_rate": 0.38636363636363635,
+            "profit_factor": 0.7915976984314653
+          },
+          {
+            "time_bucket": "10:30-11:59",
+            "trades": 44,
+            "total_pnl": -9378.0,
+            "avg_pnl": -213.13636363636363,
+            "win_rate": 0.3181818181818182,
+            "profit_factor": 0.5043340380549682
+          },
+          {
+            "time_bucket": "12:00-13:59",
+            "trades": 44,
+            "total_pnl": -3288.0,
+            "avg_pnl": -74.72727272727273,
+            "win_rate": 0.3181818181818182,
+            "profit_factor": 0.7835418038183015
+          },
+          {
+            "time_bucket": "14:00-15:30",
+            "trades": 44,
+            "total_pnl": -6728.0,
+            "avg_pnl": -152.9090909090909,
+            "win_rate": 0.2727272727272727,
+            "profit_factor": 0.6054884484578398
+          }
+        ],
+        "by_above_vwap": [
+          {
+            "above_vwap": "False",
+            "trades": 105,
+            "total_pnl": -12345.0,
+            "avg_pnl": -117.57142857142857,
+            "win_rate": 0.3333333333333333,
+            "profit_factor": 0.7242265162515358
+          },
+          {
+            "above_vwap": "True",
+            "trades": 71,
+            "total_pnl": -12337.0,
+            "avg_pnl": -173.7605633802817,
+            "win_rate": 0.30985915492957744,
+            "profit_factor": 0.6117143486608126
+          }
+        ],
+        "by_omar_positive": [
+          {
+            "omar_positive": "False",
+            "trades": 102,
+            "total_pnl": -19029.0,
+            "avg_pnl": -186.55882352941177,
+            "win_rate": 0.29411764705882354,
+            "profit_factor": 0.593127926618059
+          },
+          {
+            "omar_positive": "True",
+            "trades": 74,
+            "total_pnl": -5653.0,
+            "avg_pnl": -76.39189189189189,
+            "win_rate": 0.36486486486486486,
+            "profit_factor": 0.8101044710940911
+          }
+        ],
+        "by_momentum_15m_positive": [
+          {
+            "momentum_15m_positive": "False",
+            "trades": 96,
+            "total_pnl": -12607.0,
+            "avg_pnl": -131.32291666666666,
+            "win_rate": 0.3645833333333333,
+            "profit_factor": 0.7085558406731859
+          },
+          {
+            "momentum_15m_positive": "True",
+            "trades": 80,
+            "total_pnl": -12075.0,
+            "avg_pnl": -150.9375,
+            "win_rate": 0.275,
+            "profit_factor": 0.6371803731859018
+          }
+        ]
+      },
+      "atm_put": {
+        "metrics": {
+          "trades": 176,
+          "total_pnl": 4968.0,
+          "avg_pnl": 28.227272727272727,
+          "median_pnl": -197.0,
+          "win_rate": 0.4318181818181818,
+          "profit_factor": 1.0741824697625804,
+          "max_drawdown": -8055.0,
+          "sessions_traded": 22,
+          "mean_daily_pnl": 225.8181818181818,
+          "median_daily_pnl": 94.0,
+          "positive_day_fraction": 0.5454545454545454
+        },
+        "by_day": [
+          {
+            "session": "2026-03-02",
+            "trades": 8,
+            "total_pnl": -2101.0,
+            "avg_pnl": -262.625,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-03",
+            "trades": 8,
+            "total_pnl": -1956.0,
+            "avg_pnl": -244.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-04",
+            "trades": 8,
+            "total_pnl": -2336.0,
+            "avg_pnl": -292.0,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-05",
+            "trades": 8,
+            "total_pnl": 2719.0,
+            "avg_pnl": 339.875,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-03-06",
+            "trades": 8,
+            "total_pnl": -916.0,
+            "avg_pnl": -114.5,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-09",
+            "trades": 8,
+            "total_pnl": -2236.0,
+            "avg_pnl": -279.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-10",
+            "trades": 8,
+            "total_pnl": 2834.0,
+            "avg_pnl": 354.25,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-11",
+            "trades": 8,
+            "total_pnl": 44.0,
+            "avg_pnl": 5.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-12",
+            "trades": 8,
+            "total_pnl": -356.0,
+            "avg_pnl": -44.5,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-13",
+            "trades": 8,
+            "total_pnl": 3564.0,
+            "avg_pnl": 445.5,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-03-16",
+            "trades": 8,
+            "total_pnl": -681.0,
+            "avg_pnl": -85.125,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-17",
+            "trades": 8,
+            "total_pnl": 249.0,
+            "avg_pnl": 31.125,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-18",
+            "trades": 8,
+            "total_pnl": 1344.0,
+            "avg_pnl": 168.0,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-03-19",
+            "trades": 8,
+            "total_pnl": -2686.0,
+            "avg_pnl": -335.75,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-20",
+            "trades": 8,
+            "total_pnl": 3454.0,
+            "avg_pnl": 431.75,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-03-23",
+            "trades": 8,
+            "total_pnl": 144.0,
+            "avg_pnl": 18.0,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-24",
+            "trades": 8,
+            "total_pnl": -2436.0,
+            "avg_pnl": -304.5,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-25",
+            "trades": 8,
+            "total_pnl": 1514.0,
+            "avg_pnl": 189.25,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-26",
+            "trades": 8,
+            "total_pnl": 2184.0,
+            "avg_pnl": 273.0,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-03-27",
+            "trades": 8,
+            "total_pnl": 2414.0,
+            "avg_pnl": 301.75,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-03-30",
+            "trades": 8,
+            "total_pnl": 4084.0,
+            "avg_pnl": 510.5,
+            "win_rate": 0.75
+          },
+          {
+            "session": "2026-03-31",
+            "trades": 8,
+            "total_pnl": -3876.0,
+            "avg_pnl": -484.5,
+            "win_rate": 0.25
+          }
+        ],
+        "by_time_bucket": [
+          {
+            "time_bucket": "09:30-10:29",
+            "trades": 44,
+            "total_pnl": -7178.0,
+            "avg_pnl": -163.13636363636363,
+            "win_rate": 0.3409090909090909,
+            "profit_factor": 0.7431658794904823
+          },
+          {
+            "time_bucket": "10:30-11:59",
+            "trades": 44,
+            "total_pnl": 8622.0,
+            "avg_pnl": 195.95454545454547,
+            "win_rate": 0.5,
+            "profit_factor": 1.637062213684055
+          },
+          {
+            "time_bucket": "12:00-13:59",
+            "trades": 44,
+            "total_pnl": -1878.0,
+            "avg_pnl": -42.68181818181818,
+            "win_rate": 0.38636363636363635,
+            "profit_factor": 0.8675972927241963
+          },
+          {
+            "time_bucket": "14:00-15:30",
+            "trades": 44,
+            "total_pnl": 5402.0,
+            "avg_pnl": 122.77272727272727,
+            "win_rate": 0.5,
+            "profit_factor": 1.4778839348903043
+          }
+        ],
+        "by_above_vwap": [
+          {
+            "above_vwap": "False",
+            "trades": 105,
+            "total_pnl": -8085.0,
+            "avg_pnl": -77.0,
+            "win_rate": 0.4,
+            "profit_factor": 0.8177863920128011
+          },
+          {
+            "above_vwap": "True",
+            "trades": 71,
+            "total_pnl": 13053.0,
+            "avg_pnl": 183.8450704225352,
+            "win_rate": 0.4788732394366197,
+            "profit_factor": 1.577591928846409
+          }
+        ],
+        "by_omar_positive": [
+          {
+            "omar_positive": "False",
+            "trades": 102,
+            "total_pnl": -4414.0,
+            "avg_pnl": -43.27450980392157,
+            "win_rate": 0.43137254901960786,
+            "profit_factor": 0.8918561348490788
+          },
+          {
+            "omar_positive": "True",
+            "trades": 74,
+            "total_pnl": 9382.0,
+            "avg_pnl": 126.78378378378379,
+            "win_rate": 0.43243243243243246,
+            "profit_factor": 1.3587214192857688
+          }
+        ],
+        "by_momentum_15m_positive": [
+          {
+            "momentum_15m_positive": "False",
+            "trades": 96,
+            "total_pnl": -2087.0,
+            "avg_pnl": -21.739583333333332,
+            "win_rate": 0.3854166666666667,
+            "profit_factor": 0.9507469379085739
+          },
+          {
+            "momentum_15m_positive": "True",
+            "trades": 80,
+            "total_pnl": 7055.0,
+            "avg_pnl": 88.1875,
+            "win_rate": 0.4875,
+            "profit_factor": 1.2868235963735415
+          }
+        ]
+      },
+      "vwap_omar": {
+        "metrics": {
+          "trades": 175,
+          "total_pnl": -1465.0,
+          "avg_pnl": -8.371428571428572,
+          "median_pnl": -302.0,
+          "win_rate": 0.3942857142857143,
+          "profit_factor": 0.9772963255691416,
+          "max_drawdown": -15461.0,
+          "sessions_traded": 22,
+          "mean_daily_pnl": -66.5909090909091,
+          "median_daily_pnl": -483.5,
+          "positive_day_fraction": 0.45454545454545453
+        },
+        "by_day": [
+          {
+            "session": "2026-03-02",
+            "trades": 8,
+            "total_pnl": 3514.0,
+            "avg_pnl": 439.25,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-03",
+            "trades": 8,
+            "total_pnl": -3851.0,
+            "avg_pnl": -481.375,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-04",
+            "trades": 8,
+            "total_pnl": -591.0,
+            "avg_pnl": -73.875,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-05",
+            "trades": 8,
+            "total_pnl": 889.0,
+            "avg_pnl": 111.125,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-06",
+            "trades": 8,
+            "total_pnl": -2286.0,
+            "avg_pnl": -285.75,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-09",
+            "trades": 8,
+            "total_pnl": -401.0,
+            "avg_pnl": -50.125,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-10",
+            "trades": 8,
+            "total_pnl": -4126.0,
+            "avg_pnl": -515.75,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-11",
+            "trades": 8,
+            "total_pnl": -566.0,
+            "avg_pnl": -70.75,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-12",
+            "trades": 8,
+            "total_pnl": -1736.0,
+            "avg_pnl": -217.0,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-13",
+            "trades": 8,
+            "total_pnl": 3784.0,
+            "avg_pnl": 473.0,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-03-16",
+            "trades": 8,
+            "total_pnl": -3141.0,
+            "avg_pnl": -392.625,
+            "win_rate": 0.125
+          },
+          {
+            "session": "2026-03-17",
+            "trades": 8,
+            "total_pnl": -1256.0,
+            "avg_pnl": -157.0,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-18",
+            "trades": 8,
+            "total_pnl": 734.0,
+            "avg_pnl": 91.75,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-19",
+            "trades": 7,
+            "total_pnl": -1374.0,
+            "avg_pnl": -196.28571428571428,
+            "win_rate": 0.2857142857142857
+          },
+          {
+            "session": "2026-03-20",
+            "trades": 8,
+            "total_pnl": 3534.0,
+            "avg_pnl": 441.75,
+            "win_rate": 0.625
+          },
+          {
+            "session": "2026-03-23",
+            "trades": 8,
+            "total_pnl": -1121.0,
+            "avg_pnl": -140.125,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-24",
+            "trades": 8,
+            "total_pnl": -601.0,
+            "avg_pnl": -75.125,
+            "win_rate": 0.375
+          },
+          {
+            "session": "2026-03-25",
+            "trades": 8,
+            "total_pnl": 794.0,
+            "avg_pnl": 99.25,
+            "win_rate": 0.25
+          },
+          {
+            "session": "2026-03-26",
+            "trades": 8,
+            "total_pnl": 3024.0,
+            "avg_pnl": 378.0,
+            "win_rate": 0.75
+          },
+          {
+            "session": "2026-03-27",
+            "trades": 8,
+            "total_pnl": 1664.0,
+            "avg_pnl": 208.0,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-30",
+            "trades": 8,
+            "total_pnl": 84.0,
+            "avg_pnl": 10.5,
+            "win_rate": 0.5
+          },
+          {
+            "session": "2026-03-31",
+            "trades": 8,
+            "total_pnl": 1564.0,
+            "avg_pnl": 195.5,
+            "win_rate": 0.5
+          }
+        ],
+        "by_time_bucket": [
+          {
+            "time_bucket": "09:30-10:29",
+            "trades": 44,
+            "total_pnl": -7218.0,
+            "avg_pnl": -164.04545454545453,
+            "win_rate": 0.3409090909090909,
+            "profit_factor": 0.7125219053688068
+          },
+          {
+            "time_bucket": "10:30-11:59",
+            "trades": 40,
+            "total_pnl": -2360.0,
+            "avg_pnl": -59.0,
+            "win_rate": 0.375,
+            "profit_factor": 0.8339197748064743
+          },
+          {
+            "time_bucket": "12:00-13:59",
+            "trades": 48,
+            "total_pnl": 2629.0,
+            "avg_pnl": 54.770833333333336,
+            "win_rate": 0.4375,
+            "profit_factor": 1.1864671253280374
+          },
+          {
+            "time_bucket": "14:00-15:30",
+            "trades": 43,
+            "total_pnl": 5484.0,
+            "avg_pnl": 127.53488372093024,
+            "win_rate": 0.4186046511627907,
+            "profit_factor": 1.4936093609360936
+          }
+        ],
+        "by_above_vwap": [
+          {
+            "above_vwap": "False",
+            "trades": 97,
+            "total_pnl": 5706.0,
+            "avg_pnl": 58.824742268041234,
+            "win_rate": 0.4329896907216495,
+            "profit_factor": 1.1859843546284223
+          },
+          {
+            "above_vwap": "True",
+            "trades": 78,
+            "total_pnl": -7171.0,
+            "avg_pnl": -91.93589743589743,
+            "win_rate": 0.34615384615384615,
+            "profit_factor": 0.7881348420834934
+          }
+        ],
+        "by_omar_positive": [
+          {
+            "omar_positive": "False",
+            "trades": 97,
+            "total_pnl": 5706.0,
+            "avg_pnl": 58.824742268041234,
+            "win_rate": 0.4329896907216495,
+            "profit_factor": 1.1859843546284223
+          },
+          {
+            "omar_positive": "True",
+            "trades": 78,
+            "total_pnl": -7171.0,
+            "avg_pnl": -91.93589743589743,
+            "win_rate": 0.34615384615384615,
+            "profit_factor": 0.7881348420834934
+          }
+        ],
+        "by_momentum_15m_positive": [
+          {
+            "momentum_15m_positive": "False",
+            "trades": 109,
+            "total_pnl": 5447.0,
+            "avg_pnl": 49.972477064220186,
+            "win_rate": 0.44036697247706424,
+            "profit_factor": 1.1380840114584125
+          },
+          {
+            "momentum_15m_positive": "True",
+            "trades": 66,
+            "total_pnl": -6912.0,
+            "avg_pnl": -104.72727272727273,
+            "win_rate": 0.3181818181818182,
+            "profit_factor": 0.724401913875598
+          }
+        ]
+      }
+    }
+  }
+}

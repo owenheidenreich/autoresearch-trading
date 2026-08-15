@@ -124,6 +124,46 @@ def test_packet_exports_authoritative_csv_receipt_and_two_visuals(tmp_path) -> N
         assert hashlib.sha256((tmp_path / name).read_bytes()).hexdigest() == expected_hash
 
 
+def test_the_packet_says_which_cost_components_it_charged(tmp_path) -> None:
+    """A fee-only export must not be readable as full round-trip friction.
+
+    The default charges the measured $3.08 fee and no spread, while the measured
+    aggressive option round trip is $26.48. Nothing refuses the default -- a
+    fee-only diagnostic is legitimate -- so the packet has to say so in writing.
+    See v5/research/findings/FRICTION_DECOMPOSITION_2026_08_12.md.
+    """
+
+    fees_only = json.loads(
+        export_candidate_packet(
+            trades=_trades(),
+            spx=_spx(),
+            candidate_manifest=_manifest(),
+            output_dir=tmp_path / "fees_only",
+        ).summary_json.read_text()
+    )["cost_model"]
+
+    assert fees_only["excludes_spread_crossing"] is True
+    assert fees_only["components_omitted"] == ["spread_crossing"]
+    assert fees_only["charged_round_trip_usd"] == pytest.approx(3.08)
+    assert fees_only["reference_measured_aggressive_round_trip_usd"] == pytest.approx(26.48)
+
+    with_spread = json.loads(
+        export_candidate_packet(
+            trades=_trades(),
+            spx=_spx(),
+            candidate_manifest=_manifest(),
+            output_dir=tmp_path / "with_spread",
+            slippage_per_side_points=0.10,
+        ).summary_json.read_text()
+    )["cost_model"]
+
+    assert with_spread["excludes_spread_crossing"] is False
+    assert with_spread["components_omitted"] == []
+    assert with_spread["components_charged"] == ["commission", "spread_or_slippage"]
+    # 2 x $1.54 fee + 2 x 0.10 points x 100 multiplier
+    assert with_spread["charged_round_trip_usd"] == pytest.approx(23.08)
+
+
 def test_packet_is_deterministic_across_output_directories(tmp_path) -> None:
     first = tmp_path / "first"
     second = tmp_path / "second"

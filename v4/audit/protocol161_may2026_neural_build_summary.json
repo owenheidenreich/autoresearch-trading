@@ -1,0 +1,55 @@
+{
+  "start_date": "2026-05-19",
+  "end_date": "2026-05-20",
+  "processed_dir": "data/processed/spxw_0dte_neural_protocol161_may2026_official_context",
+  "sessions_built": 2,
+  "sessions_skipped": [],
+  "totals": {
+    "definition_rows": 41494,
+    "cbbo_rows": 389508,
+    "ohlcv_rows": 67730,
+    "statistics_rows": 6458,
+    "normalized_rows": 389508,
+    "derived_spx_rows": 782,
+    "derived_vix_rows": 735,
+    "neural_rows": 720
+  },
+  "records": [
+    {
+      "session": "2026-05-19",
+      "definition_rows": 20694,
+      "cbbo_rows": 192154,
+      "ohlcv_rows": 35179,
+      "statistics_rows": 3258,
+      "normalized_rows": 192154,
+      "derived_spx_rows": 391,
+      "derived_vix_rows": 376,
+      "neural_rows": 360,
+      "normalized_path": "v4/normalized_official_context/databento_spxw_0dte_2026-05-19.parquet",
+      "derived_normalized_path": "v4/normalized_official_context/databento_spxw_0dte_2026-05-19_official_context.parquet",
+      "spx_path": "data/raw/index/spx_1m/2026-05-19.official_spx.parquet",
+      "vix_path": "data/raw/index/vix_1m/2026-05-19.official_vix.parquet",
+      "neural_path": "data/processed/spxw_0dte_neural_protocol161_may2026_official_context/2026-05-19.pkl",
+      "context_mode": "official",
+      "context_source": "official_index_bars"
+    },
+    {
+      "session": "2026-05-20",
+      "definition_rows": 20800,
+      "cbbo_rows": 197354,
+      "ohlcv_rows": 32551,
+      "statistics_rows": 3200,
+      "normalized_rows": 197354,
+      "derived_spx_rows": 391,
+      "derived_vix_rows": 359,
+      "neural_rows": 360,
+      "normalized_path": "v4/normalized_official_context/databento_spxw_0dte_2026-05-20.parquet",
+      "derived_normalized_path": "v4/normalized_official_context/databento_spxw_0dte_2026-05-20_official_context.parquet",
+      "spx_path": "data/raw/index/spx_1m/2026-05-20.official_spx.parquet",
+      "vix_path": "data/raw/index/vix_1m/2026-05-20.official_vix.parquet",
+      "neural_path": "data/processed/spxw_0dte_neural_protocol161_may2026_official_context/2026-05-20.pkl",
+      "context_mode": "official",
+      "context_source": "official_index_bars"
+    }
+  ]
+}

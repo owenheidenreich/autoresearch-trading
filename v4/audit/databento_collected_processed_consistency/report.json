@@ -1,0 +1,81 @@
+{
+  "windows": {
+    "q3_2025": {
+      "dir": "data/processed/spxw_0dte_neural_q3_2025",
+      "expected_sessions": 64,
+      "files": 64,
+      "missing": [],
+      "extra": [],
+      "complete": true,
+      "rows": 22884,
+      "min_rows": 209,
+      "max_rows": 360,
+      "non360_sessions": [
+        {
+          "session": "2025-07-03",
+          "rows": 209
+        },
+        {
+          "session": "2025-07-30",
+          "rows": 356
+        },
+        {
+          "session": "2025-09-17",
+          "rows": 359
+        }
+      ]
+    },
+    "q4_2025": {
+      "dir": "data/processed/spxw_0dte_neural_q4_2025",
+      "expected_sessions": 64,
+      "files": 64,
+      "missing": [],
+      "extra": [],
+      "complete": true,
+      "rows": 22719,
+      "min_rows": 201,
+      "max_rows": 360,
+      "non360_sessions": [
+        {
+          "session": "2025-10-22",
+          "rows": 348
+        },
+        {
+          "session": "2025-11-07",
+          "rows": 359
+        },
+        {
+          "session": "2025-11-28",
+          "rows": 201
+        },
+        {
+          "session": "2025-12-24",
+          "rows": 211
+        }
+      ]
+    },
+    "q1_2026": {
+      "dir": "data/processed/spxw_0dte_neural_derived",
+      "expected_sessions": 61,
+      "files": 61,
+      "missing": [],
+      "extra": [],
+      "complete": true,
+      "rows": 21959,
+      "min_rows": 359,
+      "max_rows": 360,
+      "non360_sessions": [
+        {
+          "session": "2026-03-31",
+          "rows": 359
+        }
+      ]
+    }
+  },
+  "combined": {
+    "expected_sessions": 189,
+    "files": 189,
+    "complete": true,
+    "rows": 67562
+  }
+}

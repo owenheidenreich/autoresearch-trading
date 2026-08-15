@@ -1,0 +1,4699 @@
+{
+  "policy": "ask_to_bid_stop65_target150_hold45m",
+  "cooldown_minutes": 45,
+  "environment_framing": "Jan-Mar 2026 is real market truth, but only one environment slice. The goal is to identify causal environment descriptors the model can learn from, then require validation-selected patterns to survive holdout scoring.",
+  "binner": {
+    "vix_edges": [
+      12.377811749776205,
+      17.022525151570637
+    ],
+    "range_edges": [
+      27.673791885375977,
+      39.2181510925293
+    ]
+  },
+  "rows": 43910,
+  "environment_table": "v4/audit/environment_diagnostics_policy2/environment_table.parquet",
+  "summaries": {
+    "side_time_split": [
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "trades": 2662,
+        "total_pnl": 258596.0,
+        "avg_pnl": 97.143501127,
+        "median_pnl": -142.0,
+        "win_rate": 0.4406461307,
+        "profit_factor": 1.3656317779
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "first_30",
+        "trades": 550,
+        "total_pnl": 121360.0,
+        "avg_pnl": 220.6545454545,
+        "median_pnl": -317.0,
+        "win_rate": 0.4290909091,
+        "profit_factor": 1.3799529129
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "midday",
+        "trades": 2639,
+        "total_pnl": 54057.0,
+        "avg_pnl": 20.4838954149,
+        "median_pnl": -132.0,
+        "win_rate": 0.4285714286,
+        "profit_factor": 1.0683175337
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "midday",
+        "trades": 2280,
+        "total_pnl": 48220.0,
+        "avg_pnl": 21.149122807,
+        "median_pnl": -152.0,
+        "win_rate": 0.3877192982,
+        "profit_factor": 1.0768578496
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "midday",
+        "trades": 2400,
+        "total_pnl": 44680.0,
+        "avg_pnl": 18.6166666667,
+        "median_pnl": -122.0,
+        "win_rate": 0.3933333333,
+        "profit_factor": 1.0958197867
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "trades": 2420,
+        "total_pnl": 37135.0,
+        "avg_pnl": 15.3450413223,
+        "median_pnl": -102.0,
+        "win_rate": 0.3958677686,
+        "profit_factor": 1.0870336604
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "trades": 1800,
+        "total_pnl": 18510.0,
+        "avg_pnl": 10.2833333333,
+        "median_pnl": 8.0,
+        "win_rate": 0.5066666667,
+        "profit_factor": 1.0471933832
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "trades": 1708,
+        "total_pnl": 15204.0,
+        "avg_pnl": 8.9016393443,
+        "median_pnl": -97.0,
+        "win_rate": 0.4478922717,
+        "profit_factor": 1.0274259244
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "first_30",
+        "trades": 550,
+        "total_pnl": -3840.0,
+        "avg_pnl": -6.9818181818,
+        "median_pnl": -202.0,
+        "win_rate": 0.44,
+        "profit_factor": 0.9868962552
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "first_30",
+        "trades": 580,
+        "total_pnl": -12950.0,
+        "avg_pnl": -22.3275862069,
+        "median_pnl": -387.0,
+        "win_rate": 0.3603448276,
+        "profit_factor": 0.9488207025
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "first_30",
+        "trades": 638,
+        "total_pnl": -61976.0,
+        "avg_pnl": -97.1410658307,
+        "median_pnl": -167.0,
+        "win_rate": 0.4545454545,
+        "profit_factor": 0.8272811892
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "first_30",
+        "trades": 580,
+        "total_pnl": -62970.0,
+        "avg_pnl": -108.5689655172,
+        "median_pnl": -197.0,
+        "win_rate": 0.4362068966,
+        "profit_factor": 0.7196523814
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "trades": 2299,
+        "total_pnl": -63758.0,
+        "avg_pnl": -27.7329273597,
+        "median_pnl": -202.0,
+        "win_rate": 0.3658112223,
+        "profit_factor": 0.8925730538
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "trades": 2299,
+        "total_pnl": -73413.0,
+        "avg_pnl": -31.9325793823,
+        "median_pnl": -217.0,
+        "win_rate": 0.3458025228,
+        "profit_factor": 0.8691910346
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "trades": 1979,
+        "total_pnl": -74468.0,
+        "avg_pnl": -37.6291056089,
+        "median_pnl": -222.0,
+        "win_rate": 0.4002021223,
+        "profit_factor": 0.9058765834
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "trades": 2420,
+        "total_pnl": -79655.0,
+        "avg_pnl": -32.9152892562,
+        "median_pnl": -192.0,
+        "win_rate": 0.2958677686,
+        "profit_factor": 0.8389239623
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "first_30",
+        "trades": 638,
+        "total_pnl": -110066.0,
+        "avg_pnl": -172.5172413793,
+        "median_pnl": -507.0,
+        "win_rate": 0.3463949843,
+        "profit_factor": 0.7071965183
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "midday",
+        "trades": 2400,
+        "total_pnl": -153410.0,
+        "avg_pnl": -63.9208333333,
+        "median_pnl": -112.0,
+        "win_rate": 0.37125,
+        "profit_factor": 0.6869490336
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "trades": 1800,
+        "total_pnl": -173070.0,
+        "avg_pnl": -96.15,
+        "median_pnl": -292.0,
+        "win_rate": 0.3055555556,
+        "profit_factor": 0.7169237312
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "trades": 1979,
+        "total_pnl": -189728.0,
+        "avg_pnl": -95.8706417383,
+        "median_pnl": -282.0,
+        "win_rate": 0.3870641738,
+        "profit_factor": 0.7889674166
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "midday",
+        "trades": 2280,
+        "total_pnl": -199810.0,
+        "avg_pnl": -87.6359649123,
+        "median_pnl": -162.0,
+        "win_rate": 0.3653508772,
+        "profit_factor": 0.7077878394
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "trades": 1708,
+        "total_pnl": -275081.0,
+        "avg_pnl": -161.0544496487,
+        "median_pnl": -372.0,
+        "win_rate": 0.3243559719,
+        "profit_factor": 0.6560210478
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "trades": 2662,
+        "total_pnl": -333609.0,
+        "avg_pnl": -125.322689707,
+        "median_pnl": -412.0,
+        "win_rate": 0.2746055597,
+        "profit_factor": 0.6563378512
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "midday",
+        "trades": 2639,
+        "total_pnl": -394448.0,
+        "avg_pnl": -149.4687381584,
+        "median_pnl": -332.0,
+        "win_rate": 0.3129973475,
+        "profit_factor": 0.6008241614
+      }
+    ],
+    "side_time_vwap_split": [
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "first_30",
+        "above_vwap": false,
+        "trades": 270,
+        "total_pnl": 163340.0,
+        "avg_pnl": 604.962962963,
+        "median_pnl": 593.0,
+        "win_rate": 0.5703703704,
+        "profit_factor": 2.285109597
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "above_vwap": false,
+        "trades": 1569,
+        "total_pnl": 161142.0,
+        "avg_pnl": 102.7036328872,
+        "median_pnl": -72.0,
+        "win_rate": 0.4697259401,
+        "profit_factor": 1.4182204182
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "above_vwap": true,
+        "trades": 1093,
+        "total_pnl": 97454.0,
+        "avg_pnl": 89.1619396157,
+        "median_pnl": -242.0,
+        "win_rate": 0.3989021043,
+        "profit_factor": 1.3026954161
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "above_vwap": false,
+        "trades": 1059,
+        "total_pnl": 87912.0,
+        "avg_pnl": 83.0141643059,
+        "median_pnl": -202.0,
+        "win_rate": 0.4164305949,
+        "profit_factor": 1.342075363
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "above_vwap": true,
+        "trades": 1377,
+        "total_pnl": 69816.0,
+        "avg_pnl": 50.7015250545,
+        "median_pnl": -87.0,
+        "win_rate": 0.4030501089,
+        "profit_factor": 1.3768358441
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "midday",
+        "above_vwap": true,
+        "trades": 1434,
+        "total_pnl": 61867.0,
+        "avg_pnl": 43.1429567643,
+        "median_pnl": -92.0,
+        "win_rate": 0.410041841,
+        "profit_factor": 1.3013536486
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "first_30",
+        "above_vwap": true,
+        "trades": 280,
+        "total_pnl": 60520.0,
+        "avg_pnl": 216.1428571429,
+        "median_pnl": 43.0,
+        "win_rate": 0.5178571429,
+        "profit_factor": 1.5261236199
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "above_vwap": false,
+        "trades": 981,
+        "total_pnl": 56978.0,
+        "avg_pnl": 58.0815494393,
+        "median_pnl": -212.0,
+        "win_rate": 0.4016309888,
+        "profit_factor": 1.1631093197
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "midday",
+        "above_vwap": true,
+        "trades": 1188,
+        "total_pnl": 52899.0,
+        "avg_pnl": 44.5277777778,
+        "median_pnl": -142.0,
+        "win_rate": 0.4259259259,
+        "profit_factor": 1.1515865306
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "above_vwap": false,
+        "trades": 808,
+        "total_pnl": 51524.0,
+        "avg_pnl": 63.7673267327,
+        "median_pnl": -182.0,
+        "win_rate": 0.4393564356,
+        "profit_factor": 1.1354946274
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "above_vwap": true,
+        "trades": 900,
+        "total_pnl": 50970.0,
+        "avg_pnl": 56.6333333333,
+        "median_pnl": 8.0,
+        "win_rate": 0.5044444444,
+        "profit_factor": 1.2685571573
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "above_vwap": true,
+        "trades": 1240,
+        "total_pnl": 42730.0,
+        "avg_pnl": 34.4596774194,
+        "median_pnl": -127.0,
+        "win_rate": 0.3975806452,
+        "profit_factor": 1.1866762196
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "first_30",
+        "above_vwap": false,
+        "trades": 296,
+        "total_pnl": 34348.0,
+        "avg_pnl": 116.0405405405,
+        "median_pnl": -337.0,
+        "win_rate": 0.4087837838,
+        "profit_factor": 1.2718265274
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "midday",
+        "above_vwap": false,
+        "trades": 981,
+        "total_pnl": 31803.0,
+        "avg_pnl": 32.4189602446,
+        "median_pnl": -102.0,
+        "win_rate": 0.4495412844,
+        "profit_factor": 1.1010116089
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "above_vwap": false,
+        "trades": 1043,
+        "total_pnl": 24139.0,
+        "avg_pnl": 23.1438159156,
+        "median_pnl": -232.0,
+        "win_rate": 0.3077660594,
+        "profit_factor": 1.1013736829
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "above_vwap": true,
+        "trades": 998,
+        "total_pnl": 22204.0,
+        "avg_pnl": 22.248496994,
+        "median_pnl": -262.0,
+        "win_rate": 0.4098196393,
+        "profit_factor": 1.0513033794
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "first_30",
+        "above_vwap": true,
+        "trades": 296,
+        "total_pnl": 18938.0,
+        "avg_pnl": 63.9797297297,
+        "median_pnl": 78.0,
+        "win_rate": 0.5135135135,
+        "profit_factor": 1.1348111448
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "above_vwap": true,
+        "trades": 1048,
+        "total_pnl": 17264.0,
+        "avg_pnl": 16.4732824427,
+        "median_pnl": 38.0,
+        "win_rate": 0.5381679389,
+        "profit_factor": 1.0945879311
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "midday",
+        "above_vwap": true,
+        "trades": 1299,
+        "total_pnl": 16417.0,
+        "avg_pnl": 12.6381832179,
+        "median_pnl": -172.0,
+        "win_rate": 0.3410315627,
+        "profit_factor": 1.0525265
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "above_vwap": true,
+        "trades": 1093,
+        "total_pnl": 2269.0,
+        "avg_pnl": 2.0759377859,
+        "median_pnl": -317.0,
+        "win_rate": 0.3467520586,
+        "profit_factor": 1.006686253
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "above_vwap": false,
+        "trades": 752,
+        "total_pnl": 1246.0,
+        "avg_pnl": 1.6569148936,
+        "median_pnl": -82.0,
+        "win_rate": 0.4627659574,
+        "profit_factor": 1.0059418783
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "midday",
+        "above_vwap": false,
+        "trades": 1451,
+        "total_pnl": 1158.0,
+        "avg_pnl": 0.7980702963,
+        "median_pnl": -132.0,
+        "win_rate": 0.4307374225,
+        "profit_factor": 1.0026181798
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "first_30",
+        "above_vwap": true,
+        "trades": 284,
+        "total_pnl": -11868.0,
+        "avg_pnl": -41.7887323944,
+        "median_pnl": -37.0,
+        "win_rate": 0.4788732394,
+        "profit_factor": 0.865375017
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "first_30",
+        "above_vwap": false,
+        "trades": 342,
+        "total_pnl": -12164.0,
+        "avg_pnl": -35.567251462,
+        "median_pnl": -397.0,
+        "win_rate": 0.3801169591,
+        "profit_factor": 0.9373034936
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "midday",
+        "above_vwap": false,
+        "trades": 966,
+        "total_pnl": -17187.0,
+        "avg_pnl": -17.7919254658,
+        "median_pnl": -212.0,
+        "win_rate": 0.3685300207,
+        "profit_factor": 0.9341481638
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "midday",
+        "above_vwap": false,
+        "trades": 966,
+        "total_pnl": -25622.0,
+        "avg_pnl": -26.5238095238,
+        "median_pnl": -92.0,
+        "win_rate": 0.4151138716,
+        "profit_factor": 0.8887934028
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "above_vwap": false,
+        "trades": 1043,
+        "total_pnl": -32681.0,
+        "avg_pnl": -31.3336529243,
+        "median_pnl": -152.0,
+        "win_rate": 0.3863854267,
+        "profit_factor": 0.8646216938
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "above_vwap": false,
+        "trades": 808,
+        "total_pnl": -35766.0,
+        "avg_pnl": -44.2648514851,
+        "median_pnl": -302.0,
+        "win_rate": 0.3849009901,
+        "profit_factor": 0.90189646
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "first_30",
+        "above_vwap": true,
+        "trades": 280,
+        "total_pnl": -41980.0,
+        "avg_pnl": -149.9285714286,
+        "median_pnl": -807.0,
+        "win_rate": 0.2928571429,
+        "profit_factor": 0.781702079
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "first_30",
+        "above_vwap": true,
+        "trades": 284,
+        "total_pnl": -47298.0,
+        "avg_pnl": -166.5422535211,
+        "median_pnl": -402.0,
+        "win_rate": 0.3098591549,
+        "profit_factor": 0.6266104585
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "first_30",
+        "above_vwap": false,
+        "trades": 296,
+        "total_pnl": -51102.0,
+        "avg_pnl": -172.6418918919,
+        "median_pnl": -367.0,
+        "win_rate": 0.3952702703,
+        "profit_factor": 0.6255111463
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "first_30",
+        "above_vwap": false,
+        "trades": 270,
+        "total_pnl": -64360.0,
+        "avg_pnl": -238.3703703704,
+        "median_pnl": -837.0,
+        "win_rate": 0.3592592593,
+        "profit_factor": 0.6384594643
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "above_vwap": true,
+        "trades": 1048,
+        "total_pnl": -76921.0,
+        "avg_pnl": -73.3979007634,
+        "median_pnl": -272.0,
+        "win_rate": 0.2643129771,
+        "profit_factor": 0.7369475783
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "first_30",
+        "above_vwap": false,
+        "trades": 342,
+        "total_pnl": -80914.0,
+        "avg_pnl": -236.5906432749,
+        "median_pnl": -297.0,
+        "win_rate": 0.4035087719,
+        "profit_factor": 0.6294264202
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "midday",
+        "above_vwap": true,
+        "trades": 1299,
+        "total_pnl": -89303.0,
+        "avg_pnl": -68.7474980754,
+        "median_pnl": -112.0,
+        "win_rate": 0.3672055427,
+        "profit_factor": 0.7249075098
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "above_vwap": false,
+        "trades": 752,
+        "total_pnl": -96149.0,
+        "avg_pnl": -127.857712766,
+        "median_pnl": -362.0,
+        "win_rate": 0.3630319149,
+        "profit_factor": 0.6985669633
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "first_30",
+        "above_vwap": true,
+        "trades": 296,
+        "total_pnl": -97902.0,
+        "avg_pnl": -330.75,
+        "median_pnl": -627.0,
+        "win_rate": 0.3074324324,
+        "profit_factor": 0.4617516081
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "above_vwap": true,
+        "trades": 1377,
+        "total_pnl": -103794.0,
+        "avg_pnl": -75.3769063181,
+        "median_pnl": -162.0,
+        "win_rate": 0.2868554829,
+        "profit_factor": 0.5951856286
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "above_vwap": false,
+        "trades": 1059,
+        "total_pnl": -106488.0,
+        "avg_pnl": -100.5552407932,
+        "median_pnl": -362.0,
+        "win_rate": 0.328611898,
+        "profit_factor": 0.7079335824
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "midday",
+        "above_vwap": false,
+        "trades": 981,
+        "total_pnl": -110507.0,
+        "avg_pnl": -112.6472986748,
+        "median_pnl": -332.0,
+        "win_rate": 0.3628950051,
+        "profit_factor": 0.6923139035
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "midday",
+        "above_vwap": true,
+        "trades": 1188,
+        "total_pnl": -113786.0,
+        "avg_pnl": -95.7794612795,
+        "median_pnl": -297.0,
+        "win_rate": 0.3198653199,
+        "profit_factor": 0.7499956057
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "midday",
+        "above_vwap": true,
+        "trades": 1434,
+        "total_pnl": -127788.0,
+        "avg_pnl": -89.1129707113,
+        "median_pnl": -122.0,
+        "win_rate": 0.3417015342,
+        "profit_factor": 0.5078413853
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "above_vwap": true,
+        "trades": 998,
+        "total_pnl": -131446.0,
+        "avg_pnl": -131.7094188377,
+        "median_pnl": -252.0,
+        "win_rate": 0.3987975952,
+        "profit_factor": 0.7025099016
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "above_vwap": true,
+        "trades": 1240,
+        "total_pnl": -161325.0,
+        "avg_pnl": -130.1008064516,
+        "median_pnl": -232.0,
+        "win_rate": 0.285483871,
+        "profit_factor": 0.4697216223
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "above_vwap": false,
+        "trades": 981,
+        "total_pnl": -211932.0,
+        "avg_pnl": -216.0366972477,
+        "median_pnl": -282.0,
+        "win_rate": 0.3639143731,
+        "profit_factor": 0.5454522057
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "midday",
+        "above_vwap": false,
+        "trades": 1451,
+        "total_pnl": -280662.0,
+        "avg_pnl": -193.4266023432,
+        "median_pnl": -342.0,
+        "win_rate": 0.3073742247,
+        "profit_factor": 0.4734494015
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "above_vwap": true,
+        "trades": 900,
+        "total_pnl": -326605.0,
+        "avg_pnl": -362.8944444444,
+        "median_pnl": -419.5,
+        "win_rate": 0.2211111111,
+        "profit_factor": 0.2213252527
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "above_vwap": false,
+        "trades": 1569,
+        "total_pnl": -335878.0,
+        "avg_pnl": -214.0713830465,
+        "median_pnl": -452.0,
+        "win_rate": 0.2243467177,
+        "profit_factor": 0.4680373903
+      }
+    ],
+    "side_time_momentum_split": [
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "negative",
+        "trades": 118,
+        "total_pnl": 120324.0,
+        "avg_pnl": 1019.6949152542,
+        "median_pnl": 1328.0,
+        "win_rate": 0.7203389831,
+        "profit_factor": 4.9198592651
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "flat",
+        "trades": 569,
+        "total_pnl": 108522.0,
+        "avg_pnl": 190.7240773286,
+        "median_pnl": -42.0,
+        "win_rate": 0.4815465729,
+        "profit_factor": 1.8354915698
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "positive",
+        "trades": 1045,
+        "total_pnl": 100840.0,
+        "avg_pnl": 96.4976076555,
+        "median_pnl": -62.0,
+        "win_rate": 0.4717703349,
+        "profit_factor": 1.3664723583
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "positive",
+        "trades": 814,
+        "total_pnl": 77252.0,
+        "avg_pnl": 94.9041769042,
+        "median_pnl": -122.0,
+        "win_rate": 0.4054054054,
+        "profit_factor": 1.382818462
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "negative",
+        "trades": 1164,
+        "total_pnl": 75992.0,
+        "avg_pnl": 65.2852233677,
+        "median_pnl": -182.0,
+        "win_rate": 0.4372852234,
+        "profit_factor": 1.2329113924
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "positive",
+        "trades": 929,
+        "total_pnl": 74082.0,
+        "avg_pnl": 79.743810549,
+        "median_pnl": -162.0,
+        "win_rate": 0.4198062433,
+        "profit_factor": 1.2950322185
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "flat",
+        "trades": 316,
+        "total_pnl": 50348.0,
+        "avg_pnl": 159.3291139241,
+        "median_pnl": -447.0,
+        "win_rate": 0.4113924051,
+        "profit_factor": 1.2529643474
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "negative",
+        "trades": 106,
+        "total_pnl": 48618.0,
+        "avg_pnl": 458.6603773585,
+        "median_pnl": 153.0,
+        "win_rate": 0.5471698113,
+        "profit_factor": 2.3650606469
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "positive",
+        "trades": 781,
+        "total_pnl": 42418.0,
+        "avg_pnl": 54.3124199744,
+        "median_pnl": -92.0,
+        "win_rate": 0.4276568502,
+        "profit_factor": 1.3237175084
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "positive",
+        "trades": 747,
+        "total_pnl": 39946.0,
+        "avg_pnl": 53.4752342704,
+        "median_pnl": -12.0,
+        "win_rate": 0.4899598394,
+        "profit_factor": 1.2023483881
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "positive",
+        "trades": 116,
+        "total_pnl": 38288.0,
+        "avg_pnl": 330.0689655172,
+        "median_pnl": 373.0,
+        "win_rate": 0.6120689655,
+        "profit_factor": 2.2439246264
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "negative",
+        "trades": 727,
+        "total_pnl": 34036.0,
+        "avg_pnl": 46.8170563961,
+        "median_pnl": -102.0,
+        "win_rate": 0.416781293,
+        "profit_factor": 1.2428922128
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "flat",
+        "trades": 316,
+        "total_pnl": 28498.0,
+        "avg_pnl": 90.1835443038,
+        "median_pnl": -142.0,
+        "win_rate": 0.4493670886,
+        "profit_factor": 1.1774382347
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "flat",
+        "trades": 375,
+        "total_pnl": 27250.0,
+        "avg_pnl": 72.6666666667,
+        "median_pnl": 58.0,
+        "win_rate": 0.5706666667,
+        "profit_factor": 1.4492844424
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "flat",
+        "trades": 241,
+        "total_pnl": 20098.0,
+        "avg_pnl": 83.3941908714,
+        "median_pnl": -42.0,
+        "win_rate": 0.4605809129,
+        "profit_factor": 1.3390922895
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "flat",
+        "trades": 769,
+        "total_pnl": 18757.0,
+        "avg_pnl": 24.3914174252,
+        "median_pnl": -122.0,
+        "win_rate": 0.3784135241,
+        "profit_factor": 1.1455147749
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "negative",
+        "trades": 817,
+        "total_pnl": 17561.0,
+        "avg_pnl": 21.4944920441,
+        "median_pnl": -182.0,
+        "win_rate": 0.4075887393,
+        "profit_factor": 1.0806834732
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "flat",
+        "trades": 544,
+        "total_pnl": 17152.0,
+        "avg_pnl": 31.5294117647,
+        "median_pnl": -142.0,
+        "win_rate": 0.3768382353,
+        "profit_factor": 1.1450388134
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "flat",
+        "trades": 960,
+        "total_pnl": 17040.0,
+        "avg_pnl": 17.75,
+        "median_pnl": -92.0,
+        "win_rate": 0.3989583333,
+        "profit_factor": 1.1212863183
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "negative",
+        "trades": 816,
+        "total_pnl": 10468.0,
+        "avg_pnl": 12.8284313725,
+        "median_pnl": -172.0,
+        "win_rate": 0.425245098,
+        "profit_factor": 1.0344911663
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "negative",
+        "trades": 720,
+        "total_pnl": 8730.0,
+        "avg_pnl": 12.125,
+        "median_pnl": -272.0,
+        "win_rate": 0.3944444444,
+        "profit_factor": 1.025958039
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "positive",
+        "trades": 140,
+        "total_pnl": 8420.0,
+        "avg_pnl": 60.1428571429,
+        "median_pnl": -12.0,
+        "win_rate": 0.4857142857,
+        "profit_factor": 1.1424848546
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "positive",
+        "trades": 121,
+        "total_pnl": 7318.0,
+        "avg_pnl": 60.479338843,
+        "median_pnl": -2.0,
+        "win_rate": 0.4958677686,
+        "profit_factor": 1.2603158793
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "negative",
+        "trades": 661,
+        "total_pnl": 6548.0,
+        "avg_pnl": 9.9062027231,
+        "median_pnl": -62.0,
+        "win_rate": 0.4704992436,
+        "profit_factor": 1.0362649535
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "positive",
+        "trades": 788,
+        "total_pnl": 5074.0,
+        "avg_pnl": 6.4390862944,
+        "median_pnl": -182.0,
+        "win_rate": 0.366751269,
+        "profit_factor": 1.0272271649
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "negative",
+        "trades": 148,
+        "total_pnl": 2354.0,
+        "avg_pnl": 15.9054054054,
+        "median_pnl": -392.0,
+        "win_rate": 0.3783783784,
+        "profit_factor": 1.0312641114
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "flat",
+        "trades": 694,
+        "total_pnl": -3178.0,
+        "avg_pnl": -4.5792507205,
+        "median_pnl": -149.5,
+        "win_rate": 0.3703170029,
+        "profit_factor": 0.9786150233
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "flat",
+        "trades": 232,
+        "total_pnl": -10384.0,
+        "avg_pnl": -44.7586206897,
+        "median_pnl": -282.0,
+        "win_rate": 0.3836206897,
+        "profit_factor": 0.8952338674
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "flat",
+        "trades": 694,
+        "total_pnl": -11358.0,
+        "avg_pnl": -16.3659942363,
+        "median_pnl": -202.0,
+        "win_rate": 0.3631123919,
+        "profit_factor": 0.9210806078
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "flat",
+        "trades": 232,
+        "total_pnl": -11754.0,
+        "avg_pnl": -50.6637931034,
+        "median_pnl": -207.0,
+        "win_rate": 0.4137931034,
+        "profit_factor": 0.8817052797
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "positive",
+        "trades": 733,
+        "total_pnl": -13941.0,
+        "avg_pnl": -19.0190995907,
+        "median_pnl": -102.0,
+        "win_rate": 0.3710777626,
+        "profit_factor": 0.9045476953
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "positive",
+        "trades": 764,
+        "total_pnl": -15288.0,
+        "avg_pnl": -20.0104712042,
+        "median_pnl": 8.0,
+        "win_rate": 0.5065445026,
+        "profit_factor": 0.8987576488
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "negative",
+        "trades": 850,
+        "total_pnl": -16495.0,
+        "avg_pnl": -19.4058823529,
+        "median_pnl": -162.0,
+        "win_rate": 0.3752941176,
+        "profit_factor": 0.9200657114
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "flat",
+        "trades": 448,
+        "total_pnl": -18036.0,
+        "avg_pnl": -40.2589285714,
+        "median_pnl": -232.0,
+        "win_rate": 0.3415178571,
+        "profit_factor": 0.8782749544
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "positive",
+        "trades": 733,
+        "total_pnl": -18601.0,
+        "avg_pnl": -25.3765347885,
+        "median_pnl": -207.0,
+        "win_rate": 0.2946793997,
+        "profit_factor": 0.8829124282
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "positive",
+        "trades": 121,
+        "total_pnl": -21992.0,
+        "avg_pnl": -181.7520661157,
+        "median_pnl": -332.0,
+        "win_rate": 0.2727272727,
+        "profit_factor": 0.5673931859
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "flat",
+        "trades": 353,
+        "total_pnl": -22696.0,
+        "avg_pnl": -64.2946175637,
+        "median_pnl": -212.0,
+        "win_rate": 0.4617563739,
+        "profit_factor": 0.8291735662
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "negative",
+        "trades": 922,
+        "total_pnl": -26344.0,
+        "avg_pnl": -28.5726681128,
+        "median_pnl": -192.0,
+        "win_rate": 0.3882863341,
+        "profit_factor": 0.9070620692
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "flat",
+        "trades": 350,
+        "total_pnl": -27940.0,
+        "avg_pnl": -79.8285714286,
+        "median_pnl": -147.0,
+        "win_rate": 0.4685714286,
+        "profit_factor": 0.8683640201
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "negative",
+        "trades": 727,
+        "total_pnl": -28444.0,
+        "avg_pnl": -39.1251719395,
+        "median_pnl": -232.0,
+        "win_rate": 0.2696011004,
+        "profit_factor": 0.8368868347
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "negative",
+        "trades": 1146,
+        "total_pnl": -28747.0,
+        "avg_pnl": -25.0846422339,
+        "median_pnl": -152.0,
+        "win_rate": 0.4232111693,
+        "profit_factor": 0.9218676531
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "negative",
+        "trades": 850,
+        "total_pnl": -29090.0,
+        "avg_pnl": -34.2235294118,
+        "median_pnl": -112.0,
+        "win_rate": 0.3894117647,
+        "profit_factor": 0.841305344
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "flat",
+        "trades": 448,
+        "total_pnl": -30341.0,
+        "avg_pnl": -67.7254464286,
+        "median_pnl": -152.0,
+        "win_rate": 0.3794642857,
+        "profit_factor": 0.7788411776
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "positive",
+        "trades": 931,
+        "total_pnl": -31122.0,
+        "avg_pnl": -33.4285714286,
+        "median_pnl": -242.0,
+        "win_rate": 0.4167561762,
+        "profit_factor": 0.9237404008
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "flat",
+        "trades": 960,
+        "total_pnl": -32610.0,
+        "avg_pnl": -33.96875,
+        "median_pnl": -152.0,
+        "win_rate": 0.3166666667,
+        "profit_factor": 0.7977950295
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "flat",
+        "trades": 353,
+        "total_pnl": -39576.0,
+        "avg_pnl": -112.1133144476,
+        "median_pnl": -512.0,
+        "win_rate": 0.3342776204,
+        "profit_factor": 0.7624204586
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "negative",
+        "trades": 148,
+        "total_pnl": -42456.0,
+        "avg_pnl": -286.8648648649,
+        "median_pnl": -272.0,
+        "win_rate": 0.3918918919,
+        "profit_factor": 0.5146776406
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "flat",
+        "trades": 769,
+        "total_pnl": -42918.0,
+        "avg_pnl": -55.8101430429,
+        "median_pnl": -92.0,
+        "win_rate": 0.3797139142,
+        "profit_factor": 0.6811772921
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "negative",
+        "trades": 720,
+        "total_pnl": -44840.0,
+        "avg_pnl": -62.2777777778,
+        "median_pnl": -212.0,
+        "win_rate": 0.4,
+        "profit_factor": 0.8493704734
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "negative",
+        "trades": 922,
+        "total_pnl": -46184.0,
+        "avg_pnl": -50.0911062907,
+        "median_pnl": -192.0,
+        "win_rate": 0.3785249458,
+        "profit_factor": 0.849727985
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "flat",
+        "trades": 375,
+        "total_pnl": -46695.0,
+        "avg_pnl": -124.52,
+        "median_pnl": -302.0,
+        "win_rate": 0.272,
+        "profit_factor": 0.5951569693
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "positive",
+        "trades": 140,
+        "total_pnl": -46900.0,
+        "avg_pnl": -335.0,
+        "median_pnl": -427.0,
+        "win_rate": 0.2642857143,
+        "profit_factor": 0.4002250755
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "negative",
+        "trades": 106,
+        "total_pnl": -47592.0,
+        "avg_pnl": -448.9811320755,
+        "median_pnl": -732.0,
+        "win_rate": 0.2830188679,
+        "profit_factor": 0.2521919487
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "positive",
+        "trades": 116,
+        "total_pnl": -49312.0,
+        "avg_pnl": -425.1034482759,
+        "median_pnl": -912.0,
+        "win_rate": 0.1810344828,
+        "profit_factor": 0.4501338091
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "flat",
+        "trades": 241,
+        "total_pnl": -55507.0,
+        "avg_pnl": -230.3195020747,
+        "median_pnl": -352.0,
+        "win_rate": 0.2904564315,
+        "profit_factor": 0.4421238831
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "flat",
+        "trades": 544,
+        "total_pnl": -62178.0,
+        "avg_pnl": -114.2977941176,
+        "median_pnl": -117.0,
+        "win_rate": 0.3345588235,
+        "profit_factor": 0.568549898
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "negative",
+        "trades": 661,
+        "total_pnl": -62802.0,
+        "avg_pnl": -95.0105900151,
+        "median_pnl": -332.0,
+        "win_rate": 0.3585476551,
+        "profit_factor": 0.7624357878
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "positive",
+        "trades": 764,
+        "total_pnl": -63573.0,
+        "avg_pnl": -83.2107329843,
+        "median_pnl": -272.0,
+        "win_rate": 0.2761780105,
+        "profit_factor": 0.7256129932
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "flat",
+        "trades": 350,
+        "total_pnl": -65520.0,
+        "avg_pnl": -187.2,
+        "median_pnl": -622.0,
+        "win_rate": 0.3657142857,
+        "profit_factor": 0.7054142275
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "negative",
+        "trades": 817,
+        "total_pnl": -67129.0,
+        "avg_pnl": -82.1652386781,
+        "median_pnl": -282.0,
+        "win_rate": 0.3108935129,
+        "profit_factor": 0.7093303196
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "first_30",
+        "momentum_15m_sign": "negative",
+        "trades": 118,
+        "total_pnl": -70626.0,
+        "avg_pnl": -598.5254237288,
+        "median_pnl": -972.0,
+        "win_rate": 0.2457627119,
+        "profit_factor": 0.3052588089
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "positive",
+        "trades": 931,
+        "total_pnl": -74552.0,
+        "avg_pnl": -80.0773361976,
+        "median_pnl": -262.0,
+        "win_rate": 0.3823845328,
+        "profit_factor": 0.8081325921
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "positive",
+        "trades": 788,
+        "total_pnl": -78141.0,
+        "avg_pnl": -99.1637055838,
+        "median_pnl": -247.0,
+        "win_rate": 0.3185279188,
+        "profit_factor": 0.6561285695
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "positive",
+        "trades": 781,
+        "total_pnl": -81402.0,
+        "avg_pnl": -104.2279129321,
+        "median_pnl": -142.0,
+        "win_rate": 0.3431498079,
+        "profit_factor": 0.5270790003
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "flat",
+        "trades": 569,
+        "total_pnl": -98163.0,
+        "avg_pnl": -172.5184534271,
+        "median_pnl": -392.0,
+        "win_rate": 0.223198594,
+        "profit_factor": 0.5245399813
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "positive",
+        "trades": 929,
+        "total_pnl": -100118.0,
+        "avg_pnl": -107.7696447793,
+        "median_pnl": -382.0,
+        "win_rate": 0.2992465016,
+        "profit_factor": 0.6956270597
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "positive",
+        "trades": 814,
+        "total_pnl": -111288.0,
+        "avg_pnl": -136.7174447174,
+        "median_pnl": -167.0,
+        "win_rate": 0.35995086,
+        "profit_factor": 0.5656409536
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "momentum_15m_sign": "negative",
+        "trades": 1164,
+        "total_pnl": -135328.0,
+        "avg_pnl": -116.2611683849,
+        "median_pnl": -434.5,
+        "win_rate": 0.2800687285,
+        "profit_factor": 0.6891555417
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "negative",
+        "trades": 816,
+        "total_pnl": -146852.0,
+        "avg_pnl": -179.9656862745,
+        "median_pnl": -342.0,
+        "win_rate": 0.3455882353,
+        "profit_factor": 0.6249738239
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "negative",
+        "trades": 1146,
+        "total_pnl": -180562.0,
+        "avg_pnl": -157.5584642234,
+        "median_pnl": -322.0,
+        "win_rate": 0.3359511344,
+        "profit_factor": 0.5613935366
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "midday",
+        "momentum_15m_sign": "positive",
+        "trades": 1045,
+        "total_pnl": -183545.0,
+        "avg_pnl": -175.6411483254,
+        "median_pnl": -402.0,
+        "win_rate": 0.2593301435,
+        "profit_factor": 0.5821809134
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "momentum_15m_sign": "positive",
+        "trades": 747,
+        "total_pnl": -228304.0,
+        "avg_pnl": -305.6278447122,
+        "median_pnl": -432.0,
+        "win_rate": 0.2677376171,
+        "profit_factor": 0.3726085069
+      }
+    ],
+    "side_time_vol_split": [
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "high",
+        "trades": 2461,
+        "total_pnl": 222173.0,
+        "avg_pnl": 90.2775294596,
+        "median_pnl": -192.0,
+        "win_rate": 0.4327509143,
+        "profit_factor": 1.3242989577
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "low",
+        "trades": 915,
+        "total_pnl": 75990.0,
+        "avg_pnl": 83.0491803279,
+        "median_pnl": -52.0,
+        "win_rate": 0.4338797814,
+        "profit_factor": 1.9118508208
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "first_30",
+        "vix_bucket": "high",
+        "trades": 500,
+        "total_pnl": 75860.0,
+        "avg_pnl": 151.72,
+        "median_pnl": -557.0,
+        "win_rate": 0.406,
+        "profit_factor": 1.239824984
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "midday",
+        "vix_bucket": "high",
+        "trades": 1531,
+        "total_pnl": 71068.0,
+        "avg_pnl": 46.4193337688,
+        "median_pnl": -142.0,
+        "win_rate": 0.4415414762,
+        "profit_factor": 1.1454463591
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "midday",
+        "vix_bucket": "high",
+        "trades": 707,
+        "total_pnl": 71056.0,
+        "avg_pnl": 100.5035360679,
+        "median_pnl": -82.0,
+        "win_rate": 0.4441301273,
+        "profit_factor": 1.3850522391
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "first_30",
+        "vix_bucket": "mid",
+        "trades": 50,
+        "total_pnl": 45500.0,
+        "avg_pnl": 910.0,
+        "median_pnl": 448.0,
+        "win_rate": 0.66,
+        "profit_factor": 15.7058823529
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "low",
+        "trades": 436,
+        "total_pnl": 38718.0,
+        "avg_pnl": 88.8027522936,
+        "median_pnl": 78.0,
+        "win_rate": 0.6100917431,
+        "profit_factor": 1.9101551481
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "mid",
+        "trades": 742,
+        "total_pnl": 37506.0,
+        "avg_pnl": 50.5471698113,
+        "median_pnl": 68.0,
+        "win_rate": 0.5727762803,
+        "profit_factor": 1.3156698706
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "mid",
+        "trades": 201,
+        "total_pnl": 36423.0,
+        "avg_pnl": 181.2089552239,
+        "median_pnl": 68.0,
+        "win_rate": 0.5373134328,
+        "profit_factor": 2.642821704
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "midday",
+        "vix_bucket": "high",
+        "trades": 2604,
+        "total_pnl": 34807.0,
+        "avg_pnl": 13.3667434716,
+        "median_pnl": -142.0,
+        "win_rate": 0.4228110599,
+        "profit_factor": 1.0440438274
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "first_30",
+        "vix_bucket": "high",
+        "trades": 500,
+        "total_pnl": 27350.0,
+        "avg_pnl": 54.7,
+        "median_pnl": -22.0,
+        "win_rate": 0.484,
+        "profit_factor": 1.1044467188
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "first_30",
+        "vix_bucket": "mid",
+        "trades": 291,
+        "total_pnl": 20438.0,
+        "avg_pnl": 70.2336769759,
+        "median_pnl": -352.0,
+        "win_rate": 0.381443299,
+        "profit_factor": 1.2089561395
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "midday",
+        "vix_bucket": "mid",
+        "trades": 35,
+        "total_pnl": 19250.0,
+        "avg_pnl": 550.0,
+        "median_pnl": 678.0,
+        "win_rate": 0.8571428571,
+        "profit_factor": 20.6428571429
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "low",
+        "trades": 23,
+        "total_pnl": 12224.0,
+        "avg_pnl": 531.4782608696,
+        "median_pnl": 478.0,
+        "win_rate": 1.0,
+        "profit_factor": null
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "midday",
+        "vix_bucket": "mid",
+        "trades": 502,
+        "total_pnl": 11266.0,
+        "avg_pnl": 22.4422310757,
+        "median_pnl": -162.0,
+        "win_rate": 0.3466135458,
+        "profit_factor": 1.1177269687
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "low",
+        "trades": 260,
+        "total_pnl": 9995.0,
+        "avg_pnl": 38.4423076923,
+        "median_pnl": -112.0,
+        "win_rate": 0.3807692308,
+        "profit_factor": 1.3227629412
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "midday",
+        "vix_bucket": "mid",
+        "trades": 667,
+        "total_pnl": 9926.0,
+        "avg_pnl": 14.8815592204,
+        "median_pnl": -122.0,
+        "win_rate": 0.3943028486,
+        "profit_factor": 1.0812088883
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "high",
+        "trades": 805,
+        "total_pnl": 8505.0,
+        "avg_pnl": 10.5652173913,
+        "median_pnl": -327.0,
+        "win_rate": 0.3055900621,
+        "profit_factor": 1.0351529079
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "mid",
+        "trades": 700,
+        "total_pnl": 5080.0,
+        "avg_pnl": 7.2571428571,
+        "median_pnl": -109.5,
+        "win_rate": 0.3971428571,
+        "profit_factor": 1.042971096
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "first_30",
+        "vix_bucket": "low",
+        "trades": 23,
+        "total_pnl": 5004.0,
+        "avg_pnl": 217.5652173913,
+        "median_pnl": 108.0,
+        "win_rate": 0.6956521739,
+        "profit_factor": 8.8927444795
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "mid",
+        "trades": 369,
+        "total_pnl": 3092.0,
+        "avg_pnl": 8.379403794,
+        "median_pnl": -22.0,
+        "win_rate": 0.487804878,
+        "profit_factor": 1.0480661609
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "high",
+        "trades": 1316,
+        "total_pnl": -112.0,
+        "avg_pnl": -0.085106383,
+        "median_pnl": -152.0,
+        "win_rate": 0.4270516717,
+        "profit_factor": 0.9997714463
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "mid",
+        "trades": 538,
+        "total_pnl": -1051.0,
+        "avg_pnl": -1.9535315985,
+        "median_pnl": -102.0,
+        "win_rate": 0.4163568773,
+        "profit_factor": 0.9875999906
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "mid",
+        "trades": 700,
+        "total_pnl": -1610.0,
+        "avg_pnl": -2.3,
+        "median_pnl": -202.0,
+        "win_rate": 0.3228571429,
+        "profit_factor": 0.9869241765
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "midday",
+        "vix_bucket": "low",
+        "trades": 247,
+        "total_pnl": -1889.0,
+        "avg_pnl": -7.6477732794,
+        "median_pnl": -22.0,
+        "win_rate": 0.4655870445,
+        "profit_factor": 0.9175073147
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "low",
+        "trades": 260,
+        "total_pnl": -2925.0,
+        "avg_pnl": -11.25,
+        "median_pnl": -77.0,
+        "win_rate": 0.4384615385,
+        "profit_factor": 0.9000751571
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "midday",
+        "vix_bucket": "low",
+        "trades": 1026,
+        "total_pnl": -5492.0,
+        "avg_pnl": -5.3528265107,
+        "median_pnl": -62.0,
+        "win_rate": 0.4122807018,
+        "profit_factor": 0.9598320729
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "first_30",
+        "vix_bucket": "low",
+        "trades": 23,
+        "total_pnl": -7626.0,
+        "avg_pnl": -331.5652173913,
+        "median_pnl": -322.0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "low",
+        "trades": 23,
+        "total_pnl": -11401.0,
+        "avg_pnl": -495.6956521739,
+        "median_pnl": -507.0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "first_30",
+        "vix_bucket": "mid",
+        "trades": 291,
+        "total_pnl": -13242.0,
+        "avg_pnl": -45.5051546392,
+        "median_pnl": -92.0,
+        "win_rate": 0.4776632302,
+        "profit_factor": 0.8499047878
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "midday",
+        "vix_bucket": "mid",
+        "trades": 35,
+        "total_pnl": -17640.0,
+        "avg_pnl": -504.0,
+        "median_pnl": -537.0,
+        "win_rate": 0.0285714286,
+        "profit_factor": 0.0155151245
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "first_30",
+        "vix_bucket": "high",
+        "trades": 266,
+        "total_pnl": -25762.0,
+        "avg_pnl": -96.8496240602,
+        "median_pnl": -527.0,
+        "win_rate": 0.3684210526,
+        "profit_factor": 0.8254559744
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "high",
+        "trades": 622,
+        "total_pnl": -29194.0,
+        "avg_pnl": -46.9356913183,
+        "median_pnl": -147.0,
+        "win_rate": 0.4565916399,
+        "profit_factor": 0.8888846599
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "first_30",
+        "vix_bucket": "mid",
+        "trades": 50,
+        "total_pnl": -31190.0,
+        "avg_pnl": -623.8,
+        "median_pnl": -647.0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "mid",
+        "trades": 538,
+        "total_pnl": -32236.0,
+        "avg_pnl": -59.9182156134,
+        "median_pnl": -212.0,
+        "win_rate": 0.2881040892,
+        "profit_factor": 0.6794383509
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "midday",
+        "vix_bucket": "low",
+        "trades": 247,
+        "total_pnl": -34114.0,
+        "avg_pnl": -138.1133603239,
+        "median_pnl": -172.0,
+        "win_rate": 0.1376518219,
+        "profit_factor": 0.2080508868
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "midday",
+        "vix_bucket": "low",
+        "trades": 1026,
+        "total_pnl": -36302.0,
+        "avg_pnl": -35.3820662768,
+        "median_pnl": -142.0,
+        "win_rate": 0.3576998051,
+        "profit_factor": 0.7724412015
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "midday",
+        "vix_bucket": "mid",
+        "trades": 502,
+        "total_pnl": -37029.0,
+        "avg_pnl": -73.7629482072,
+        "median_pnl": -127.0,
+        "win_rate": 0.312749004,
+        "profit_factor": 0.5978387184
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "high",
+        "trades": 1501,
+        "total_pnl": -38252.0,
+        "avg_pnl": -25.4843437708,
+        "median_pnl": -292.0,
+        "win_rate": 0.3504330446,
+        "profit_factor": 0.9113284963
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "mid",
+        "trades": 201,
+        "total_pnl": -42627.0,
+        "avg_pnl": -212.0746268657,
+        "median_pnl": -297.0,
+        "win_rate": 0.1044776119,
+        "profit_factor": 0.2220640569
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "high",
+        "trades": 805,
+        "total_pnl": -43935.0,
+        "avg_pnl": -54.5776397516,
+        "median_pnl": -242.0,
+        "win_rate": 0.351552795,
+        "profit_factor": 0.8048365531
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "first_30",
+        "vix_bucket": "high",
+        "trades": 266,
+        "total_pnl": -54732.0,
+        "avg_pnl": -205.7593984962,
+        "median_pnl": -462.0,
+        "win_rate": 0.3684210526,
+        "profit_factor": 0.596835499
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "high",
+        "trades": 622,
+        "total_pnl": -57714.0,
+        "avg_pnl": -92.7877813505,
+        "median_pnl": -312.0,
+        "win_rate": 0.3553054662,
+        "profit_factor": 0.7500064974
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "first_30",
+        "vix_bucket": "high",
+        "trades": 638,
+        "total_pnl": -61976.0,
+        "avg_pnl": -97.1410658307,
+        "median_pnl": -167.0,
+        "win_rate": 0.4545454545,
+        "profit_factor": 0.8272811892
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "midday",
+        "vix_bucket": "high",
+        "trades": 707,
+        "total_pnl": -66394.0,
+        "avg_pnl": -93.909476662,
+        "median_pnl": -182.0,
+        "win_rate": 0.3465346535,
+        "profit_factor": 0.6905487663
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "mid",
+        "trades": 742,
+        "total_pnl": -69629.0,
+        "avg_pnl": -93.8396226415,
+        "median_pnl": -342.0,
+        "win_rate": 0.2520215633,
+        "profit_factor": 0.7058157467
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "high",
+        "trades": 1501,
+        "total_pnl": -72702.0,
+        "avg_pnl": -48.435709527,
+        "median_pnl": -322.0,
+        "win_rate": 0.3451032645,
+        "profit_factor": 0.8478324571
+      },
+      {
+        "split": "train",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "low",
+        "trades": 436,
+        "total_pnl": -74247.0,
+        "avg_pnl": -170.2912844037,
+        "median_pnl": -282.0,
+        "win_rate": 0.1811926606,
+        "profit_factor": 0.3368968197
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "high",
+        "trades": 1979,
+        "total_pnl": -74468.0,
+        "avg_pnl": -37.6291056089,
+        "median_pnl": -222.0,
+        "win_rate": 0.4002021223,
+        "profit_factor": 0.9058765834
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "mid",
+        "trades": 369,
+        "total_pnl": -78058.0,
+        "avg_pnl": -211.539295393,
+        "median_pnl": -322.0,
+        "win_rate": 0.2628726287,
+        "profit_factor": 0.2707177159
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "midday",
+        "vix_bucket": "mid",
+        "trades": 667,
+        "total_pnl": -81524.0,
+        "avg_pnl": -122.2248875562,
+        "median_pnl": -152.0,
+        "win_rate": 0.3343328336,
+        "profit_factor": 0.4125158538
+      },
+      {
+        "split": "train",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "low",
+        "trades": 915,
+        "total_pnl": -86550.0,
+        "avg_pnl": -94.5901639344,
+        "median_pnl": -147.0,
+        "win_rate": 0.2666666667,
+        "profit_factor": 0.3313865907
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "first_30",
+        "vix_bucket": "high",
+        "trades": 638,
+        "total_pnl": -110066.0,
+        "avg_pnl": -172.5172413793,
+        "median_pnl": -507.0,
+        "win_rate": 0.3463949843,
+        "profit_factor": 0.7071965183
+      },
+      {
+        "split": "validation",
+        "side": "C",
+        "time_bucket": "midday",
+        "vix_bucket": "high",
+        "trades": 1531,
+        "total_pnl": -160892.0,
+        "avg_pnl": -105.0894839974,
+        "median_pnl": -302.0,
+        "win_rate": 0.3664271718,
+        "profit_factor": 0.7171428069
+      },
+      {
+        "split": "validation",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "high",
+        "trades": 1316,
+        "total_pnl": -185622.0,
+        "avg_pnl": -141.0501519757,
+        "median_pnl": -387.0,
+        "win_rate": 0.3472644377,
+        "profit_factor": 0.7275345385
+      },
+      {
+        "split": "test",
+        "side": "P",
+        "time_bucket": "post_open_morning",
+        "vix_bucket": "high",
+        "trades": 1979,
+        "total_pnl": -189728.0,
+        "avg_pnl": -95.8706417383,
+        "median_pnl": -282.0,
+        "win_rate": 0.3870641738,
+        "profit_factor": 0.7889674166
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "late_afternoon",
+        "vix_bucket": "high",
+        "trades": 2461,
+        "total_pnl": -290982.0,
+        "avg_pnl": -118.2373019098,
+        "median_pnl": -432.0,
+        "win_rate": 0.2885006095,
+        "profit_factor": 0.682317414
+      },
+      {
+        "split": "test",
+        "side": "C",
+        "time_bucket": "midday",
+        "vix_bucket": "high",
+        "trades": 2604,
+        "total_pnl": -376808.0,
+        "avg_pnl": -144.7035330261,
+        "median_pnl": -322.0,
+        "win_rate": 0.3168202765,
+        "profit_factor": 0.6116334343
+      }
+    ]
+  },
+  "validation_selected_rules": [
+    {
+      "rule": "P|range_bucket=mid",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "range_bucket",
+          "value": "mid"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 6760.0,
+        "avg_pnl": 225.33333333333334,
+        "median_pnl": 18.0,
+        "win_rate": 0.5,
+        "profit_factor": 1.6766766766766767,
+        "max_drawdown": -3824.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": 375.55555555555554,
+        "median_daily_pnl": -122.0,
+        "positive_day_fraction": 0.4444444444444444
+      },
+      "test": {
+        "trades": 37,
+        "total_pnl": -3274.0,
+        "avg_pnl": -88.48648648648648,
+        "median_pnl": -172.0,
+        "win_rate": 0.40540540540540543,
+        "profit_factor": 0.8189559831895599,
+        "max_drawdown": -7478.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -148.8181818181818,
+        "median_daily_pnl": -293.0,
+        "positive_day_fraction": 0.36363636363636365
+      }
+    },
+    {
+      "rule": "C|above_vwap=False|momentum_15m_sign=negative|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 6740.0,
+        "avg_pnl": 224.66666666666666,
+        "median_pnl": 58.0,
+        "win_rate": 0.5333333333333333,
+        "profit_factor": 1.5493968046951418,
+        "max_drawdown": -3340.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": 396.47058823529414,
+        "median_daily_pnl": -34.0,
+        "positive_day_fraction": 0.4117647058823529
+      },
+      "test": {
+        "trades": 35,
+        "total_pnl": 250.0,
+        "avg_pnl": 7.142857142857143,
+        "median_pnl": -292.0,
+        "win_rate": 0.34285714285714286,
+        "profit_factor": 1.0179262871074144,
+        "max_drawdown": -9340.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 13.157894736842104,
+        "median_daily_pnl": -104.0,
+        "positive_day_fraction": 0.42105263157894735
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=positive|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 35,
+        "total_pnl": 6680.0,
+        "avg_pnl": 190.85714285714286,
+        "median_pnl": 68.0,
+        "win_rate": 0.5428571428571428,
+        "profit_factor": 1.88688263409453,
+        "max_drawdown": -1514.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 351.57894736842104,
+        "median_daily_pnl": 206.0,
+        "positive_day_fraction": 0.631578947368421
+      },
+      "test": {
+        "trades": 44,
+        "total_pnl": -2818.0,
+        "avg_pnl": -64.04545454545455,
+        "median_pnl": -287.0,
+        "win_rate": 0.38636363636363635,
+        "profit_factor": 0.8498987962075211,
+        "max_drawdown": -10660.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -128.0909090909091,
+        "median_daily_pnl": -529.0,
+        "positive_day_fraction": 0.36363636363636365
+      }
+    },
+    {
+      "rule": "C|above_vwap=False|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 31,
+        "total_pnl": 5678.0,
+        "avg_pnl": 183.16129032258064,
+        "median_pnl": 88.0,
+        "win_rate": 0.5483870967741935,
+        "profit_factor": 1.456137532133676,
+        "max_drawdown": -3520.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": 334.0,
+        "median_daily_pnl": -224.0,
+        "positive_day_fraction": 0.4117647058823529
+      },
+      "test": {
+        "trades": 37,
+        "total_pnl": 546.0,
+        "avg_pnl": 14.756756756756756,
+        "median_pnl": -312.0,
+        "win_rate": 0.35135135135135137,
+        "profit_factor": 1.0353672755538281,
+        "max_drawdown": -10532.0,
+        "sessions_traded": 20,
+        "mean_daily_pnl": 27.3,
+        "median_daily_pnl": -254.0,
+        "positive_day_fraction": 0.45
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|momentum_15m_sign=flat|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 23,
+        "total_pnl": 4824.0,
+        "avg_pnl": 209.7391304347826,
+        "median_pnl": 128.0,
+        "win_rate": 0.5652173913043478,
+        "profit_factor": 2.1089655172413795,
+        "max_drawdown": -2230.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 371.0769230769231,
+        "median_daily_pnl": 116.0,
+        "positive_day_fraction": 0.6153846153846154
+      },
+      "test": {
+        "trades": 27,
+        "total_pnl": -2624.0,
+        "avg_pnl": -97.18518518518519,
+        "median_pnl": -192.0,
+        "win_rate": 0.4074074074074074,
+        "profit_factor": 0.7838906275737111,
+        "max_drawdown": -7284.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": -145.77777777777777,
+        "median_daily_pnl": -793.0,
+        "positive_day_fraction": 0.3333333333333333
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|momentum_15m_sign=negative|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 22,
+        "total_pnl": 4606.0,
+        "avg_pnl": 209.36363636363637,
+        "median_pnl": 138.0,
+        "win_rate": 0.6363636363636364,
+        "profit_factor": 2.2230483271375463,
+        "max_drawdown": -1392.0,
+        "sessions_traded": 12,
+        "mean_daily_pnl": 383.8333333333333,
+        "median_daily_pnl": 371.0,
+        "positive_day_fraction": 0.75
+      },
+      "test": {
+        "trades": 24,
+        "total_pnl": -5038.0,
+        "avg_pnl": -209.91666666666666,
+        "median_pnl": -312.0,
+        "win_rate": 0.375,
+        "profit_factor": 0.6160060975609756,
+        "max_drawdown": -7932.0,
+        "sessions_traded": 16,
+        "mean_daily_pnl": -314.875,
+        "median_daily_pnl": -1097.0,
+        "positive_day_fraction": 0.3125
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 28,
+        "total_pnl": 4594.0,
+        "avg_pnl": 164.07142857142858,
+        "median_pnl": 58.0,
+        "win_rate": 0.5357142857142857,
+        "profit_factor": 1.7171401810802374,
+        "max_drawdown": -1408.0,
+        "sessions_traded": 16,
+        "mean_daily_pnl": 287.125,
+        "median_daily_pnl": 541.0,
+        "positive_day_fraction": 0.625
+      },
+      "test": {
+        "trades": 38,
+        "total_pnl": -3936.0,
+        "avg_pnl": -103.57894736842105,
+        "median_pnl": -387.0,
+        "win_rate": 0.3157894736842105,
+        "profit_factor": 0.7717202180721494,
+        "max_drawdown": -12394.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -178.9090909090909,
+        "median_daily_pnl": -902.0,
+        "positive_day_fraction": 0.2727272727272727
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=negative",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        }
+      ],
+      "validation": {
+        "trades": 127,
+        "total_pnl": 4561.0,
+        "avg_pnl": 35.91338582677165,
+        "median_pnl": -192.0,
+        "win_rate": 0.3937007874015748,
+        "profit_factor": 1.1091304972005551,
+        "max_drawdown": -7133.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 240.05263157894737,
+        "median_daily_pnl": -92.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 153,
+        "total_pnl": -18171.0,
+        "avg_pnl": -118.76470588235294,
+        "median_pnl": -322.0,
+        "win_rate": 0.32679738562091504,
+        "profit_factor": 0.6917086578103527,
+        "max_drawdown": -34010.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -825.9545454545455,
+        "median_daily_pnl": -1706.5,
+        "positive_day_fraction": 0.36363636363636365
+      }
+    },
+    {
+      "rule": "C|vix_bucket=high",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "vix_bucket",
+          "value": "high"
+        }
+      ],
+      "validation": {
+        "trades": 122,
+        "total_pnl": 4386.0,
+        "avg_pnl": 35.950819672131146,
+        "median_pnl": -142.0,
+        "win_rate": 0.4262295081967213,
+        "profit_factor": 1.1071323888617488,
+        "max_drawdown": -8363.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 230.8421052631579,
+        "median_daily_pnl": -638.0,
+        "positive_day_fraction": 0.3684210526315789
+      },
+      "test": {
+        "trades": 175,
+        "total_pnl": -25130.0,
+        "avg_pnl": -143.6,
+        "median_pnl": -352.0,
+        "win_rate": 0.32,
+        "profit_factor": 0.6729057114593637,
+        "max_drawdown": -36850.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -1142.2727272727273,
+        "median_daily_pnl": -1966.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=negative|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 36,
+        "total_pnl": 4268.0,
+        "avg_pnl": 118.55555555555556,
+        "median_pnl": 73.0,
+        "win_rate": 0.5277777777777778,
+        "profit_factor": 1.322015995171269,
+        "max_drawdown": -3890.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 224.6315789473684,
+        "median_daily_pnl": 16.0,
+        "positive_day_fraction": 0.5263157894736842
+      },
+      "test": {
+        "trades": 42,
+        "total_pnl": -524.0,
+        "avg_pnl": -12.476190476190476,
+        "median_pnl": -292.0,
+        "win_rate": 0.38095238095238093,
+        "profit_factor": 0.9716480900335461,
+        "max_drawdown": -9944.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -23.818181818181817,
+        "median_daily_pnl": -289.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|range_bucket=low",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "range_bucket",
+          "value": "low"
+        }
+      ],
+      "validation": {
+        "trades": 26,
+        "total_pnl": 4038.0,
+        "avg_pnl": 155.30769230769232,
+        "median_pnl": -62.0,
+        "win_rate": 0.46153846153846156,
+        "profit_factor": 1.3898435991504152,
+        "max_drawdown": -4612.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 212.52631578947367,
+        "median_daily_pnl": -142.0,
+        "positive_day_fraction": 0.42105263157894735
+      },
+      "test": {
+        "trades": 25,
+        "total_pnl": -7720.0,
+        "avg_pnl": -308.8,
+        "median_pnl": -582.0,
+        "win_rate": 0.32,
+        "profit_factor": 0.5279442338265867,
+        "max_drawdown": -11806.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -350.90909090909093,
+        "median_daily_pnl": -582.0,
+        "positive_day_fraction": 0.3181818181818182
+      }
+    },
+    {
+      "rule": "C|above_vwap=False",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        }
+      ],
+      "validation": {
+        "trades": 98,
+        "total_pnl": 3999.0,
+        "avg_pnl": 40.80612244897959,
+        "median_pnl": -279.5,
+        "win_rate": 0.3979591836734694,
+        "profit_factor": 1.1125749514399121,
+        "max_drawdown": -10108.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 210.47368421052633,
+        "median_daily_pnl": 248.0,
+        "positive_day_fraction": 0.5263157894736842
+      },
+      "test": {
+        "trades": 133,
+        "total_pnl": -18996.0,
+        "avg_pnl": -142.82706766917292,
+        "median_pnl": -372.0,
+        "win_rate": 0.3007518796992481,
+        "profit_factor": 0.6686320343299724,
+        "max_drawdown": -29010.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -863.4545454545455,
+        "median_daily_pnl": -1182.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|mean_reversion_side=True",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "mean_reversion_side",
+          "value": true
+        }
+      ],
+      "validation": {
+        "trades": 98,
+        "total_pnl": 3999.0,
+        "avg_pnl": 40.80612244897959,
+        "median_pnl": -279.5,
+        "win_rate": 0.3979591836734694,
+        "profit_factor": 1.1125749514399121,
+        "max_drawdown": -10108.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 210.47368421052633,
+        "median_daily_pnl": 248.0,
+        "positive_day_fraction": 0.5263157894736842
+      },
+      "test": {
+        "trades": 133,
+        "total_pnl": -18996.0,
+        "avg_pnl": -142.82706766917292,
+        "median_pnl": -372.0,
+        "win_rate": 0.3007518796992481,
+        "profit_factor": 0.6686320343299724,
+        "max_drawdown": -29010.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -863.4545454545455,
+        "median_daily_pnl": -1182.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|momentum_15m_sign=positive|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 28,
+        "total_pnl": 2794.0,
+        "avg_pnl": 99.78571428571429,
+        "median_pnl": 38.0,
+        "win_rate": 0.5357142857142857,
+        "profit_factor": 1.4583333333333333,
+        "max_drawdown": -1792.0,
+        "sessions_traded": 16,
+        "mean_daily_pnl": 174.625,
+        "median_daily_pnl": 302.0,
+        "positive_day_fraction": 0.625
+      },
+      "test": {
+        "trades": 37,
+        "total_pnl": -3624.0,
+        "avg_pnl": -97.94594594594595,
+        "median_pnl": -352.0,
+        "win_rate": 0.2972972972972973,
+        "profit_factor": 0.777695988222304,
+        "max_drawdown": -11290.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -164.72727272727272,
+        "median_daily_pnl": -638.0,
+        "positive_day_fraction": 0.2727272727272727
+      }
+    },
+    {
+      "rule": "P|range_bucket=low",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "range_bucket",
+          "value": "low"
+        }
+      ],
+      "validation": {
+        "trades": 26,
+        "total_pnl": 2438.0,
+        "avg_pnl": 93.76923076923077,
+        "median_pnl": -207.0,
+        "win_rate": 0.34615384615384615,
+        "profit_factor": 1.188933663980161,
+        "max_drawdown": -4194.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 128.31578947368422,
+        "median_daily_pnl": -292.0,
+        "positive_day_fraction": 0.42105263157894735
+      },
+      "test": {
+        "trades": 25,
+        "total_pnl": -2990.0,
+        "avg_pnl": -119.6,
+        "median_pnl": -342.0,
+        "win_rate": 0.36,
+        "profit_factor": 0.8171477495107632,
+        "max_drawdown": -4770.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -135.9090909090909,
+        "median_daily_pnl": -478.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=positive|time_bucket=late_afternoon",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 43,
+        "total_pnl": 2054.0,
+        "avg_pnl": 47.76744186046512,
+        "median_pnl": -152.0,
+        "win_rate": 0.4186046511627907,
+        "profit_factor": 1.240797186400938,
+        "max_drawdown": -2679.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 108.10526315789474,
+        "median_daily_pnl": -39.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 57,
+        "total_pnl": -4044.0,
+        "avg_pnl": -70.94736842105263,
+        "median_pnl": -327.0,
+        "win_rate": 0.3157894736842105,
+        "profit_factor": 0.8067660550458715,
+        "max_drawdown": -9528.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -183.8181818181818,
+        "median_daily_pnl": -684.0,
+        "positive_day_fraction": 0.2727272727272727
+      }
+    },
+    {
+      "rule": "C|trend_aligned=False",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "trend_aligned",
+          "value": false
+        }
+      ],
+      "validation": {
+        "trades": 145,
+        "total_pnl": 1815.0,
+        "avg_pnl": 12.517241379310345,
+        "median_pnl": -152.0,
+        "win_rate": 0.4068965517241379,
+        "profit_factor": 1.0409364639014818,
+        "max_drawdown": -8855.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 95.52631578947368,
+        "median_daily_pnl": -356.0,
+        "positive_day_fraction": 0.42105263157894735
+      },
+      "test": {
+        "trades": 169,
+        "total_pnl": -23313.0,
+        "avg_pnl": -137.9467455621302,
+        "median_pnl": -302.0,
+        "win_rate": 0.33727810650887574,
+        "profit_factor": 0.6616351470993773,
+        "max_drawdown": -33865.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -1059.6818181818182,
+        "median_daily_pnl": -2100.0,
+        "positive_day_fraction": 0.2727272727272727
+      }
+    },
+    {
+      "rule": "P|above_vwap=True|momentum_15m_sign=positive|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 35,
+        "total_pnl": 1610.0,
+        "avg_pnl": 46.0,
+        "median_pnl": -152.0,
+        "win_rate": 0.34285714285714286,
+        "profit_factor": 1.187733208955224,
+        "max_drawdown": -3362.0,
+        "sessions_traded": 15,
+        "mean_daily_pnl": 107.33333333333333,
+        "median_daily_pnl": -186.0,
+        "positive_day_fraction": 0.4666666666666667
+      },
+      "test": {
+        "trades": 39,
+        "total_pnl": -138.0,
+        "avg_pnl": -3.5384615384615383,
+        "median_pnl": -2.0,
+        "win_rate": 0.48717948717948717,
+        "profit_factor": 0.9865889212827988,
+        "max_drawdown": -3768.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": -7.666666666666667,
+        "median_daily_pnl": 242.0,
+        "positive_day_fraction": 0.6111111111111112
+      }
+    },
+    {
+      "rule": "P|momentum_15m_sign=positive|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 48,
+        "total_pnl": 1564.0,
+        "avg_pnl": 32.583333333333336,
+        "median_pnl": -187.0,
+        "win_rate": 0.375,
+        "profit_factor": 1.1204003079291762,
+        "max_drawdown": -4124.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 82.3157894736842,
+        "median_daily_pnl": -186.0,
+        "positive_day_fraction": 0.3684210526315789
+      },
+      "test": {
+        "trades": 58,
+        "total_pnl": -3096.0,
+        "avg_pnl": -53.37931034482759,
+        "median_pnl": -172.0,
+        "win_rate": 0.43103448275862066,
+        "profit_factor": 0.8137856369541682,
+        "max_drawdown": -8190.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -140.72727272727272,
+        "median_daily_pnl": -150.0,
+        "positive_day_fraction": 0.3181818181818182
+      }
+    },
+    {
+      "rule": "P|above_vwap=False|momentum_15m_sign=positive|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 22,
+        "total_pnl": 1486.0,
+        "avg_pnl": 67.54545454545455,
+        "median_pnl": -187.0,
+        "win_rate": 0.45454545454545453,
+        "profit_factor": 1.227078239608802,
+        "max_drawdown": -3810.0,
+        "sessions_traded": 11,
+        "mean_daily_pnl": 135.0909090909091,
+        "median_daily_pnl": -84.0,
+        "positive_day_fraction": 0.36363636363636365
+      },
+      "test": {
+        "trades": 31,
+        "total_pnl": -3122.0,
+        "avg_pnl": -100.70967741935483,
+        "median_pnl": -212.0,
+        "win_rate": 0.3225806451612903,
+        "profit_factor": 0.6869233854793422,
+        "max_drawdown": -7006.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": -183.64705882352942,
+        "median_daily_pnl": -444.0,
+        "positive_day_fraction": 0.29411764705882354
+      }
+    },
+    {
+      "rule": "C|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 38,
+        "total_pnl": 1304.0,
+        "avg_pnl": 34.31578947368421,
+        "median_pnl": -52.0,
+        "win_rate": 0.47368421052631576,
+        "profit_factor": 1.0855081967213114,
+        "max_drawdown": -3890.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 68.63157894736842,
+        "median_daily_pnl": -154.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 44,
+        "total_pnl": -1038.0,
+        "avg_pnl": -23.59090909090909,
+        "median_pnl": -367.0,
+        "win_rate": 0.4090909090909091,
+        "profit_factor": 0.9484146705098897,
+        "max_drawdown": -10680.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -47.18181818181818,
+        "median_daily_pnl": -474.0,
+        "positive_day_fraction": 0.36363636363636365
+      }
+    },
+    {
+      "rule": "P|above_vwap=True|momentum_15m_sign=positive|time_bucket=late_afternoon",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 31,
+        "total_pnl": 1253.0,
+        "avg_pnl": 40.41935483870968,
+        "median_pnl": -202.0,
+        "win_rate": 0.45161290322580644,
+        "profit_factor": 1.1785154580424562,
+        "max_drawdown": -1712.0,
+        "sessions_traded": 15,
+        "mean_daily_pnl": 83.53333333333333,
+        "median_daily_pnl": -84.0,
+        "positive_day_fraction": 0.4666666666666667
+      },
+      "test": {
+        "trades": 32,
+        "total_pnl": 3776.0,
+        "avg_pnl": 118.0,
+        "median_pnl": -102.0,
+        "win_rate": 0.46875,
+        "profit_factor": 1.439888164026095,
+        "max_drawdown": -2882.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": 222.11764705882354,
+        "median_daily_pnl": 318.0,
+        "positive_day_fraction": 0.7058823529411765
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|momentum_15m_sign=negative|time_bucket=midday",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 1250.0,
+        "avg_pnl": 41.666666666666664,
+        "median_pnl": -132.0,
+        "win_rate": 0.43333333333333335,
+        "profit_factor": 1.1861781352397975,
+        "max_drawdown": -2106.0,
+        "sessions_traded": 14,
+        "mean_daily_pnl": 89.28571428571429,
+        "median_daily_pnl": 16.0,
+        "positive_day_fraction": 0.5
+      },
+      "test": {
+        "trades": 28,
+        "total_pnl": -2596.0,
+        "avg_pnl": -92.71428571428571,
+        "median_pnl": -122.0,
+        "win_rate": 0.35714285714285715,
+        "profit_factor": 0.7018148403399954,
+        "max_drawdown": -6482.0,
+        "sessions_traded": 16,
+        "mean_daily_pnl": -162.25,
+        "median_daily_pnl": -308.0,
+        "positive_day_fraction": 0.3125
+      }
+    },
+    {
+      "rule": "P|momentum_15m_sign=negative",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        }
+      ],
+      "validation": {
+        "trades": 127,
+        "total_pnl": 1116.0,
+        "avg_pnl": 8.78740157480315,
+        "median_pnl": -202.0,
+        "win_rate": 0.3543307086614173,
+        "profit_factor": 1.0239259068690507,
+        "max_drawdown": -7354.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 58.73684210526316,
+        "median_daily_pnl": -104.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 153,
+        "total_pnl": -3396.0,
+        "avg_pnl": -22.19607843137255,
+        "median_pnl": -242.0,
+        "win_rate": 0.39215686274509803,
+        "profit_factor": 0.9394393323346887,
+        "max_drawdown": -13978.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -154.36363636363637,
+        "median_daily_pnl": -449.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|above_vwap=False|momentum_15m_sign=negative|time_bucket=late_afternoon",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 1105.0,
+        "avg_pnl": 36.833333333333336,
+        "median_pnl": -287.0,
+        "win_rate": 0.43333333333333335,
+        "profit_factor": 1.139186295503212,
+        "max_drawdown": -3315.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 85.0,
+        "median_daily_pnl": 261.0,
+        "positive_day_fraction": 0.6153846153846154
+      },
+      "test": {
+        "trades": 40,
+        "total_pnl": -6445.0,
+        "avg_pnl": -161.125,
+        "median_pnl": -397.0,
+        "win_rate": 0.25,
+        "profit_factor": 0.5867265149086246,
+        "max_drawdown": -8389.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": -358.05555555555554,
+        "median_daily_pnl": -744.0,
+        "positive_day_fraction": 0.3333333333333333
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=flat|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 35,
+        "total_pnl": 1090.0,
+        "avg_pnl": 31.142857142857142,
+        "median_pnl": -52.0,
+        "win_rate": 0.4857142857142857,
+        "profit_factor": 1.1180164573408402,
+        "max_drawdown": -3516.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 57.36842105263158,
+        "median_daily_pnl": -54.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 43,
+        "total_pnl": 894.0,
+        "avg_pnl": 20.790697674418606,
+        "median_pnl": -212.0,
+        "win_rate": 0.4186046511627907,
+        "profit_factor": 1.0481421647819062,
+        "max_drawdown": -9578.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": 40.63636363636363,
+        "median_daily_pnl": -754.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "P|trend_aligned=True",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "trend_aligned",
+          "value": true
+        }
+      ],
+      "validation": {
+        "trades": 137,
+        "total_pnl": 1061.0,
+        "avg_pnl": 7.744525547445256,
+        "median_pnl": -222.0,
+        "win_rate": 0.3722627737226277,
+        "profit_factor": 1.0214920898575972,
+        "max_drawdown": -7288.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 55.8421052631579,
+        "median_daily_pnl": -449.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 158,
+        "total_pnl": -4311.0,
+        "avg_pnl": -27.28481012658228,
+        "median_pnl": -262.0,
+        "win_rate": 0.3860759493670886,
+        "profit_factor": 0.9289774131369545,
+        "max_drawdown": -16696.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -195.95454545454547,
+        "median_daily_pnl": -575.5,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|above_vwap=False|time_bucket=late_afternoon",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 32,
+        "total_pnl": 956.0,
+        "avg_pnl": 29.875,
+        "median_pnl": -272.0,
+        "win_rate": 0.34375,
+        "profit_factor": 1.1063167259786477,
+        "max_drawdown": -4095.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 73.53846153846153,
+        "median_daily_pnl": 34.0,
+        "positive_day_fraction": 0.5384615384615384
+      },
+      "test": {
+        "trades": 46,
+        "total_pnl": -7367.0,
+        "avg_pnl": -160.15217391304347,
+        "median_pnl": -387.0,
+        "win_rate": 0.2608695652173913,
+        "profit_factor": 0.5732491455714533,
+        "max_drawdown": -8669.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": -409.27777777777777,
+        "median_daily_pnl": -1066.0,
+        "positive_day_fraction": 0.3333333333333333
+      }
+    },
+    {
+      "rule": "P|above_vwap=False|momentum_15m_sign=flat|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 22,
+        "total_pnl": 836.0,
+        "avg_pnl": 38.0,
+        "median_pnl": 43.0,
+        "win_rate": 0.5454545454545454,
+        "profit_factor": 1.1443868739205527,
+        "max_drawdown": -3808.0,
+        "sessions_traded": 10,
+        "mean_daily_pnl": 83.6,
+        "median_daily_pnl": -334.0,
+        "positive_day_fraction": 0.3
+      },
+      "test": {
+        "trades": 34,
+        "total_pnl": -5288.0,
+        "avg_pnl": -155.52941176470588,
+        "median_pnl": -322.0,
+        "win_rate": 0.4117647058823529,
+        "profit_factor": 0.5316209034543844,
+        "max_drawdown": -8890.0,
+        "sessions_traded": 16,
+        "mean_daily_pnl": -330.5,
+        "median_daily_pnl": -658.0,
+        "positive_day_fraction": 0.1875
+      }
+    },
+    {
+      "rule": "C|trend_aligned=True",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "trend_aligned",
+          "value": true
+        }
+      ],
+      "validation": {
+        "trades": 134,
+        "total_pnl": 772.0,
+        "avg_pnl": 5.7611940298507465,
+        "median_pnl": -112.0,
+        "win_rate": 0.41044776119402987,
+        "profit_factor": 1.0226008548509866,
+        "max_drawdown": -7966.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 40.63157894736842,
+        "median_daily_pnl": -47.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 156,
+        "total_pnl": -19857.0,
+        "avg_pnl": -127.28846153846153,
+        "median_pnl": -367.0,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 0.6916279719845325,
+        "max_drawdown": -35087.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -902.5909090909091,
+        "median_daily_pnl": -929.0,
+        "positive_day_fraction": 0.3181818181818182
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|momentum_15m_sign=flat|time_bucket=late_afternoon",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 765.0,
+        "avg_pnl": 25.5,
+        "median_pnl": -229.5,
+        "win_rate": 0.43333333333333335,
+        "profit_factor": 1.131465887609555,
+        "max_drawdown": -2252.0,
+        "sessions_traded": 14,
+        "mean_daily_pnl": 54.642857142857146,
+        "median_daily_pnl": -49.0,
+        "positive_day_fraction": 0.5
+      },
+      "test": {
+        "trades": 25,
+        "total_pnl": -2395.0,
+        "avg_pnl": -95.8,
+        "median_pnl": -452.0,
+        "win_rate": 0.32,
+        "profit_factor": 0.7110628543853299,
+        "max_drawdown": -3054.0,
+        "sessions_traded": 12,
+        "mean_daily_pnl": -199.58333333333334,
+        "median_daily_pnl": -564.0,
+        "positive_day_fraction": 0.16666666666666666
+      }
+    },
+    {
+      "rule": "C|above_vwap=False|momentum_15m_sign=flat|time_bucket=late_afternoon",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 24,
+        "total_pnl": 612.0,
+        "avg_pnl": 25.5,
+        "median_pnl": -182.0,
+        "win_rate": 0.375,
+        "profit_factor": 1.1131238447319778,
+        "max_drawdown": -3262.0,
+        "sessions_traded": 12,
+        "mean_daily_pnl": 51.0,
+        "median_daily_pnl": 191.0,
+        "positive_day_fraction": 0.6666666666666666
+      },
+      "test": {
+        "trades": 39,
+        "total_pnl": -3778.0,
+        "avg_pnl": -96.87179487179488,
+        "median_pnl": -362.0,
+        "win_rate": 0.3076923076923077,
+        "profit_factor": 0.7116910866910867,
+        "max_drawdown": -7068.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": -222.23529411764707,
+        "median_daily_pnl": -546.0,
+        "positive_day_fraction": 0.29411764705882354
+      }
+    },
+    {
+      "rule": "C|time_bucket=late_afternoon",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 57,
+        "total_pnl": 496.0,
+        "avg_pnl": 8.701754385964913,
+        "median_pnl": -132.0,
+        "win_rate": 0.38596491228070173,
+        "profit_factor": 1.0372652141247183,
+        "max_drawdown": -4184.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 26.105263157894736,
+        "median_daily_pnl": 44.0,
+        "positive_day_fraction": 0.5789473684210527
+      },
+      "test": {
+        "trades": 66,
+        "total_pnl": -7982.0,
+        "avg_pnl": -120.93939393939394,
+        "median_pnl": -299.5,
+        "win_rate": 0.3181818181818182,
+        "profit_factor": 0.6355251141552511,
+        "max_drawdown": -11647.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -362.8181818181818,
+        "median_daily_pnl": -593.5,
+        "positive_day_fraction": 0.3181818181818182
+      }
+    },
+    {
+      "rule": "P|above_vwap=False|momentum_15m_sign=negative|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 360.0,
+        "avg_pnl": 12.0,
+        "median_pnl": -12.0,
+        "win_rate": 0.4666666666666667,
+        "profit_factor": 1.0348432055749128,
+        "max_drawdown": -6250.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 27.692307692307693,
+        "median_daily_pnl": -84.0,
+        "positive_day_fraction": 0.46153846153846156
+      },
+      "test": {
+        "trades": 40,
+        "total_pnl": 650.0,
+        "avg_pnl": 16.25,
+        "median_pnl": -172.0,
+        "win_rate": 0.375,
+        "profit_factor": 1.0522088353413654,
+        "max_drawdown": -5280.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": 36.111111111111114,
+        "median_daily_pnl": -336.0,
+        "positive_day_fraction": 0.3888888888888889
+      }
+    },
+    {
+      "rule": "P|above_vwap=True|momentum_15m_sign=flat|time_bucket=late_afternoon",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 330.0,
+        "avg_pnl": 11.0,
+        "median_pnl": -204.5,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 1.0450204638472034,
+        "max_drawdown": -2851.0,
+        "sessions_traded": 14,
+        "mean_daily_pnl": 23.571428571428573,
+        "median_daily_pnl": -182.5,
+        "positive_day_fraction": 0.42857142857142855
+      },
+      "test": {
+        "trades": 25,
+        "total_pnl": 1815.0,
+        "avg_pnl": 72.6,
+        "median_pnl": -182.0,
+        "win_rate": 0.48,
+        "profit_factor": 1.302449591734711,
+        "max_drawdown": -1476.0,
+        "sessions_traded": 12,
+        "mean_daily_pnl": 151.25,
+        "median_daily_pnl": 131.0,
+        "positive_day_fraction": 0.6666666666666666
+      }
+    },
+    {
+      "rule": "P|above_vwap=False|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 32,
+        "total_pnl": 136.0,
+        "avg_pnl": 4.25,
+        "median_pnl": -177.0,
+        "win_rate": 0.4375,
+        "profit_factor": 1.0134440490312377,
+        "max_drawdown": -6474.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 10.461538461538462,
+        "median_daily_pnl": 146.0,
+        "positive_day_fraction": 0.5384615384615384
+      },
+      "test": {
+        "trades": 44,
+        "total_pnl": 42.0,
+        "avg_pnl": 0.9545454545454546,
+        "median_pnl": -112.0,
+        "win_rate": 0.4090909090909091,
+        "profit_factor": 1.0031837477258945,
+        "max_drawdown": -5024.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": 2.3333333333333335,
+        "median_daily_pnl": -424.0,
+        "positive_day_fraction": 0.4444444444444444
+      }
+    }
+  ],
+  "best_test_rules": [
+    {
+      "rule": "P|above_vwap=True|momentum_15m_sign=positive|time_bucket=late_afternoon",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 31,
+        "total_pnl": 1253.0,
+        "avg_pnl": 40.41935483870968,
+        "median_pnl": -202.0,
+        "win_rate": 0.45161290322580644,
+        "profit_factor": 1.1785154580424562,
+        "max_drawdown": -1712.0,
+        "sessions_traded": 15,
+        "mean_daily_pnl": 83.53333333333333,
+        "median_daily_pnl": -84.0,
+        "positive_day_fraction": 0.4666666666666667
+      },
+      "test": {
+        "trades": 32,
+        "total_pnl": 3776.0,
+        "avg_pnl": 118.0,
+        "median_pnl": -102.0,
+        "win_rate": 0.46875,
+        "profit_factor": 1.439888164026095,
+        "max_drawdown": -2882.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": 222.11764705882354,
+        "median_daily_pnl": 318.0,
+        "positive_day_fraction": 0.7058823529411765
+      }
+    },
+    {
+      "rule": "P|above_vwap=True|momentum_15m_sign=flat|time_bucket=late_afternoon",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 330.0,
+        "avg_pnl": 11.0,
+        "median_pnl": -204.5,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 1.0450204638472034,
+        "max_drawdown": -2851.0,
+        "sessions_traded": 14,
+        "mean_daily_pnl": 23.571428571428573,
+        "median_daily_pnl": -182.5,
+        "positive_day_fraction": 0.42857142857142855
+      },
+      "test": {
+        "trades": 25,
+        "total_pnl": 1815.0,
+        "avg_pnl": 72.6,
+        "median_pnl": -182.0,
+        "win_rate": 0.48,
+        "profit_factor": 1.302449591734711,
+        "max_drawdown": -1476.0,
+        "sessions_traded": 12,
+        "mean_daily_pnl": 151.25,
+        "median_daily_pnl": 131.0,
+        "positive_day_fraction": 0.6666666666666666
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=flat|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 35,
+        "total_pnl": 1090.0,
+        "avg_pnl": 31.142857142857142,
+        "median_pnl": -52.0,
+        "win_rate": 0.4857142857142857,
+        "profit_factor": 1.1180164573408402,
+        "max_drawdown": -3516.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 57.36842105263158,
+        "median_daily_pnl": -54.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 43,
+        "total_pnl": 894.0,
+        "avg_pnl": 20.790697674418606,
+        "median_pnl": -212.0,
+        "win_rate": 0.4186046511627907,
+        "profit_factor": 1.0481421647819062,
+        "max_drawdown": -9578.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": 40.63636363636363,
+        "median_daily_pnl": -754.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "P|above_vwap=False|momentum_15m_sign=negative|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 360.0,
+        "avg_pnl": 12.0,
+        "median_pnl": -12.0,
+        "win_rate": 0.4666666666666667,
+        "profit_factor": 1.0348432055749128,
+        "max_drawdown": -6250.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 27.692307692307693,
+        "median_daily_pnl": -84.0,
+        "positive_day_fraction": 0.46153846153846156
+      },
+      "test": {
+        "trades": 40,
+        "total_pnl": 650.0,
+        "avg_pnl": 16.25,
+        "median_pnl": -172.0,
+        "win_rate": 0.375,
+        "profit_factor": 1.0522088353413654,
+        "max_drawdown": -5280.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": 36.111111111111114,
+        "median_daily_pnl": -336.0,
+        "positive_day_fraction": 0.3888888888888889
+      }
+    },
+    {
+      "rule": "C|above_vwap=False|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 31,
+        "total_pnl": 5678.0,
+        "avg_pnl": 183.16129032258064,
+        "median_pnl": 88.0,
+        "win_rate": 0.5483870967741935,
+        "profit_factor": 1.456137532133676,
+        "max_drawdown": -3520.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": 334.0,
+        "median_daily_pnl": -224.0,
+        "positive_day_fraction": 0.4117647058823529
+      },
+      "test": {
+        "trades": 37,
+        "total_pnl": 546.0,
+        "avg_pnl": 14.756756756756756,
+        "median_pnl": -312.0,
+        "win_rate": 0.35135135135135137,
+        "profit_factor": 1.0353672755538281,
+        "max_drawdown": -10532.0,
+        "sessions_traded": 20,
+        "mean_daily_pnl": 27.3,
+        "median_daily_pnl": -254.0,
+        "positive_day_fraction": 0.45
+      }
+    },
+    {
+      "rule": "C|above_vwap=False|momentum_15m_sign=negative|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 6740.0,
+        "avg_pnl": 224.66666666666666,
+        "median_pnl": 58.0,
+        "win_rate": 0.5333333333333333,
+        "profit_factor": 1.5493968046951418,
+        "max_drawdown": -3340.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": 396.47058823529414,
+        "median_daily_pnl": -34.0,
+        "positive_day_fraction": 0.4117647058823529
+      },
+      "test": {
+        "trades": 35,
+        "total_pnl": 250.0,
+        "avg_pnl": 7.142857142857143,
+        "median_pnl": -292.0,
+        "win_rate": 0.34285714285714286,
+        "profit_factor": 1.0179262871074144,
+        "max_drawdown": -9340.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 13.157894736842104,
+        "median_daily_pnl": -104.0,
+        "positive_day_fraction": 0.42105263157894735
+      }
+    },
+    {
+      "rule": "P|above_vwap=False|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 32,
+        "total_pnl": 136.0,
+        "avg_pnl": 4.25,
+        "median_pnl": -177.0,
+        "win_rate": 0.4375,
+        "profit_factor": 1.0134440490312377,
+        "max_drawdown": -6474.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 10.461538461538462,
+        "median_daily_pnl": 146.0,
+        "positive_day_fraction": 0.5384615384615384
+      },
+      "test": {
+        "trades": 44,
+        "total_pnl": 42.0,
+        "avg_pnl": 0.9545454545454546,
+        "median_pnl": -112.0,
+        "win_rate": 0.4090909090909091,
+        "profit_factor": 1.0031837477258945,
+        "max_drawdown": -5024.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": 2.3333333333333335,
+        "median_daily_pnl": -424.0,
+        "positive_day_fraction": 0.4444444444444444
+      }
+    },
+    {
+      "rule": "P|above_vwap=True|momentum_15m_sign=positive|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 35,
+        "total_pnl": 1610.0,
+        "avg_pnl": 46.0,
+        "median_pnl": -152.0,
+        "win_rate": 0.34285714285714286,
+        "profit_factor": 1.187733208955224,
+        "max_drawdown": -3362.0,
+        "sessions_traded": 15,
+        "mean_daily_pnl": 107.33333333333333,
+        "median_daily_pnl": -186.0,
+        "positive_day_fraction": 0.4666666666666667
+      },
+      "test": {
+        "trades": 39,
+        "total_pnl": -138.0,
+        "avg_pnl": -3.5384615384615383,
+        "median_pnl": -2.0,
+        "win_rate": 0.48717948717948717,
+        "profit_factor": 0.9865889212827988,
+        "max_drawdown": -3768.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": -7.666666666666667,
+        "median_daily_pnl": 242.0,
+        "positive_day_fraction": 0.6111111111111112
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=negative|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 36,
+        "total_pnl": 4268.0,
+        "avg_pnl": 118.55555555555556,
+        "median_pnl": 73.0,
+        "win_rate": 0.5277777777777778,
+        "profit_factor": 1.322015995171269,
+        "max_drawdown": -3890.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 224.6315789473684,
+        "median_daily_pnl": 16.0,
+        "positive_day_fraction": 0.5263157894736842
+      },
+      "test": {
+        "trades": 42,
+        "total_pnl": -524.0,
+        "avg_pnl": -12.476190476190476,
+        "median_pnl": -292.0,
+        "win_rate": 0.38095238095238093,
+        "profit_factor": 0.9716480900335461,
+        "max_drawdown": -9944.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -23.818181818181817,
+        "median_daily_pnl": -289.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 38,
+        "total_pnl": 1304.0,
+        "avg_pnl": 34.31578947368421,
+        "median_pnl": -52.0,
+        "win_rate": 0.47368421052631576,
+        "profit_factor": 1.0855081967213114,
+        "max_drawdown": -3890.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 68.63157894736842,
+        "median_daily_pnl": -154.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 44,
+        "total_pnl": -1038.0,
+        "avg_pnl": -23.59090909090909,
+        "median_pnl": -367.0,
+        "win_rate": 0.4090909090909091,
+        "profit_factor": 0.9484146705098897,
+        "max_drawdown": -10680.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -47.18181818181818,
+        "median_daily_pnl": -474.0,
+        "positive_day_fraction": 0.36363636363636365
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|momentum_15m_sign=flat|time_bucket=late_afternoon",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 765.0,
+        "avg_pnl": 25.5,
+        "median_pnl": -229.5,
+        "win_rate": 0.43333333333333335,
+        "profit_factor": 1.131465887609555,
+        "max_drawdown": -2252.0,
+        "sessions_traded": 14,
+        "mean_daily_pnl": 54.642857142857146,
+        "median_daily_pnl": -49.0,
+        "positive_day_fraction": 0.5
+      },
+      "test": {
+        "trades": 25,
+        "total_pnl": -2395.0,
+        "avg_pnl": -95.8,
+        "median_pnl": -452.0,
+        "win_rate": 0.32,
+        "profit_factor": 0.7110628543853299,
+        "max_drawdown": -3054.0,
+        "sessions_traded": 12,
+        "mean_daily_pnl": -199.58333333333334,
+        "median_daily_pnl": -564.0,
+        "positive_day_fraction": 0.16666666666666666
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|momentum_15m_sign=negative|time_bucket=midday",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 1250.0,
+        "avg_pnl": 41.666666666666664,
+        "median_pnl": -132.0,
+        "win_rate": 0.43333333333333335,
+        "profit_factor": 1.1861781352397975,
+        "max_drawdown": -2106.0,
+        "sessions_traded": 14,
+        "mean_daily_pnl": 89.28571428571429,
+        "median_daily_pnl": 16.0,
+        "positive_day_fraction": 0.5
+      },
+      "test": {
+        "trades": 28,
+        "total_pnl": -2596.0,
+        "avg_pnl": -92.71428571428571,
+        "median_pnl": -122.0,
+        "win_rate": 0.35714285714285715,
+        "profit_factor": 0.7018148403399954,
+        "max_drawdown": -6482.0,
+        "sessions_traded": 16,
+        "mean_daily_pnl": -162.25,
+        "median_daily_pnl": -308.0,
+        "positive_day_fraction": 0.3125
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|momentum_15m_sign=flat|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 23,
+        "total_pnl": 4824.0,
+        "avg_pnl": 209.7391304347826,
+        "median_pnl": 128.0,
+        "win_rate": 0.5652173913043478,
+        "profit_factor": 2.1089655172413795,
+        "max_drawdown": -2230.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 371.0769230769231,
+        "median_daily_pnl": 116.0,
+        "positive_day_fraction": 0.6153846153846154
+      },
+      "test": {
+        "trades": 27,
+        "total_pnl": -2624.0,
+        "avg_pnl": -97.18518518518519,
+        "median_pnl": -192.0,
+        "win_rate": 0.4074074074074074,
+        "profit_factor": 0.7838906275737111,
+        "max_drawdown": -7284.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": -145.77777777777777,
+        "median_daily_pnl": -793.0,
+        "positive_day_fraction": 0.3333333333333333
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=positive|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 35,
+        "total_pnl": 6680.0,
+        "avg_pnl": 190.85714285714286,
+        "median_pnl": 68.0,
+        "win_rate": 0.5428571428571428,
+        "profit_factor": 1.88688263409453,
+        "max_drawdown": -1514.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 351.57894736842104,
+        "median_daily_pnl": 206.0,
+        "positive_day_fraction": 0.631578947368421
+      },
+      "test": {
+        "trades": 44,
+        "total_pnl": -2818.0,
+        "avg_pnl": -64.04545454545455,
+        "median_pnl": -287.0,
+        "win_rate": 0.38636363636363635,
+        "profit_factor": 0.8498987962075211,
+        "max_drawdown": -10660.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -128.0909090909091,
+        "median_daily_pnl": -529.0,
+        "positive_day_fraction": 0.36363636363636365
+      }
+    },
+    {
+      "rule": "P|range_bucket=low",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "range_bucket",
+          "value": "low"
+        }
+      ],
+      "validation": {
+        "trades": 26,
+        "total_pnl": 2438.0,
+        "avg_pnl": 93.76923076923077,
+        "median_pnl": -207.0,
+        "win_rate": 0.34615384615384615,
+        "profit_factor": 1.188933663980161,
+        "max_drawdown": -4194.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 128.31578947368422,
+        "median_daily_pnl": -292.0,
+        "positive_day_fraction": 0.42105263157894735
+      },
+      "test": {
+        "trades": 25,
+        "total_pnl": -2990.0,
+        "avg_pnl": -119.6,
+        "median_pnl": -342.0,
+        "win_rate": 0.36,
+        "profit_factor": 0.8171477495107632,
+        "max_drawdown": -4770.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -135.9090909090909,
+        "median_daily_pnl": -478.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "P|momentum_15m_sign=positive|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 48,
+        "total_pnl": 1564.0,
+        "avg_pnl": 32.583333333333336,
+        "median_pnl": -187.0,
+        "win_rate": 0.375,
+        "profit_factor": 1.1204003079291762,
+        "max_drawdown": -4124.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 82.3157894736842,
+        "median_daily_pnl": -186.0,
+        "positive_day_fraction": 0.3684210526315789
+      },
+      "test": {
+        "trades": 58,
+        "total_pnl": -3096.0,
+        "avg_pnl": -53.37931034482759,
+        "median_pnl": -172.0,
+        "win_rate": 0.43103448275862066,
+        "profit_factor": 0.8137856369541682,
+        "max_drawdown": -8190.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -140.72727272727272,
+        "median_daily_pnl": -150.0,
+        "positive_day_fraction": 0.3181818181818182
+      }
+    },
+    {
+      "rule": "P|above_vwap=False|momentum_15m_sign=positive|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 22,
+        "total_pnl": 1486.0,
+        "avg_pnl": 67.54545454545455,
+        "median_pnl": -187.0,
+        "win_rate": 0.45454545454545453,
+        "profit_factor": 1.227078239608802,
+        "max_drawdown": -3810.0,
+        "sessions_traded": 11,
+        "mean_daily_pnl": 135.0909090909091,
+        "median_daily_pnl": -84.0,
+        "positive_day_fraction": 0.36363636363636365
+      },
+      "test": {
+        "trades": 31,
+        "total_pnl": -3122.0,
+        "avg_pnl": -100.70967741935483,
+        "median_pnl": -212.0,
+        "win_rate": 0.3225806451612903,
+        "profit_factor": 0.6869233854793422,
+        "max_drawdown": -7006.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": -183.64705882352942,
+        "median_daily_pnl": -444.0,
+        "positive_day_fraction": 0.29411764705882354
+      }
+    },
+    {
+      "rule": "P|range_bucket=mid",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "range_bucket",
+          "value": "mid"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 6760.0,
+        "avg_pnl": 225.33333333333334,
+        "median_pnl": 18.0,
+        "win_rate": 0.5,
+        "profit_factor": 1.6766766766766767,
+        "max_drawdown": -3824.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": 375.55555555555554,
+        "median_daily_pnl": -122.0,
+        "positive_day_fraction": 0.4444444444444444
+      },
+      "test": {
+        "trades": 37,
+        "total_pnl": -3274.0,
+        "avg_pnl": -88.48648648648648,
+        "median_pnl": -172.0,
+        "win_rate": 0.40540540540540543,
+        "profit_factor": 0.8189559831895599,
+        "max_drawdown": -7478.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -148.8181818181818,
+        "median_daily_pnl": -293.0,
+        "positive_day_fraction": 0.36363636363636365
+      }
+    },
+    {
+      "rule": "P|momentum_15m_sign=negative",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        }
+      ],
+      "validation": {
+        "trades": 127,
+        "total_pnl": 1116.0,
+        "avg_pnl": 8.78740157480315,
+        "median_pnl": -202.0,
+        "win_rate": 0.3543307086614173,
+        "profit_factor": 1.0239259068690507,
+        "max_drawdown": -7354.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 58.73684210526316,
+        "median_daily_pnl": -104.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 153,
+        "total_pnl": -3396.0,
+        "avg_pnl": -22.19607843137255,
+        "median_pnl": -242.0,
+        "win_rate": 0.39215686274509803,
+        "profit_factor": 0.9394393323346887,
+        "max_drawdown": -13978.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -154.36363636363637,
+        "median_daily_pnl": -449.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|above_vwap=True|momentum_15m_sign=positive|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 28,
+        "total_pnl": 2794.0,
+        "avg_pnl": 99.78571428571429,
+        "median_pnl": 38.0,
+        "win_rate": 0.5357142857142857,
+        "profit_factor": 1.4583333333333333,
+        "max_drawdown": -1792.0,
+        "sessions_traded": 16,
+        "mean_daily_pnl": 174.625,
+        "median_daily_pnl": 302.0,
+        "positive_day_fraction": 0.625
+      },
+      "test": {
+        "trades": 37,
+        "total_pnl": -3624.0,
+        "avg_pnl": -97.94594594594595,
+        "median_pnl": -352.0,
+        "win_rate": 0.2972972972972973,
+        "profit_factor": 0.777695988222304,
+        "max_drawdown": -11290.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -164.72727272727272,
+        "median_daily_pnl": -638.0,
+        "positive_day_fraction": 0.2727272727272727
+      }
+    }
+  ]
+}

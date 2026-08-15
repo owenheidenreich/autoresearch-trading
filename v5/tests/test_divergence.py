@@ -177,3 +177,82 @@ def test_the_real_corpus_is_start_labelled_on_every_session() -> None:
     sessions = loader.load_sessions()
     assert len(sessions) == 254  # all owned sessions load; 7 are ineligible
     assert all(s.minute_et[0] == "09:30" for s in sessions)
+
+
+# --- clock_and_dst -----------------------------------------------------------
+# Sessions either side of both daylight-saving transitions in the owned corpus.
+# US clocks moved back 2025-11-02 and forward 2026-03-08, both Sundays.
+DST_PAIRS = (
+    ("2025-10-31", "2025-11-03", "fall back 2025-11-02"),
+    ("2026-03-06", "2026-03-09", "spring forward 2026-03-08"),
+)
+
+
+@pytest.mark.skipif(
+    not Path(loader.family.ES_BARS_ROOT).is_dir(), reason="owned ES bars not present"
+)
+def test_the_same_market_minute_maps_to_the_same_bar_across_both_dst_changes() -> None:
+    """An off-by-one-hour error looks exactly like a real regime change.
+
+    The corpus stores UTC and the loader converts to America/New_York, so the
+    stored offset must move by exactly one hour across each transition while the
+    local trading day stays put. If the conversion were skipped or pinned to a
+    fixed offset, one side of each pair would silently shift by 60 minutes and
+    every feature on those sessions would be misaligned against a plausible-
+    looking bar.
+    """
+
+    import pandas as pd
+
+    root = Path(loader.family.ES_BARS_ROOT)
+    by_session = {s.session: s for s in loader.load_sessions()}
+
+    for before, after, label in DST_PAIRS:
+        assert before in by_session and after in by_session, label
+
+        # The stored UTC offset really does differ -- otherwise this whole test
+        # is vacuous and proves nothing about the conversion.
+        stored_hours = []
+        for session in (before, after):
+            frame = pd.read_parquet(next(root.glob(f"{session}*.parquet")))
+            assert frame.index.tz is not None, f"{session} is tz-naive"
+            stored_hours.append(frame.index[0].tz_convert("UTC").hour)
+        assert abs(stored_hours[0] - stored_hours[1]) == 1, (
+            f"{label}: stored UTC open hours {stored_hours} do not differ by one, "
+            "so these sessions do not actually straddle the transition"
+        )
+
+        # ...and after conversion both sides open and close at the same local
+        # minute, on the same bar index.
+        for session in (before, after):
+            minutes = by_session[session].minute_et
+            assert minutes[0] == "09:30", f"{label}: {session} opens {minutes[0]}"
+            assert minutes[-1] == "15:59", f"{label}: {session} closes {minutes[-1]}"
+            assert len(minutes) == 390, f"{label}: {session} has {len(minutes)} bars"
+
+        # The same wall-clock minute is the same offset into both sessions.
+        for probe in ("09:30", "09:35", "12:00", "15:59"):
+            assert by_session[before].index_of(probe) == by_session[after].index_of(
+                probe
+            ), f"{label}: {probe} sits at a different bar index either side"
+
+
+@pytest.mark.skipif(
+    not Path(loader.family.ES_BARS_ROOT).is_dir(), reason="owned ES bars not present"
+)
+def test_no_session_contains_the_ambiguous_or_skipped_dst_hour() -> None:
+    """Why the transitions are safe at all, asserted rather than assumed.
+
+    The fall-back hour is repeated and the spring-forward hour does not exist,
+    which is what makes local timestamps ambiguous. Both happen at 01:00-03:00
+    local on a Sunday. US equity regular hours never reach that window and no
+    session spans a weekend, so no owned bar can be ambiguous. That is the
+    mechanism -- not a property of the loader -- so it is worth pinning: a
+    future move to a near-24-hour session would break it.
+    """
+
+    for session in loader.load_sessions():
+        assert all("03:00" <= minute <= "23:59" for minute in session.minute_et), (
+            f"{session.session} contains a bar before 03:00 local, which can fall "
+            "inside a daylight-saving transition window"
+        )

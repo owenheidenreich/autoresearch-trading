@@ -1,0 +1,499 @@
+{
+  "input_dir": "data/processed/spxw_0dte_neural_derived",
+  "output_dir": "data/processed/spxw_0dte_neural_derived_nofee",
+  "removed_roundtrip_fee": 2.0,
+  "sessions": 61,
+  "total_rows": 21959,
+  "total_finite_net_labels": 1914256,
+  "total_finite_mid_labels": 1914256,
+  "records": [
+    {
+      "session": "2026-01-02",
+      "rows": 360,
+      "finite_net_labels": 29553,
+      "finite_mid_labels": 29553,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-02.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-02.pkl"
+    },
+    {
+      "session": "2026-01-05",
+      "rows": 360,
+      "finite_net_labels": 25578,
+      "finite_mid_labels": 25578,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-05.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-05.pkl"
+    },
+    {
+      "session": "2026-01-06",
+      "rows": 360,
+      "finite_net_labels": 25077,
+      "finite_mid_labels": 25077,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-06.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-06.pkl"
+    },
+    {
+      "session": "2026-01-07",
+      "rows": 360,
+      "finite_net_labels": 26232,
+      "finite_mid_labels": 26232,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-07.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-07.pkl"
+    },
+    {
+      "session": "2026-01-08",
+      "rows": 360,
+      "finite_net_labels": 29133,
+      "finite_mid_labels": 29133,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-08.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-08.pkl"
+    },
+    {
+      "session": "2026-01-09",
+      "rows": 360,
+      "finite_net_labels": 28038,
+      "finite_mid_labels": 28038,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-09.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-09.pkl"
+    },
+    {
+      "session": "2026-01-12",
+      "rows": 360,
+      "finite_net_labels": 26565,
+      "finite_mid_labels": 26565,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-12.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-12.pkl"
+    },
+    {
+      "session": "2026-01-13",
+      "rows": 360,
+      "finite_net_labels": 27972,
+      "finite_mid_labels": 27972,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-13.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-13.pkl"
+    },
+    {
+      "session": "2026-01-14",
+      "rows": 360,
+      "finite_net_labels": 31137,
+      "finite_mid_labels": 31137,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-14.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-14.pkl"
+    },
+    {
+      "session": "2026-01-15",
+      "rows": 360,
+      "finite_net_labels": 28662,
+      "finite_mid_labels": 28662,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-15.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-15.pkl"
+    },
+    {
+      "session": "2026-01-16",
+      "rows": 360,
+      "finite_net_labels": 29013,
+      "finite_mid_labels": 29013,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-16.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-16.pkl"
+    },
+    {
+      "session": "2026-01-20",
+      "rows": 360,
+      "finite_net_labels": 34512,
+      "finite_mid_labels": 34512,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-20.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-20.pkl"
+    },
+    {
+      "session": "2026-01-21",
+      "rows": 360,
+      "finite_net_labels": 32631,
+      "finite_mid_labels": 32631,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-21.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-21.pkl"
+    },
+    {
+      "session": "2026-01-22",
+      "rows": 360,
+      "finite_net_labels": 30645,
+      "finite_mid_labels": 30645,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-22.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-22.pkl"
+    },
+    {
+      "session": "2026-01-23",
+      "rows": 360,
+      "finite_net_labels": 30951,
+      "finite_mid_labels": 30951,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-23.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-23.pkl"
+    },
+    {
+      "session": "2026-01-26",
+      "rows": 360,
+      "finite_net_labels": 28872,
+      "finite_mid_labels": 28872,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-26.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-26.pkl"
+    },
+    {
+      "session": "2026-01-27",
+      "rows": 360,
+      "finite_net_labels": 27084,
+      "finite_mid_labels": 27084,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-27.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-27.pkl"
+    },
+    {
+      "session": "2026-01-28",
+      "rows": 360,
+      "finite_net_labels": 34389,
+      "finite_mid_labels": 34389,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-28.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-28.pkl"
+    },
+    {
+      "session": "2026-01-29",
+      "rows": 360,
+      "finite_net_labels": 31986,
+      "finite_mid_labels": 31986,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-29.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-29.pkl"
+    },
+    {
+      "session": "2026-01-30",
+      "rows": 360,
+      "finite_net_labels": 34428,
+      "finite_mid_labels": 34428,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-01-30.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-01-30.pkl"
+    },
+    {
+      "session": "2026-02-02",
+      "rows": 360,
+      "finite_net_labels": 29622,
+      "finite_mid_labels": 29622,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-02.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-02.pkl"
+    },
+    {
+      "session": "2026-02-03",
+      "rows": 360,
+      "finite_net_labels": 35052,
+      "finite_mid_labels": 35052,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-03.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-03.pkl"
+    },
+    {
+      "session": "2026-02-04",
+      "rows": 360,
+      "finite_net_labels": 33609,
+      "finite_mid_labels": 33609,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-04.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-04.pkl"
+    },
+    {
+      "session": "2026-02-05",
+      "rows": 360,
+      "finite_net_labels": 32622,
+      "finite_mid_labels": 32622,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-05.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-05.pkl"
+    },
+    {
+      "session": "2026-02-06",
+      "rows": 360,
+      "finite_net_labels": 31929,
+      "finite_mid_labels": 31929,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-06.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-06.pkl"
+    },
+    {
+      "session": "2026-02-09",
+      "rows": 360,
+      "finite_net_labels": 29562,
+      "finite_mid_labels": 29562,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-09.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-09.pkl"
+    },
+    {
+      "session": "2026-02-10",
+      "rows": 360,
+      "finite_net_labels": 30234,
+      "finite_mid_labels": 30234,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-10.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-10.pkl"
+    },
+    {
+      "session": "2026-02-11",
+      "rows": 360,
+      "finite_net_labels": 31212,
+      "finite_mid_labels": 31212,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-11.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-11.pkl"
+    },
+    {
+      "session": "2026-02-12",
+      "rows": 360,
+      "finite_net_labels": 33864,
+      "finite_mid_labels": 33864,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-12.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-12.pkl"
+    },
+    {
+      "session": "2026-02-13",
+      "rows": 360,
+      "finite_net_labels": 32079,
+      "finite_mid_labels": 32079,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-13.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-13.pkl"
+    },
+    {
+      "session": "2026-02-17",
+      "rows": 360,
+      "finite_net_labels": 32481,
+      "finite_mid_labels": 32481,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-17.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-17.pkl"
+    },
+    {
+      "session": "2026-02-18",
+      "rows": 360,
+      "finite_net_labels": 31509,
+      "finite_mid_labels": 31509,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-18.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-18.pkl"
+    },
+    {
+      "session": "2026-02-19",
+      "rows": 360,
+      "finite_net_labels": 32931,
+      "finite_mid_labels": 32931,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-19.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-19.pkl"
+    },
+    {
+      "session": "2026-02-20",
+      "rows": 360,
+      "finite_net_labels": 30732,
+      "finite_mid_labels": 30732,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-20.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-20.pkl"
+    },
+    {
+      "session": "2026-02-23",
+      "rows": 360,
+      "finite_net_labels": 32691,
+      "finite_mid_labels": 32691,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-23.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-23.pkl"
+    },
+    {
+      "session": "2026-02-24",
+      "rows": 360,
+      "finite_net_labels": 29646,
+      "finite_mid_labels": 29646,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-24.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-24.pkl"
+    },
+    {
+      "session": "2026-02-25",
+      "rows": 360,
+      "finite_net_labels": 26049,
+      "finite_mid_labels": 26049,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-25.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-25.pkl"
+    },
+    {
+      "session": "2026-02-26",
+      "rows": 360,
+      "finite_net_labels": 31953,
+      "finite_mid_labels": 31953,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-26.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-26.pkl"
+    },
+    {
+      "session": "2026-02-27",
+      "rows": 360,
+      "finite_net_labels": 33885,
+      "finite_mid_labels": 33885,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-02-27.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-02-27.pkl"
+    },
+    {
+      "session": "2026-03-02",
+      "rows": 360,
+      "finite_net_labels": 31485,
+      "finite_mid_labels": 31485,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-02.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-02.pkl"
+    },
+    {
+      "session": "2026-03-03",
+      "rows": 360,
+      "finite_net_labels": 32328,
+      "finite_mid_labels": 32328,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-03.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-03.pkl"
+    },
+    {
+      "session": "2026-03-04",
+      "rows": 360,
+      "finite_net_labels": 31105,
+      "finite_mid_labels": 31105,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-04.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-04.pkl"
+    },
+    {
+      "session": "2026-03-05",
+      "rows": 360,
+      "finite_net_labels": 33612,
+      "finite_mid_labels": 33612,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-05.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-05.pkl"
+    },
+    {
+      "session": "2026-03-06",
+      "rows": 360,
+      "finite_net_labels": 32598,
+      "finite_mid_labels": 32598,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-06.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-06.pkl"
+    },
+    {
+      "session": "2026-03-09",
+      "rows": 360,
+      "finite_net_labels": 32760,
+      "finite_mid_labels": 32760,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-09.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-09.pkl"
+    },
+    {
+      "session": "2026-03-10",
+      "rows": 360,
+      "finite_net_labels": 33174,
+      "finite_mid_labels": 33174,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-10.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-10.pkl"
+    },
+    {
+      "session": "2026-03-11",
+      "rows": 360,
+      "finite_net_labels": 33462,
+      "finite_mid_labels": 33462,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-11.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-11.pkl"
+    },
+    {
+      "session": "2026-03-12",
+      "rows": 360,
+      "finite_net_labels": 33030,
+      "finite_mid_labels": 33030,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-12.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-12.pkl"
+    },
+    {
+      "session": "2026-03-13",
+      "rows": 360,
+      "finite_net_labels": 32727,
+      "finite_mid_labels": 32727,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-13.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-13.pkl"
+    },
+    {
+      "session": "2026-03-16",
+      "rows": 360,
+      "finite_net_labels": 31659,
+      "finite_mid_labels": 31659,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-16.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-16.pkl"
+    },
+    {
+      "session": "2026-03-17",
+      "rows": 360,
+      "finite_net_labels": 30801,
+      "finite_mid_labels": 30801,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-17.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-17.pkl"
+    },
+    {
+      "session": "2026-03-18",
+      "rows": 360,
+      "finite_net_labels": 32835,
+      "finite_mid_labels": 32835,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-18.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-18.pkl"
+    },
+    {
+      "session": "2026-03-19",
+      "rows": 360,
+      "finite_net_labels": 32763,
+      "finite_mid_labels": 32763,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-19.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-19.pkl"
+    },
+    {
+      "session": "2026-03-20",
+      "rows": 360,
+      "finite_net_labels": 33699,
+      "finite_mid_labels": 33699,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-20.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-20.pkl"
+    },
+    {
+      "session": "2026-03-23",
+      "rows": 360,
+      "finite_net_labels": 32103,
+      "finite_mid_labels": 32103,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-23.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-23.pkl"
+    },
+    {
+      "session": "2026-03-24",
+      "rows": 360,
+      "finite_net_labels": 32820,
+      "finite_mid_labels": 32820,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-24.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-24.pkl"
+    },
+    {
+      "session": "2026-03-25",
+      "rows": 360,
+      "finite_net_labels": 32112,
+      "finite_mid_labels": 32112,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-25.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-25.pkl"
+    },
+    {
+      "session": "2026-03-26",
+      "rows": 360,
+      "finite_net_labels": 33729,
+      "finite_mid_labels": 33729,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-26.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-26.pkl"
+    },
+    {
+      "session": "2026-03-27",
+      "rows": 360,
+      "finite_net_labels": 33960,
+      "finite_mid_labels": 33960,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-27.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-27.pkl"
+    },
+    {
+      "session": "2026-03-30",
+      "rows": 360,
+      "finite_net_labels": 33837,
+      "finite_mid_labels": 33837,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-30.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-30.pkl"
+    },
+    {
+      "session": "2026-03-31",
+      "rows": 359,
+      "finite_net_labels": 33537,
+      "finite_mid_labels": 33537,
+      "input_path": "data/processed/spxw_0dte_neural_derived/2026-03-31.pkl",
+      "output_path": "data/processed/spxw_0dte_neural_derived_nofee/2026-03-31.pkl"
+    }
+  ]
+}

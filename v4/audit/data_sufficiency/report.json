@@ -1,0 +1,493 @@
+{
+  "v4": {
+    "raw": {
+      "definition": {
+        "path": "data/raw/databento/opra_spxw_definition",
+        "files": 61,
+        "rows": 1088932,
+        "sessions": 61,
+        "first_session": "2026-01-02",
+        "last_session": "2026-03-31"
+      },
+      "cbbo_1m": {
+        "path": "data/raw/databento/opra_spxw_cbbo_1m",
+        "files": 61,
+        "rows": 11140845,
+        "sessions": 61,
+        "first_session": "2026-01-02",
+        "last_session": "2026-03-31"
+      },
+      "ohlcv_1m": {
+        "path": "data/raw/databento/opra_spxw_ohlcv_1m",
+        "files": 61,
+        "rows": 2026868,
+        "sessions": 61,
+        "first_session": "2026-01-02",
+        "last_session": "2026-03-31"
+      },
+      "statistics": {
+        "path": "data/raw/databento/opra_spxw_statistics",
+        "files": 61,
+        "rows": 181526,
+        "sessions": 61,
+        "first_session": "2026-01-02",
+        "last_session": "2026-03-31"
+      },
+      "cbbo_1s_audit": {
+        "path": "data/raw/audit/opra_spxw_cbbo_1s",
+        "files": 10,
+        "rows": 16635213,
+        "sessions": 10,
+        "first_session": "2026-01-02",
+        "last_session": "2026-03-31"
+      },
+      "spx_1m": {
+        "path": "data/raw/index/spx_1m",
+        "files": 62,
+        "rows": 25094,
+        "sessions": 61,
+        "first_session": "2026-01-02",
+        "last_session": "2026-03-31"
+      },
+      "vix_1m": {
+        "path": "data/raw/index/vix_1m",
+        "files": 62,
+        "rows": 25013,
+        "sessions": 61,
+        "first_session": "2026-01-02",
+        "last_session": "2026-03-31"
+      }
+    },
+    "context_sources": {
+      "spx_1m": {
+        "files": 62,
+        "rows": 25094,
+        "sources": {
+          "spxw_put_call_parity": 23774,
+          "GLBX.MDP3:ES.FUT": 1320
+        },
+        "is_official_index_data": false
+      },
+      "vix_1m": {
+        "files": 62,
+        "rows": 25013,
+        "sources": {
+          "spxw_0dte_atm_iv": 23774,
+          "XCBF.PITCH:VX.FUT": 1239
+        },
+        "is_official_index_data": false
+      }
+    },
+    "normalized": {
+      "files": 61,
+      "sessions": 61,
+      "first_session": "2026-01-02",
+      "last_session": "2026-03-31",
+      "rows": 11140845,
+      "rows_by_month": {
+        "2026-01": 20,
+        "2026-02": 19,
+        "2026-03": 22
+      },
+      "rows_by_session_min": 144681,
+      "rows_by_session_median": 164004.0,
+      "rows_by_session_max": 433530,
+      "unique_contracts": 31350,
+      "roots": {
+        "SPXW": 11140845
+      },
+      "rights": {
+        "P": 5415720,
+        "C": 5725125
+      },
+      "settlement_styles": {
+        "PM": 11140845
+      },
+      "bad_root_rows": 0,
+      "bad_settlement_rows": 0,
+      "bad_strike_alignment_rows": 0,
+      "expiry_not_event_date_rows": 0,
+      "bidask_coverage": 0.699865853981453,
+      "mid_coverage": 0.699865853981453,
+      "invalid_bidask_rows": 0,
+      "crossed_bidask_rows": 0,
+      "bid_size_coverage": 1.0,
+      "ask_size_coverage": 1.0,
+      "ohlcv_volume_coverage": 0.18193126284406613,
+      "open_interest_coverage": 1.0,
+      "underlying_coverage": 0.9971860303235527,
+      "iv_coverage": 0.0,
+      "delta_coverage": 0.0,
+      "gamma_coverage": 0.0,
+      "theta_coverage": 0.0,
+      "quote_gap_populated_fraction": 0.0,
+      "quote_gap_lte_90s_fraction": null,
+      "quote_gap_seconds_p50": null,
+      "quote_gap_seconds_p95": null,
+      "spread_p50": 0.8000000000000114,
+      "spread_p95": 15.800000000000011
+    },
+    "neural": {
+      "files": 61,
+      "sessions": 61,
+      "first_session": "2026-01-02",
+      "last_session": "2026-03-31",
+      "sessions_by_month": {
+        "2026-01": 20,
+        "2026-02": 19,
+        "2026-03": 22
+      },
+      "decision_rows": 21959,
+      "decision_rows_by_split": {
+        "train": 7200,
+        "validation": 6840,
+        "test": 7919
+      },
+      "decision_rows_by_time_bucket": {
+        "first_30": 1769,
+        "post_open_morning": 5490,
+        "midday": 7319,
+        "late_afternoon": 7381
+      },
+      "decision_rows_per_session_min": 359,
+      "decision_rows_per_session_median": 360.0,
+      "decision_rows_per_session_max": 360,
+      "candidate_slots": 922278,
+      "candidate_mask_true": 638091,
+      "candidate_mask_true_fraction": 0.6918640583424954,
+      "candidate_count_per_row_p10": 22.0,
+      "candidate_count_per_row_p50": 30.0,
+      "candidate_count_per_row_p90": 33.0,
+      "latest_market_complete_fraction": 1.0,
+      "full_market_window_complete_fraction": 0.9194407759916208,
+      "label_names": [
+        "ask_to_bid_stop35_target60_hold10m",
+        "ask_to_bid_stop50_target100_hold25m",
+        "ask_to_bid_stop65_target150_hold45m"
+      ],
+      "option_feature_coverage": {
+        "ask": 1.0,
+        "ask_size": 1.0,
+        "bid": 1.0,
+        "bid_size": 1.0,
+        "breakeven_distance": 1.0,
+        "delta": 0.9998244764461496,
+        "distance_points": 1.0,
+        "gamma": 0.9998244764461496,
+        "iv": 0.9998244764461496,
+        "mid": 1.0,
+        "option_ohlcv_volume": 0.9800247927019814,
+        "spread": 1.0,
+        "spread_frac": 1.0,
+        "stat_open_interest": 1.0,
+        "theta": 0.9998244764461496
+      },
+      "finite_net_labels_by_policy": {
+        "ask_to_bid_stop35_target60_hold10m": 638091,
+        "ask_to_bid_stop50_target100_hold25m": 638087,
+        "ask_to_bid_stop65_target150_hold45m": 638078
+      },
+      "finite_mid_labels_by_policy": {
+        "ask_to_bid_stop35_target60_hold10m": 638091,
+        "ask_to_bid_stop50_target100_hold25m": 638087,
+        "ask_to_bid_stop65_target150_hold45m": 638078
+      },
+      "decision_rows_with_net_label_by_policy": {
+        "ask_to_bid_stop35_target60_hold10m": 21959,
+        "ask_to_bid_stop50_target100_hold25m": 21959,
+        "ask_to_bid_stop65_target150_hold45m": 21959
+      },
+      "net_vs_mid_abs_diff_p50": 15.000000000000028,
+      "net_vs_mid_abs_diff_p95": 50.0
+    }
+  },
+  "v3_v2": {
+    "v2_data": {
+      "exists": true,
+      "bars": 389160,
+      "days": 1002,
+      "first_day": "2022-04-11",
+      "last_day": "2026-04-24",
+      "days_by_year": {
+        "2022": 172,
+        "2023": 250,
+        "2024": 252,
+        "2025": 250,
+        "2026": 78
+      },
+      "feature_count": 89,
+      "metadata_version": "v5_exact_chain_slice",
+      "label_scheme": "exact_contract_fixed_risk_dynamic_slice",
+      "trade_window": "bar 30-270",
+      "chain_schema_version": "v5_exact_chain_v2_slice",
+      "execution_filters": {
+        "min_contract_mid": 0.5,
+        "max_spread_fraction": 0.18,
+        "require_volume_or_transactions": true
+      },
+      "risk_policy": {
+        "stop_pct": 0.35,
+        "target_pct": 0.5,
+        "max_hold_bars": 120,
+        "exit_policy": "TRAILING"
+      },
+      "label_trade_valid_mean": 0.6060412169801624,
+      "label_trade_mean": 0.5191258094357076,
+      "slice_label_trade_valid_mean": 0.6033662246890739,
+      "slice_label_trade_mean": 0.393509096515572,
+      "best_contract_pnl_mean": 0.18140641962810858,
+      "best_contract_pnl_p50": 0.04550982266664505,
+      "slice_best_contract_pnl_mean": 0.17596359154235372,
+      "slice_best_contract_pnl_p50": 0.04404187761247158
+    },
+    "sidecars": {
+      "path": "v2/data_sidecars",
+      "files_loaded": 1019,
+      "canonical_dates": 1002,
+      "duplicate_canonical_dates": [
+        "2024-04-15",
+        "2026-04-02",
+        "2026-04-06",
+        "2026-04-07",
+        "2026-04-08",
+        "2026-04-09",
+        "2026-04-10",
+        "2026-04-13",
+        "2026-04-14",
+        "2026-04-15",
+        "2026-04-16",
+        "2026-04-17",
+        "2026-04-20",
+        "2026-04-21",
+        "2026-04-22",
+        "2026-04-23",
+        "2026-04-24"
+      ],
+      "duplicate_canonical_date_count": 17,
+      "first_day": "2022-04-11",
+      "last_day": "2026-04-24",
+      "days_by_year": {
+        "2022": 172,
+        "2023": 250,
+        "2024": 252,
+        "2025": 250,
+        "2026": 78
+      },
+      "contracts_per_day_min": 145,
+      "contracts_per_day_median": 237.0,
+      "contracts_per_day_max": 655,
+      "bars_per_day_median": 390.0,
+      "bad_expiry_date_days": 0,
+      "bad_strike_alignment_contracts": 0,
+      "contract_bar_cells": 99615660,
+      "mid_coverage": 0.2349595535481068,
+      "bidask_coverage": 0.23484761331702264,
+      "crossed_bidask_cells": 0,
+      "quality_valid_fraction": 0.2349595535481068,
+      "quality_partial_fraction": 0.0,
+      "quality_corrupt_fraction": 0.7650404464518932,
+      "bidask_provenance": "proxy: v2/pipeline/build_v2_dataset.py computes bid/ask from Polygon minute close +/- spread_fraction_proxy(close, high, low) / 2"
+    },
+    "action_surface_full": {
+      "exists": true,
+      "path": "v3/artifacts/layer2_action_surface_dataset.pkl",
+      "rows": 91148,
+      "days": 1002,
+      "first_day": "2022-04-11",
+      "last_day": "2026-04-24",
+      "days_by_year": {
+        "2022": 172,
+        "2023": 250,
+        "2024": 252,
+        "2025": 250,
+        "2026": 78
+      },
+      "execution_window": {
+        "start_bar": 15,
+        "end_bar": 120,
+        "label": "09:45-11:30 ET"
+      },
+      "top_k_contracts_per_side": 12,
+      "n_action_contract_tokens": 24,
+      "contract_selection_mode": "risk_band",
+      "label_timing": {
+        "decision_bar_observed": "bar_t",
+        "entry_fill_bar": "bar_t_plus_1",
+        "reason": "live executable decisions observe a completed bar before sending an order"
+      },
+      "utility_horizon_bars": 60,
+      "contract_feature_names": [
+        "right_is_call",
+        "strike_offset_pct",
+        "premium",
+        "delta",
+        "abs_delta",
+        "spread_fraction",
+        "gamma_dollar",
+        "theta_to_premium",
+        "selection_score",
+        "slot_role",
+        "moneyness_bucket",
+        "risk_band",
+        "passed",
+        "premium_cap_ok",
+        "premium_floor_ok",
+        "delta_floor_ok",
+        "spread_cap_ok"
+      ],
+      "action_label_names": [
+        "utility_raw",
+        "utility_arcsinh",
+        "best_exit_pnl",
+        "horizon_pnl",
+        "return_on_premium",
+        "win_label",
+        "entry_fill_bar",
+        "entry_fill_mid",
+        "entry_spread_fraction",
+        "spread_cost",
+        "hybrid_live_utility",
+        "hybrid_live_utility_arcsinh",
+        "mfe_5",
+        "mae_5",
+        "mfe_10",
+        "mae_10",
+        "mfe_20",
+        "mae_20",
+        "clean_entry",
+        "stopout_risk",
+        "available_mask",
+        "tradeable_mask"
+      ],
+      "tokens_per_row_mean": 23.790823715276254,
+      "tradeable_actions_per_row_mean": 13.463981656207487,
+      "available_actions_per_row_mean": 23.790823715276254,
+      "rows_with_any_tradeable_action": 0.992462807741256,
+      "entry_fill_mid_finite_fraction": 0.9319458463158818,
+      "entry_fill_mid_p50": 7.900000095367432,
+      "entry_spread_fraction_finite_fraction": 0.9319458463158818,
+      "entry_spread_fraction_p50": 0.03500000014901161,
+      "spread_cost_finite_fraction": 0.9319458463158818,
+      "spread_cost_p50": 28.349998474121094,
+      "horizon_pnl_finite_fraction": 0.9316971665130703,
+      "horizon_pnl_p50": -98.73199462890625,
+      "hybrid_live_utility_finite_fraction": 0.9317607078597446,
+      "hybrid_live_utility_p50": -300.1357116699219,
+      "best_exit_pnl_finite_fraction": 0.9317607078597446,
+      "best_exit_pnl_p50": 315.52838134765625
+    },
+    "action_surface_live_0945_1130": {
+      "exists": true,
+      "path": "v3/artifacts/layer2_action_surface_dataset_spx_live_0945_1130.pkl",
+      "rows": 89692,
+      "days": 986,
+      "first_day": "2022-04-11",
+      "last_day": "2026-04-01",
+      "days_by_year": {
+        "2022": 172,
+        "2023": 250,
+        "2024": 252,
+        "2025": 250,
+        "2026": 62
+      },
+      "execution_window": {
+        "start_bar": 15,
+        "end_bar": 120,
+        "label": "09:45-11:30 ET"
+      },
+      "top_k_contracts_per_side": 12,
+      "n_action_contract_tokens": 24,
+      "contract_selection_mode": "risk_band",
+      "label_timing": {
+        "decision_bar_observed": "bar_t",
+        "entry_fill_bar": "bar_t_plus_1",
+        "reason": "live executable decisions observe a completed bar before sending an order"
+      },
+      "utility_horizon_bars": 60,
+      "contract_feature_names": [
+        "right_is_call",
+        "strike_offset_pct",
+        "premium",
+        "delta",
+        "abs_delta",
+        "spread_fraction",
+        "gamma_dollar",
+        "theta_to_premium",
+        "selection_score",
+        "slot_role",
+        "moneyness_bucket",
+        "risk_band",
+        "passed",
+        "premium_cap_ok",
+        "premium_floor_ok",
+        "delta_floor_ok",
+        "spread_cap_ok"
+      ],
+      "action_label_names": [
+        "utility_raw",
+        "utility_arcsinh",
+        "best_exit_pnl",
+        "horizon_pnl",
+        "return_on_premium",
+        "win_label",
+        "entry_fill_bar",
+        "entry_fill_mid",
+        "entry_spread_fraction",
+        "spread_cost",
+        "hybrid_live_utility",
+        "hybrid_live_utility_arcsinh",
+        "mfe_5",
+        "mae_5",
+        "mfe_10",
+        "mae_10",
+        "mfe_20",
+        "mae_20",
+        "clean_entry",
+        "stopout_risk",
+        "available_mask",
+        "tradeable_mask"
+      ],
+      "tokens_per_row_mean": 23.78814164028007,
+      "tradeable_actions_per_row_mean": 13.438991214378094,
+      "available_actions_per_row_mean": 23.78814164028007,
+      "rows_with_any_tradeable_action": 0.9926414841903403,
+      "entry_fill_mid_finite_fraction": 0.9312303958732848,
+      "entry_fill_mid_p50": 7.900000095367432,
+      "entry_spread_fraction_finite_fraction": 0.9312303958732848,
+      "entry_spread_fraction_p50": 0.0348692387342453,
+      "spread_cost_finite_fraction": 0.9312303958732848,
+      "spread_cost_p50": 28.000001907348633,
+      "horizon_pnl_finite_fraction": 0.9309776791687107,
+      "horizon_pnl_p50": -98.00760269165039,
+      "hybrid_live_utility_finite_fraction": 0.9310422520031515,
+      "hybrid_live_utility_p50": -298.3401184082031,
+      "best_exit_pnl_finite_fraction": 0.9310422520031515,
+      "best_exit_pnl_p50": 314.9999694824219
+    }
+  },
+  "cross_dataset": {
+    "v4_high_quality_executable_days": 61,
+    "v4_decision_rows": 21959,
+    "v4_candidate_slots": 922278,
+    "v3_historical_days": 1002,
+    "v3_action_surface_rows": 89692,
+    "v3_safe_use": [
+      "regime priors",
+      "time-of-day priors",
+      "architecture pretraining or ablations",
+      "feature importance triage"
+    ],
+    "v3_unsafe_use_without_relabeling": [
+      "final executable PnL",
+      "bid/ask microstructure edge claims",
+      "broad purchase gate for Databento-quality data"
+    ],
+    "v4_safe_use": [
+      "executable ask-entry / bid-exit labels",
+      "SPXW PM-settled 0DTE neural prototype",
+      "small-sample holdout gates",
+      "calibration experiments before spending more"
+    ],
+    "enough_data_verdict": "Enough data for a serious prototype and data-quality falsification; not enough Databento-quality months for a robust broad-market neural edge claim."
+  }
+}

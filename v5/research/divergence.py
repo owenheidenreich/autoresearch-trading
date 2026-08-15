@@ -343,13 +343,26 @@ _AXES: tuple[Axis, ...] = (
     Axis(
         name="clock_and_dst",
         group=TIMING,
-        status=UNKNOWN,
+        status=PROVEN_EQUAL,
         summary=(
             "Conversions between UTC storage, Eastern market time and Pacific "
             "machine time, across both daylight-saving transitions. An "
-            "off-by-one-hour error looks exactly like a real regime change."
+            "off-by-one-hour error looks exactly like a real regime change. "
+            "Settled 2026-08-12: the corpus stores UTC and the loader converts "
+            "per-timestamp, so the local trading day is stable across both "
+            "changes."
         ),
-        evidence="UNKNOWN - no fixture covers a transition date",
+        evidence=(
+            "v5/tests/test_divergence.py::"
+            "test_the_same_market_minute_maps_to_the_same_bar_across_both_dst_changes "
+            "covers 2025-10-31/11-03 (fall back) and 2026-03-06/03-09 (spring "
+            "forward). The stored UTC open hour differs by exactly one across "
+            "each pair -- 13:30 against 14:30 -- so the fixture is not vacuous, "
+            "and after conversion both sides open 09:30, close 15:59, carry 390 "
+            "bars, and place every probed minute at the same bar index. A "
+            "companion test pins the mechanism: no owned bar falls before 03:00 "
+            "local, so no bar can land in an ambiguous or skipped hour."
+        ),
         settles_when=(
             "Fixtures cover both 2025-11 and 2026-03 transitions and prove the "
             "same wall-clock minute maps to the same bar on either side."
@@ -387,19 +400,86 @@ _AXES: tuple[Axis, ...] = (
         ),
     ),
     Axis(
-        name="slippage_accounting",
-        group=EXECUTION,
-        status=UNKNOWN,
+        name="option_payoff_source_schema",
+        group=INPUT_CONSTRUCTION,
+        status=PROVEN_EQUAL,
         summary=(
-            "Whether slippage is counted once, twice or not at all. The frozen "
-            "friction knob is documented as a spread, fee and slippage study, "
-            "while the candidate packet takes a separate per-side slippage "
-            "argument that defaults to zero."
+            "Whether a payoff measured from quotes and the same payoff measured "
+            "from trade bars describe the same thing. Settled 2026-08-13: they "
+            "do. On identical sessions the near-ATM break-even is 50.57% from "
+            "mids and 50.62% from last trades -- a 0.05-point difference -- and "
+            "liquidity selection is nil, because 100% of near-ATM quoted "
+            "contracts traded in both the entry and exit minute anyway."
         ),
         evidence=(
-            "knobs.es_round_trip_friction_points unfreeze_condition names "
-            "slippage; v5/research/validation/candidate_packet.py takes "
-            "slippage_per_side_points with default 0.0."
+            "Three-way decomposition on the owned quote corpus 2026-08-13: "
+            "(a) mid over all quoted contracts 50.57%, (b) mid restricted to "
+            "contracts that traded at both minutes 50.57%, (c) last trade on the "
+            "same restricted set 50.62%, over 4,638 near-ATM observations. The "
+            "7.7-point gap against the OHLCV corpus is therefore NOT a schema "
+            "artifact; see option_payoff_regime_stability."
+        ),
+        settles_when=(
+            "The quote and trade-bar sources are compared on identical sessions "
+            "with liquidity selection held constant."
+        ),
+        binds_at_gate="G2",
+    ),
+    Axis(
+        name="option_payoff_regime_stability",
+        group=INPUT_CONSTRUCTION,
+        status=MEASURED_DIFFERENT,
+        summary=(
+            "The option payoff structure is NOT stationary across eras. The "
+            "near-ATM break-even is 59.58% on 2022-23 sessions and 50.57% on "
+            "2025-26 sessions -- a 9-point swing in the bar every option gate is "
+            "judged against, on the same instrument and the same measurement."
+        ),
+        evidence=(
+            "1,852 near-ATM observations over 115 sessions from 2022-06 onward "
+            "give 59.58% with a bootstrap 95% CI of 57.58%..61.71%. The 2025-26 "
+            "quote-corpus figure of 50.57% lies OUTSIDE that interval, so this is "
+            "neither sampling noise nor the source schema, both of which were "
+            "excluded first."
+        ),
+        settles_when=(
+            "A declared rule for which era's payoff structure a candidate is "
+            "judged against, and a per-era report alongside any pooled figure, "
+            "so an edge that exists only in one regime cannot hide in an average."
+        ),
+        binds_at_gate="G2",
+        repair=(
+            "Report the break-even and the payoff pair per era on every option "
+            "packet, never pooled alone. A pooled bar is only meaningful if the "
+            "candidate is expected to trade across all the eras it pools, and "
+            "that expectation has to be stated rather than assumed. Measured "
+            "2026-08-13 over 749 sessions: break-even tracks the hourly decay at "
+            "r = -0.934 across half-year periods, and decay is WEAKLY predictable "
+            "from the entry premium as a share of spot (r = -0.191), which IS "
+            "observable at 09:35. The richest premium quartile decays -13.3% "
+            "against -7.1% for the cheapest, so 'avoid the richest quartile' is a "
+            "causal entry-time filter rather than hindsight. The relationship is "
+            "not monotone across all four quartiles, so it is a partial control, "
+            "not a solution."
+        ),
+        knob_names=("near_atm_correct_call_dollars", "near_atm_wrong_call_dollars"),
+    ),
+Axis(
+        name="slippage_accounting",
+        group=EXECUTION,
+        status=MEASURED_DIFFERENT,
+        summary=(
+            "Slippage is counted NOT AT ALL, anywhere -- not twice, as the "
+            "wording of three documents implied. No frozen cost constant "
+            "contains a slippage term, and the candidate packet's slippage "
+            "input defaults to zero. The live difference that remains is the "
+            "packet's default cost of $3.08 per option round trip against a "
+            "measured aggressive round trip of $26.48, 8.6x larger."
+        ),
+        evidence=(
+            "Decomposed 2026-08-12: ES 0.358 points = 0.26835 measured spread "
+            "+ 0.09 assumed commission + 0.0 slippage. See "
+            "v5/research/findings/FRICTION_DECOMPOSITION_2026_08_12.md."
         ),
         settles_when=(
             "The friction knob's composition is decomposed into spread, fee and "
@@ -408,6 +488,16 @@ _AXES: tuple[Axis, ...] = (
             "counting."
         ),
         binds_at_gate="G5",
+        repair=(
+            "The decomposition is written down and the two wording errors are "
+            "corrected. candidate_packet.export_candidate_packet now emits a "
+            "cost_model block naming components_charged, components_omitted and "
+            "excludes_spread_crossing, so a fee-only export cannot be read as "
+            "full friction. Any option candidate judged at G5 must set "
+            "slippage_per_side_points to the spread it would actually cross; "
+            "the argument is additive, not a double count, because nothing else "
+            "charges spread."
+        ),
     ),
     Axis(
         name="quote_age_at_execution",
@@ -430,17 +520,23 @@ _AXES: tuple[Axis, ...] = (
     Axis(
         name="reconnects_and_gaps",
         group=EXECUTION,
-        status=UNKNOWN,
+        status=PROVEN_EQUAL,
         summary=(
             "Reconnects, duplicates, corrections and sequence gaps legitimately "
-            "change what input has arrived. They do not waive parity: live must "
-            "fail closed to WAIT, preserve the sealed decision, and log the "
-            "divergence."
+            "change what input has arrived. They do not waive parity: the live "
+            "path fails closed rather than emitting. Settled 2026-08-13 with a "
+            "boundary fixture for each of the four."
         ),
         evidence=(
-            "Specified in v5/research/findings/GATE_CHAIN_AUDIT_2026_08_05.md "
-            "section 8; StreamReadiness discards the first interval after any "
-            "reconnect. Never tested end to end."
+            "v5/tests/test_training_twin.py -- a reconnect discards the first "
+            "interval (StreamReadiness.reconnect resets the warm-up); a duplicate "
+            "boundary row is refused rather than deduplicated, because two rows "
+            "claiming one completed interval is ambiguity not a choice; a "
+            "sequence gap is refused rather than interpolated from a neighbour; "
+            "and a correction received after the emission instant cannot be "
+            "consumed, while the same row received in time is accepted -- so the "
+            "refusal is about arrival, not about the row being malformed. "
+            "Emitting before definitions load is refused outright."
         ),
         settles_when=(
             "Boundary fixtures for a reconnect, a duplicate, a correction and a "

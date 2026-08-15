@@ -1,0 +1,35 @@
+{
+  "spx": {
+    "directory": "data/raw/index/spx_1m",
+    "files": 312,
+    "rows": 122460,
+    "sessions": 312,
+    "first_session": "2025-01-02",
+    "last_session": "2026-03-31",
+    "official_rows": 0,
+    "derived_rows": 121140,
+    "proxy_rows": 1320,
+    "official_fraction": 0.0,
+    "source_counts": {
+      "GLBX.MDP3:ES.FUT": 1320,
+      "spxw_put_call_parity": 121140
+    }
+  },
+  "vix": {
+    "directory": "data/raw/index/vix_1m",
+    "files": 312,
+    "rows": 122379,
+    "sessions": 312,
+    "first_session": "2025-01-02",
+    "last_session": "2026-03-31",
+    "official_rows": 0,
+    "derived_rows": 121140,
+    "proxy_rows": 1239,
+    "official_fraction": 0.0,
+    "source_counts": {
+      "XCBF.PITCH:VX.FUT": 1239,
+      "spxw_0dte_atm_iv": 121140
+    }
+  },
+  "promotion_grade": false
+}

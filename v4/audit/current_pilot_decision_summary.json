@@ -1,0 +1,711 @@
+{
+  "conclusion": "The v4 data stack is usable and the first time-aware action model found a promising time-window-sensitive structure. A fresh Q4 2025 frozen holdout rejected both current Jan-Mar champions, so the broad data-purchase signal is not cleared. Continue model iteration on the existing data; do not spend more credits until a pre-registered model change survives the protected holdouts.",
+  "environment_caveat": "Jan-Mar 2026 is real market truth, but only one environment slice. The goal is to train across all market environments over time, not to freeze the system around this slice.",
+  "candidate_policy_summary": [
+    {
+      "policy": "policy0_stop35_target60_hold10m",
+      "neural_trades": 35,
+      "neural_total_pnl": -60.0,
+      "neural_profit_factor": 0.93717277486911,
+      "neural_max_drawdown": -464.0,
+      "random_mean_pnl": -18490.5,
+      "atm_call_pnl": -36264.0,
+      "atm_put_pnl": -11149.0,
+      "vwap_omar_pnl": -26308.0,
+      "clears_gate": false
+    },
+    {
+      "policy": "policy1_stop50_target100_hold25m",
+      "neural_trades": 38,
+      "neural_total_pnl": -401.0,
+      "neural_profit_factor": 0.7733182589033352,
+      "neural_max_drawdown": -1146.0,
+      "random_mean_pnl": -13248.5,
+      "atm_call_pnl": -25455.0,
+      "atm_put_pnl": -3220.0,
+      "vwap_omar_pnl": -5752.0,
+      "clears_gate": false
+    },
+    {
+      "policy": "policy2_stop65_target150_hold45m",
+      "neural_trades": 13,
+      "neural_total_pnl": -541.0,
+      "neural_profit_factor": 0.040780141843971635,
+      "neural_max_drawdown": -564.0,
+      "random_mean_pnl": -11556.75,
+      "atm_call_pnl": -24682.0,
+      "atm_put_pnl": 4968.0,
+      "vwap_omar_pnl": -1465.0,
+      "clears_gate": false
+    }
+  ],
+  "timeaware_action_policy2_all_times": {
+    "trades": 176,
+    "total_pnl": 10473.0,
+    "avg_pnl": 59.50568181818182,
+    "median_pnl": -182.0,
+    "win_rate": 0.4318181818181818,
+    "profit_factor": 1.1684168207767147,
+    "max_drawdown": -8867.0,
+    "sessions_traded": 22,
+    "mean_daily_pnl": 476.04545454545456,
+    "median_daily_pnl": 496.5,
+    "positive_day_fraction": 0.5909090909090909
+  },
+  "timeaware_action_policy2_time_filters": {
+    "all_times": {
+      "trades": 176,
+      "total_pnl": 10473.0,
+      "avg_pnl": 59.50568181818182,
+      "median_pnl": -182.0,
+      "win_rate": 0.4318181818181818,
+      "profit_factor": 1.1684168207767147,
+      "max_drawdown": -8867.0,
+      "sessions_traded": 22,
+      "mean_daily_pnl": 476.04545454545456,
+      "median_daily_pnl": 496.5,
+      "positive_day_fraction": 0.5909090909090909
+    },
+    "skip_first_30": {
+      "trades": 154,
+      "total_pnl": 17427.0,
+      "avg_pnl": 113.16233766233766,
+      "median_pnl": -137.0,
+      "win_rate": 0.44805194805194803,
+      "profit_factor": 1.3722524831784684,
+      "max_drawdown": -5611.0,
+      "sessions_traded": 22,
+      "mean_daily_pnl": 792.1363636363636,
+      "median_daily_pnl": 1206.0,
+      "positive_day_fraction": 0.6818181818181818
+    },
+    "post_open_and_late": {
+      "trades": 89,
+      "total_pnl": 15107.0,
+      "avg_pnl": 169.74157303370785,
+      "median_pnl": -132.0,
+      "win_rate": 0.4606741573033708,
+      "profit_factor": 1.559497796377912,
+      "max_drawdown": -4051.0,
+      "sessions_traded": 22,
+      "mean_daily_pnl": 686.6818181818181,
+      "median_daily_pnl": 1037.0,
+      "positive_day_fraction": 0.5909090909090909
+    },
+    "late_afternoon_only": {
+      "trades": 45,
+      "total_pnl": 8545.0,
+      "avg_pnl": 189.88888888888889,
+      "median_pnl": 158.0,
+      "win_rate": 0.5333333333333333,
+      "profit_factor": 1.8322781727865978,
+      "max_drawdown": -1880.0,
+      "sessions_traded": 22,
+      "mean_daily_pnl": 388.40909090909093,
+      "median_daily_pnl": 251.0,
+      "positive_day_fraction": 0.5909090909090909
+    },
+    "post_open_only": {
+      "trades": 44,
+      "total_pnl": 6562.0,
+      "avg_pnl": 149.13636363636363,
+      "median_pnl": -242.0,
+      "win_rate": 0.38636363636363635,
+      "profit_factor": 1.3921357714832079,
+      "max_drawdown": -6426.0,
+      "sessions_traded": 22,
+      "mean_daily_pnl": 298.27272727272725,
+      "median_daily_pnl": -64.0,
+      "positive_day_fraction": 0.5
+    }
+  },
+  "calibrated_abstention_envpriors": {
+    "report": "v4/audit/calibrated_abstention_signal_envpriors/report.md",
+    "recommendation": "no_broad_purchase_yet_continue_existing_data_iteration",
+    "summary": [
+      {
+        "policy": "policy0_stop35_target60_hold10m",
+        "runs": 10,
+        "test_pnl_median": 56.5,
+        "test_profit_factor_median": 1.009916067093348,
+        "test_max_drawdown_median": -2508.0,
+        "test_trades_median": 45.0,
+        "positive_seed_fraction": 0.5,
+        "positive_day_fraction_median": 0.46862745098039216,
+        "top_day_profit_share_median": 0.30430026207769106,
+        "passes_broad_purchase_gate": false
+      },
+      {
+        "policy": "policy1_stop50_target100_hold25m",
+        "runs": 10,
+        "test_pnl_median": 1679.0,
+        "test_profit_factor_median": 1.1128142555877392,
+        "test_max_drawdown_median": -3720.0,
+        "test_trades_median": 45.5,
+        "positive_seed_fraction": 0.7,
+        "positive_day_fraction_median": 0.41883116883116883,
+        "top_day_profit_share_median": 0.2657816491353914,
+        "passes_broad_purchase_gate": false
+      },
+      {
+        "policy": "policy2_stop65_target150_hold45m",
+        "runs": 10,
+        "test_pnl_median": -273.5,
+        "test_profit_factor_median": 1.0013430287268994,
+        "test_max_drawdown_median": -4874.0,
+        "test_trades_median": 44.0,
+        "positive_seed_fraction": 0.5,
+        "positive_day_fraction_median": 0.45454545454545453,
+        "top_day_profit_share_median": 0.2761773910205335,
+        "passes_broad_purchase_gate": false
+      }
+    ]
+  },
+  "autoresearch_loop_001": {
+    "program": "v4/autoresearch/program.md",
+    "report": "v4/audit/autoresearch/v4_autoresearch_001/report.md",
+    "selection_protocol": "Champion selected from floor-eligible trials using only the second half of February validation sessions; March is audit-only.",
+    "champion": {
+      "policy": "policy1_stop50_target100_hold25m",
+      "trial": "skip_first30_edge0_max4_stop1000",
+      "selection_pnl_median": 1152.0,
+      "selection_profit_factor_median": 1.1588965517241379,
+      "selection_positive_day_fraction_median": 0.5,
+      "selection_trades_median": 32.0,
+      "selection_top_day_profit_share_median": 0.39521367521367523,
+      "audit_test_pnl_median": 1687.0,
+      "audit_test_profit_factor_median": 1.1812614161383905,
+      "audit_test_max_drawdown_median": -2358.0,
+      "audit_test_trades_median": 42.0,
+      "audit_test_positive_seed_fraction": 1.0,
+      "audit_test_positive_day_fraction_median": 0.625,
+      "audit_test_top_day_profit_share_median": 0.28861226371599813
+    },
+    "interpretation": "Useful modeling lead, not a broad-purchase or live-trading signal."
+  },
+  "decision_aware_no_trade_loss_v1": {
+    "report": "v4/audit/autoresearch/v4_autoresearch_001_decision_loss/report.md",
+    "loss": "Huber regression plus best-action classification, false-positive trade margin, and missed-trade margin.",
+    "comparison": {
+      "huber_q_regression_baseline": {
+        "champion": "policy1_stop50_target100_hold25m / skip_first30_edge0_max4_stop1000",
+        "selection_pnl_median": 1152.0,
+        "selection_profit_factor_median": 1.1588965517241379,
+        "selection_trades_median": 32.0,
+        "audit_test_pnl_median": 1687.0,
+        "audit_test_profit_factor_median": 1.1812614161383905,
+        "audit_test_trades_median": 42.0,
+        "audit_test_positive_seed_fraction": 1.0
+      },
+      "decision_aware_loss_v1": {
+        "champion": "policy1_stop50_target100_hold25m / post_open_late_edge25_max4",
+        "selection_pnl_median": 1656.0,
+        "selection_profit_factor_median": 1.429460580912863,
+        "selection_trades_median": 17.0,
+        "audit_test_pnl_median": 160.0,
+        "audit_test_profit_factor_median": 1.11889035667107,
+        "audit_test_trades_median": 15.0,
+        "audit_test_positive_seed_fraction": 0.6666666666666666
+      }
+    },
+    "interpretation": "Decision-aware loss v1 improved February selection but degraded the protected March audit; it is not a confirmed improvement."
+  },
+  "q4_2025_frozen_holdout_audit": {
+    "download_audit": "v4/audit/databento_q4_2025_downloads.jsonl",
+    "build_summary": "v4/audit/q4_2025_neural_build_summary.json",
+    "audit_report": "v4/audit/autoresearch/q4_2025_frozen_audit/report.md",
+    "date_range": {
+      "start": "2025-10-01",
+      "end": "2025-12-31"
+    },
+    "download_estimated_cost_usd": 31.4731,
+    "sessions_built": 64,
+    "sessions_skipped": [
+      "2025-11-27",
+      "2025-12-25"
+    ],
+    "quality_caveats": [
+      "Databento warned that 2025-10-22 had degraded data quality.",
+      "Q4 is audit-only and must not be used to retune thresholds, time windows, loss weights, or selection knobs."
+    ],
+    "data_totals": {
+      "definition_rows": 1103280,
+      "cbbo_rows": 11594235,
+      "ohlcv_rows": 1901889,
+      "statistics_rows": 186590,
+      "normalized_rows": 11594235,
+      "derived_spx_rows": 24573,
+      "derived_vix_rows": 24573,
+      "neural_rows": 22719
+    },
+    "frozen_champions": {
+      "huber_q_autoresearch_001_champion": {
+        "source_report": "v4/audit/autoresearch/v4_autoresearch_001/report.md",
+        "policy": "policy1_stop50_target100_hold25m",
+        "loss_mode": "huber",
+        "feature_version": "action_v1",
+        "trial": "skip_first30_edge0_max4_stop1000",
+        "q4_pnl_median": -13691.0,
+        "q4_profit_factor_median": 0.5969912566432367,
+        "q4_max_drawdown_median": -14343.0,
+        "q4_trades_median": 188.0,
+        "q4_positive_seed_fraction": 0.0,
+        "q4_positive_day_fraction_median": 0.34375,
+        "q4_top_day_profit_share_median": 0.13979895755770663
+      },
+      "decision_aware_v1_champion": {
+        "source_report": "v4/audit/autoresearch/v4_autoresearch_001_decision_loss/report.md",
+        "policy": "policy1_stop50_target100_hold25m",
+        "loss_mode": "decision_aware",
+        "feature_version": "action_v2_decision_aware",
+        "trial": "post_open_late_edge25_max4",
+        "q4_pnl_median": -2337.0,
+        "q4_profit_factor_median": 0.7015826738858809,
+        "q4_max_drawdown_median": -4758.0,
+        "q4_trades_median": 51.0,
+        "q4_positive_seed_fraction": 0.0,
+        "q4_positive_day_fraction_median": 0.35714285714285715,
+        "q4_top_day_profit_share_median": 0.19618320610687023
+      }
+    },
+    "interpretation": "Q4 2025 rejects the current Jan-Mar champions as broad/generalizable trading signals. Preserve remaining credits for narrow pre-registered audits after model changes, not broad data collection by default."
+  },
+  "best_validation_selected_environment_rules": [
+    {
+      "rule": "P|above_vwap=True|momentum_15m_sign=positive|time_bucket=late_afternoon",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 31,
+        "total_pnl": 1253.0,
+        "avg_pnl": 40.41935483870968,
+        "median_pnl": -202.0,
+        "win_rate": 0.45161290322580644,
+        "profit_factor": 1.1785154580424562,
+        "max_drawdown": -1712.0,
+        "sessions_traded": 15,
+        "mean_daily_pnl": 83.53333333333333,
+        "median_daily_pnl": -84.0,
+        "positive_day_fraction": 0.4666666666666667
+      },
+      "test": {
+        "trades": 32,
+        "total_pnl": 3776.0,
+        "avg_pnl": 118.0,
+        "median_pnl": -102.0,
+        "win_rate": 0.46875,
+        "profit_factor": 1.439888164026095,
+        "max_drawdown": -2882.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": 222.11764705882354,
+        "median_daily_pnl": 318.0,
+        "positive_day_fraction": 0.7058823529411765
+      }
+    },
+    {
+      "rule": "P|above_vwap=True|momentum_15m_sign=flat|time_bucket=late_afternoon",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "late_afternoon"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 330.0,
+        "avg_pnl": 11.0,
+        "median_pnl": -204.5,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 1.0450204638472034,
+        "max_drawdown": -2851.0,
+        "sessions_traded": 14,
+        "mean_daily_pnl": 23.571428571428573,
+        "median_daily_pnl": -182.5,
+        "positive_day_fraction": 0.42857142857142855
+      },
+      "test": {
+        "trades": 25,
+        "total_pnl": 1815.0,
+        "avg_pnl": 72.6,
+        "median_pnl": -182.0,
+        "win_rate": 0.48,
+        "profit_factor": 1.302449591734711,
+        "max_drawdown": -1476.0,
+        "sessions_traded": 12,
+        "mean_daily_pnl": 151.25,
+        "median_daily_pnl": 131.0,
+        "positive_day_fraction": 0.6666666666666666
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=flat|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "flat"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 35,
+        "total_pnl": 1090.0,
+        "avg_pnl": 31.142857142857142,
+        "median_pnl": -52.0,
+        "win_rate": 0.4857142857142857,
+        "profit_factor": 1.1180164573408402,
+        "max_drawdown": -3516.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 57.36842105263158,
+        "median_daily_pnl": -54.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 43,
+        "total_pnl": 894.0,
+        "avg_pnl": 20.790697674418606,
+        "median_pnl": -212.0,
+        "win_rate": 0.4186046511627907,
+        "profit_factor": 1.0481421647819062,
+        "max_drawdown": -9578.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": 40.63636363636363,
+        "median_daily_pnl": -754.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "P|above_vwap=False|momentum_15m_sign=negative|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 360.0,
+        "avg_pnl": 12.0,
+        "median_pnl": -12.0,
+        "win_rate": 0.4666666666666667,
+        "profit_factor": 1.0348432055749128,
+        "max_drawdown": -6250.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 27.692307692307693,
+        "median_daily_pnl": -84.0,
+        "positive_day_fraction": 0.46153846153846156
+      },
+      "test": {
+        "trades": 40,
+        "total_pnl": 650.0,
+        "avg_pnl": 16.25,
+        "median_pnl": -172.0,
+        "win_rate": 0.375,
+        "profit_factor": 1.0522088353413654,
+        "max_drawdown": -5280.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": 36.111111111111114,
+        "median_daily_pnl": -336.0,
+        "positive_day_fraction": 0.3888888888888889
+      }
+    },
+    {
+      "rule": "C|above_vwap=False|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 31,
+        "total_pnl": 5678.0,
+        "avg_pnl": 183.16129032258064,
+        "median_pnl": 88.0,
+        "win_rate": 0.5483870967741935,
+        "profit_factor": 1.456137532133676,
+        "max_drawdown": -3520.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": 334.0,
+        "median_daily_pnl": -224.0,
+        "positive_day_fraction": 0.4117647058823529
+      },
+      "test": {
+        "trades": 37,
+        "total_pnl": 546.0,
+        "avg_pnl": 14.756756756756756,
+        "median_pnl": -312.0,
+        "win_rate": 0.35135135135135137,
+        "profit_factor": 1.0353672755538281,
+        "max_drawdown": -10532.0,
+        "sessions_traded": 20,
+        "mean_daily_pnl": 27.3,
+        "median_daily_pnl": -254.0,
+        "positive_day_fraction": 0.45
+      }
+    },
+    {
+      "rule": "C|above_vwap=False|momentum_15m_sign=negative|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 30,
+        "total_pnl": 6740.0,
+        "avg_pnl": 224.66666666666666,
+        "median_pnl": 58.0,
+        "win_rate": 0.5333333333333333,
+        "profit_factor": 1.5493968046951418,
+        "max_drawdown": -3340.0,
+        "sessions_traded": 17,
+        "mean_daily_pnl": 396.47058823529414,
+        "median_daily_pnl": -34.0,
+        "positive_day_fraction": 0.4117647058823529
+      },
+      "test": {
+        "trades": 35,
+        "total_pnl": 250.0,
+        "avg_pnl": 7.142857142857143,
+        "median_pnl": -292.0,
+        "win_rate": 0.34285714285714286,
+        "profit_factor": 1.0179262871074144,
+        "max_drawdown": -9340.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 13.157894736842104,
+        "median_daily_pnl": -104.0,
+        "positive_day_fraction": 0.42105263157894735
+      }
+    },
+    {
+      "rule": "P|above_vwap=False|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": false
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 32,
+        "total_pnl": 136.0,
+        "avg_pnl": 4.25,
+        "median_pnl": -177.0,
+        "win_rate": 0.4375,
+        "profit_factor": 1.0134440490312377,
+        "max_drawdown": -6474.0,
+        "sessions_traded": 13,
+        "mean_daily_pnl": 10.461538461538462,
+        "median_daily_pnl": 146.0,
+        "positive_day_fraction": 0.5384615384615384
+      },
+      "test": {
+        "trades": 44,
+        "total_pnl": 42.0,
+        "avg_pnl": 0.9545454545454546,
+        "median_pnl": -112.0,
+        "win_rate": 0.4090909090909091,
+        "profit_factor": 1.0031837477258945,
+        "max_drawdown": -5024.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": 2.3333333333333335,
+        "median_daily_pnl": -424.0,
+        "positive_day_fraction": 0.4444444444444444
+      }
+    },
+    {
+      "rule": "P|above_vwap=True|momentum_15m_sign=positive|time_bucket=midday",
+      "side": "P",
+      "conditions": [
+        {
+          "column": "above_vwap",
+          "value": true
+        },
+        {
+          "column": "momentum_15m_sign",
+          "value": "positive"
+        },
+        {
+          "column": "time_bucket",
+          "value": "midday"
+        }
+      ],
+      "validation": {
+        "trades": 35,
+        "total_pnl": 1610.0,
+        "avg_pnl": 46.0,
+        "median_pnl": -152.0,
+        "win_rate": 0.34285714285714286,
+        "profit_factor": 1.187733208955224,
+        "max_drawdown": -3362.0,
+        "sessions_traded": 15,
+        "mean_daily_pnl": 107.33333333333333,
+        "median_daily_pnl": -186.0,
+        "positive_day_fraction": 0.4666666666666667
+      },
+      "test": {
+        "trades": 39,
+        "total_pnl": -138.0,
+        "avg_pnl": -3.5384615384615383,
+        "median_pnl": -2.0,
+        "win_rate": 0.48717948717948717,
+        "profit_factor": 0.9865889212827988,
+        "max_drawdown": -3768.0,
+        "sessions_traded": 18,
+        "mean_daily_pnl": -7.666666666666667,
+        "median_daily_pnl": 242.0,
+        "positive_day_fraction": 0.6111111111111112
+      }
+    },
+    {
+      "rule": "C|momentum_15m_sign=negative|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "momentum_15m_sign",
+          "value": "negative"
+        },
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 36,
+        "total_pnl": 4268.0,
+        "avg_pnl": 118.55555555555556,
+        "median_pnl": 73.0,
+        "win_rate": 0.5277777777777778,
+        "profit_factor": 1.322015995171269,
+        "max_drawdown": -3890.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 224.6315789473684,
+        "median_daily_pnl": 16.0,
+        "positive_day_fraction": 0.5263157894736842
+      },
+      "test": {
+        "trades": 42,
+        "total_pnl": -524.0,
+        "avg_pnl": -12.476190476190476,
+        "median_pnl": -292.0,
+        "win_rate": 0.38095238095238093,
+        "profit_factor": 0.9716480900335461,
+        "max_drawdown": -9944.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -23.818181818181817,
+        "median_daily_pnl": -289.0,
+        "positive_day_fraction": 0.4090909090909091
+      }
+    },
+    {
+      "rule": "C|time_bucket=post_open_morning",
+      "side": "C",
+      "conditions": [
+        {
+          "column": "time_bucket",
+          "value": "post_open_morning"
+        }
+      ],
+      "validation": {
+        "trades": 38,
+        "total_pnl": 1304.0,
+        "avg_pnl": 34.31578947368421,
+        "median_pnl": -52.0,
+        "win_rate": 0.47368421052631576,
+        "profit_factor": 1.0855081967213114,
+        "max_drawdown": -3890.0,
+        "sessions_traded": 19,
+        "mean_daily_pnl": 68.63157894736842,
+        "median_daily_pnl": -154.0,
+        "positive_day_fraction": 0.47368421052631576
+      },
+      "test": {
+        "trades": 44,
+        "total_pnl": -1038.0,
+        "avg_pnl": -23.59090909090909,
+        "median_pnl": -367.0,
+        "win_rate": 0.4090909090909091,
+        "profit_factor": 0.9484146705098897,
+        "max_drawdown": -10680.0,
+        "sessions_traded": 22,
+        "mean_daily_pnl": -47.18181818181818,
+        "median_daily_pnl": -474.0,
+        "positive_day_fraction": 0.36363636363636365
+      }
+    }
+  ],
+  "interpretation": [
+    "Adding explicit causal time-of-day features materially changed the model result, which confirms the model could not fairly discover this structure before.",
+    "The time-aware action model is positive across train, validation, and March holdout, but all-times drawdown is still too large.",
+    "The best single-seed time filter is encouraging, but the multi-seed evidence is not stable enough for broad data purchase.",
+    "Validation-calibrated abstention also failed; the best policy 1 result had acceptable concentration and drawdown, but too little median PnL and too few positive days.",
+    "Autoresearch loop 001 found a floor-cleared validation champion with positive March audit across three seeds, but the result is too small for a broad data-purchase signal.",
+    "Decision-aware no-trade loss v1 improved February selection but degraded the protected March audit; this is not a confirmed improvement.",
+    "Q4 2025 frozen holdout rejected both current champions; the Jan-Mar result is not yet a generalizable edge.",
+    "Late afternoon is the cleanest standalone window across train, validation, and test; post-open morning is useful but more volatile.",
+    "This is a modeling continuation signal, not a broad data-purchase signal yet."
+  ],
+  "next_steps": [
+    "Promote time-aware action modeling as the main prototype path.",
+    "Replace grid-heavy selection with simpler pre-registered priors: skip first 30, late-afternoon-only, and post-open-plus-late.",
+    "Keep Huber Q-regression as the current baseline until a no-trade objective improves both February selection and March audit.",
+    "If trying no-trade loss v2, pre-register it as a new objective variant before looking at March; do not tune loss weights against the March audit.",
+    "Treat Q4 2025 as audit-only. Do not tune model weights, time windows, thresholds, or loss coefficients directly against Q4.",
+    "Use v2/v3 to pretrain or rank candidate features, but continue using v4 CBBO ask-entry/bid-exit labels for all purchase decisions.",
+    "Do not buy more broad historical data until a pre-registered model change survives both March 2026 and the frozen Q4 2025 audit without adding new selection knobs."
+  ]
+}

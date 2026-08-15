@@ -1,0 +1,70 @@
+{
+  "extra": {
+    "auc_bar": 0.6,
+    "decision": "FAIL",
+    "fold_results": [
+      {
+        "fold_idx": 4,
+        "lr_auc": 0.6102084417458709,
+        "lr_sweep_realized_mean": {
+          "0.05": 0.31779447197914124,
+          "0.10": 0.3215816617012024,
+          "0.20": 0.3116801083087921,
+          "0.30": 0.3084392845630646,
+          "0.50": 0.30427640676498413
+        },
+        "lr_top_decile_lift": 1.4043109079033314,
+        "lr_top_decile_precision": 0.7150776053215078,
+        "mlp_auc": 0.5860839687346971,
+        "mlp_sweep_realized_mean": {
+          "0.05": 0.2752421200275421,
+          "0.10": 0.27462223172187805,
+          "0.20": 0.2738091051578522,
+          "0.30": 0.28215375542640686,
+          "0.50": 0.2932239770889282
+        },
+        "mlp_top_decile_lift": 1.3564119311996516,
+        "mlp_top_decile_precision": 0.6906873614190687,
+        "panel_always_on_mean": 0.3093666434288025,
+        "panel_prior_bq_sweep": {
+          "0.05": 0.3372655212879181,
+          "0.10": 0.33415624499320984,
+          "0.20": 0.3212921619415283,
+          "0.30": 0.31882598996162415,
+          "0.50": 0.30978408455848694
+        },
+        "panel_random_top10_mean": 0.3138972818851471,
+        "panel_trivial5_sweep": {
+          "0.05": 0.26308733224868774,
+          "0.10": 0.27789589762687683,
+          "0.20": 0.2876254618167877,
+          "0.30": 0.2926821708679199,
+          "0.50": 0.29694557189941406
+        },
+        "train_base_rate": 0.520596122565613,
+        "train_n": 204723,
+        "val_base_rate": 0.5092017738359201,
+        "val_n": 9020
+      }
+    ],
+    "lift_bar": 1.5,
+    "representation": "current",
+    "selected_folds": [
+      4
+    ],
+    "strict": false,
+    "verdict": "0/1 folds clear all four criteria (AUC>=0.60, lift>=1.50x, monotone sweep, realized@10% beats prior_bq and trivial5) (required: >=1)\n  fold 4: auc=True lift=False mono=True panel=False \u2192 FAIL"
+  },
+  "provenance": {
+    "cost_model_version": "821db21ddb75673b",
+    "dataset_fingerprint": "unknown",
+    "feature_set_id": "6a76be5276175806",
+    "git_commit": "59db643515333d3c64573251c1f5172bf6d90e67",
+    "label_mode": "85f10d8ac296a7e8",
+    "research_tier": true,
+    "schema_version": 1,
+    "sidecar_schema_version": "unknown",
+    "split_recipe": "e6c4bec2283720bc"
+  },
+  "written_at": "2026-04-21T11:43:03-0700"
+}

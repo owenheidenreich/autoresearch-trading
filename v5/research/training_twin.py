@@ -364,6 +364,29 @@ def _select_option_quote(
     if not eligible:
         raise TrainingTwinError(f"no causal option quote for {stable_contract_id}")
     label = max(eligible, key=lambda item: int(ts_recv.loc[item]))
+    if not exact_boundary:
+        # The exact-boundary path already refuses anything but a single row.
+        # The windowed entry path takes the latest quote, and `max` returns the
+        # *first* maximal element -- so two rows sharing the newest timestamp
+        # with different prices would silently resolve to whichever the vendor
+        # happened to deliver first, and a correction would be discarded in
+        # favour of the value it corrects. This row sets the fill price, so an
+        # ambiguity here is a wrong fill rather than a wrong feature.
+        newest_ns = int(ts_recv.loc[label])
+        tied = [item for item in eligible if int(ts_recv.loc[item]) == newest_ns]
+        quotes = {
+            (float(frame.loc[item, "bid_px_00"]), float(frame.loc[item, "ask_px_00"]))
+            for item in tied
+        }
+        if len(quotes) > 1:
+            raise TrainingTwinError(
+                f"ambiguous entry quote for {stable_contract_id} at "
+                f"{newest_ns}: {len(tied)} rows share the newest timestamp with "
+                f"{len(quotes)} different bid/ask pairs. A duplicate or a "
+                "correction must be resolved before selection, not silently "
+                "picked by delivery order. See the reconnects_and_gaps axis in "
+                "v5/research/divergence.py."
+            )
     position = int(label)
     age = consumed_at_ns - int(ts_recv.loc[label])
     if age < 0 or age > max_age_ns:

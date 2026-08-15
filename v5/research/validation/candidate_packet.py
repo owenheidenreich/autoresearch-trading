@@ -21,6 +21,10 @@ import pandas as pd
 
 SCHEMA_VERSION = "v5.candidate-validation-packet.v1"
 MEASURED_COMMISSION_PER_SIDE_USD = 1.54
+# Fees plus spread crossing on an aggressive option round trip, measured over
+# 156,950 candidates (do-not-retest ledger row 181).  Recorded here only as the
+# reference a fee-only export is compared against; nothing charges it.
+MEASURED_AGGRESSIVE_OPTION_ROUND_TRIP_USD = 26.48
 REVIEWED_ANTECEDENT = {
     "path": "v4/scripts/export_protocol101_trade_charts.py",
     "sha256": "02bb26cdaa45b71bbf7e10a3c5557e888d87eea323a0faf7b6de214418dea7fb",
@@ -363,6 +367,51 @@ def _equity_chart_html(trades: pd.DataFrame, *, starting_equity: float) -> str:
     )
 
 
+def _describe_cost_model(
+    *,
+    commission_per_side_usd: float,
+    slippage_per_side_points: float,
+    contract_multiplier: float,
+) -> dict[str, Any]:
+    """Say in the output exactly which cost components were charged.
+
+    Settled 2026-08-12 by the friction decomposition
+    (``v5/research/findings/FRICTION_DECOMPOSITION_2026_08_12.md``): **no frozen
+    cost constant in this project contains slippage**, so this packet's
+    ``slippage_per_side_points`` is additive rather than a double count.  Its
+    real job is spread crossing, which nothing else here charges.
+
+    That matters because the default is zero.  A packet exported at the default
+    charges the measured $3.08 round-trip *fee* and no spread at all, while the
+    measured aggressive option round trip is **$26.48** — 8.6x larger.  A
+    candidate judged on the default would be credited a cost it would not pay.
+    Refusing the default outright would break every caller that legitimately
+    wants a fee-only diagnostic, so the packet states its model instead of
+    guessing the caller's intent.
+    """
+
+    charged = ["commission"]
+    omitted: list[str] = []
+    if slippage_per_side_points > 0.0:
+        charged.append("spread_or_slippage")
+    else:
+        omitted.append("spread_crossing")
+    return {
+        "components_charged": charged,
+        "components_omitted": omitted,
+        "charged_round_trip_usd": round(
+            2.0 * commission_per_side_usd
+            + 2.0 * slippage_per_side_points * contract_multiplier,
+            6,
+        ),
+        "excludes_spread_crossing": not slippage_per_side_points > 0.0,
+        "reference_measured_aggressive_round_trip_usd": (
+            MEASURED_AGGRESSIVE_OPTION_ROUND_TRIP_USD
+        ),
+        "evidence": "v5/research/findings/FRICTION_DECOMPOSITION_2026_08_12.md",
+    }
+
+
 def export_candidate_packet(
     *,
     trades: pd.DataFrame,
@@ -425,6 +474,11 @@ def export_candidate_packet(
         "commission_per_side_usd": float(commission_per_side_usd),
         "slippage_per_side_points": float(slippage_per_side_points),
         "contract_multiplier": float(contract_multiplier),
+        "cost_model": _describe_cost_model(
+            commission_per_side_usd=commission_per_side_usd,
+            slippage_per_side_points=slippage_per_side_points,
+            contract_multiplier=contract_multiplier,
+        ),
         "first_entry": normalized_trades.iloc[0]["entry_time"] if len(normalized_trades) else None,
         "last_exit": normalized_trades.iloc[-1]["exit_time"] if len(normalized_trades) else None,
         "authoritative_outputs": ["trades.csv", "manifest.json"],

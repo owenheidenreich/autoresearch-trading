@@ -1,0 +1,37 @@
+{
+  "bad_spread_symbols": [],
+  "files": 311,
+  "first_session": "2025-01-02",
+  "last_session": "2026-03-31",
+  "low_rth_sessions": [
+    {
+      "rows": 1155,
+      "rth_rows": 225,
+      "session": "2025-07-03",
+      "volume": 539274.0
+    },
+    {
+      "rows": 285,
+      "rth_rows": 225,
+      "session": "2025-11-28",
+      "volume": 300011.0
+    },
+    {
+      "rows": 793,
+      "rth_rows": 225,
+      "session": "2025-12-24",
+      "volume": 362557.0
+    }
+  ],
+  "median_rth_rows": 391.0,
+  "min_rth_rows": 225,
+  "selected_contract_counts": {
+    "ESH5": 49,
+    "ESH6": 61,
+    "ESM5": 63,
+    "ESM6": 12,
+    "ESU5": 62,
+    "ESZ5": 64
+  },
+  "zero_volume_sessions": []
+}

@@ -1,0 +1,2 @@
+{"end_date": "2026-05-18", "files_written": 33, "first_event_time": "2026-04-01T13:30:00+00:00", "interval": "1m", "last_event_time": "2026-05-18T20:00:00+00:00", "output_dir": "data/vendor/thetadata/index/spx_1m", "rows_written": 12903, "start_date": "2026-04-01", "symbol": "SPX"}
+{"end_date": "2026-05-18", "files_written": 33, "first_event_time": "2026-04-01T13:32:00+00:00", "interval": "1m", "last_event_time": "2026-05-18T20:00:00+00:00", "output_dir": "data/vendor/thetadata/index/vix_1m", "rows_written": 12185, "start_date": "2026-04-01", "symbol": "VIX"}

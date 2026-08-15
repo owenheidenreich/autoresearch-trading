@@ -1,0 +1,70 @@
+{
+  "extra": {
+    "auc_bar": 0.6,
+    "decision": "FAIL",
+    "fold_results": [
+      {
+        "fold_idx": 4,
+        "lr_auc": 0.5292935945894387,
+        "lr_sweep_realized_mean": {
+          "0.05": 0.3372655212879181,
+          "0.10": 0.33415624499320984,
+          "0.20": 0.3212921619415283,
+          "0.30": 0.31882598996162415,
+          "0.50": 0.30978408455848694
+        },
+        "lr_top_decile_lift": 1.3484486873508352,
+        "lr_top_decile_precision": 0.12527716186252771,
+        "mlp_auc": 0.5113989378862384,
+        "mlp_sweep_realized_mean": {
+          "0.05": 0.30832841992378235,
+          "0.10": 0.30584290623664856,
+          "0.20": 0.3093639314174652,
+          "0.30": 0.3126124143600464,
+          "0.50": 0.310077428817749
+        },
+        "mlp_top_decile_lift": 1.2768496420047732,
+        "mlp_top_decile_precision": 0.11862527716186252,
+        "panel_always_on_mean": 0.3093666434288025,
+        "panel_prior_bq_sweep": {
+          "0.05": NaN,
+          "0.10": NaN,
+          "0.20": NaN,
+          "0.30": NaN,
+          "0.50": NaN
+        },
+        "panel_random_top10_mean": 0.3138972818851471,
+        "panel_trivial5_sweep": {
+          "0.05": 0.3425270617008209,
+          "0.10": 0.31277012825012207,
+          "0.20": 0.2934555411338806,
+          "0.30": 0.28990501165390015,
+          "0.50": 0.30552998185157776
+        },
+        "train_base_rate": 0.1170410750135549,
+        "train_n": 204723,
+        "val_base_rate": 0.09290465631929047,
+        "val_n": 9020
+      }
+    ],
+    "lift_bar": 1.5,
+    "representation": "current",
+    "selected_folds": [
+      4
+    ],
+    "strict": false,
+    "verdict": "0/1 folds clear all four criteria (AUC>=0.60, lift>=1.50x, monotone sweep, realized@10% beats prior_bq and trivial5) (required: >=1)\n  fold 4: auc=False lift=False mono=True panel=True \u2192 FAIL"
+  },
+  "provenance": {
+    "cost_model_version": "821db21ddb75673b",
+    "dataset_fingerprint": "unknown",
+    "feature_set_id": "6a76be5276175806",
+    "git_commit": "59db643515333d3c64573251c1f5172bf6d90e67",
+    "label_mode": "4181cfacb27ca1a2",
+    "research_tier": false,
+    "schema_version": 1,
+    "sidecar_schema_version": "unknown",
+    "split_recipe": "e6c4bec2283720bc"
+  },
+  "written_at": "2026-04-21T11:43:02-0700"
+}

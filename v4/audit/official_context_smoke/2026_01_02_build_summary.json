@@ -1,0 +1,37 @@
+{
+  "start_date": "2026-01-02",
+  "end_date": "2026-01-02",
+  "processed_dir": "data/processed/spxw_0dte_neural_official_context_smoke",
+  "sessions_built": 1,
+  "sessions_skipped": [],
+  "totals": {
+    "definition_rows": 17386,
+    "cbbo_rows": 195861,
+    "ohlcv_rows": 27157,
+    "statistics_rows": 2900,
+    "normalized_rows": 195861,
+    "derived_spx_rows": 391,
+    "derived_vix_rows": 388,
+    "neural_rows": 360
+  },
+  "records": [
+    {
+      "session": "2026-01-02",
+      "definition_rows": 17386,
+      "cbbo_rows": 195861,
+      "ohlcv_rows": 27157,
+      "statistics_rows": 2900,
+      "normalized_rows": 195861,
+      "derived_spx_rows": 391,
+      "derived_vix_rows": 388,
+      "neural_rows": 360,
+      "normalized_path": "v4/normalized_official_context_smoke/databento_spxw_0dte_2026-01-02.parquet",
+      "derived_normalized_path": "v4/normalized_official_context_smoke/databento_spxw_0dte_2026-01-02_official_context.parquet",
+      "spx_path": "data/raw/index/spx_1m/2026-01-02.official_spx.parquet",
+      "vix_path": "data/raw/index/vix_1m/2026-01-02.official_vix.parquet",
+      "neural_path": "data/processed/spxw_0dte_neural_official_context_smoke/2026-01-02.pkl",
+      "context_mode": "official",
+      "context_source": "official_index_bars"
+    }
+  ]
+}

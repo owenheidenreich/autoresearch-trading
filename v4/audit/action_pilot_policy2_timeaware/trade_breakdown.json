@@ -1,0 +1,4345 @@
+{
+  "train": {
+    "metrics": {
+      "trades": 160,
+      "total_pnl": 22340.0,
+      "avg_pnl": 139.625,
+      "median_pnl": 3.0,
+      "win_rate": 0.5,
+      "profit_factor": 1.767302077966684,
+      "max_drawdown": -2731.0,
+      "sessions_traded": 20,
+      "mean_daily_pnl": 1117.0,
+      "median_daily_pnl": 1069.0,
+      "positive_day_fraction": 0.75
+    },
+    "groups": [
+      {
+        "group": "time_bucket",
+        "time_bucket": "first_30",
+        "trades": 20,
+        "total_pnl": -2150.0,
+        "avg_pnl": -107.5,
+        "win_rate": 0.4,
+        "profit_factor": 0.7360019646365422
+      },
+      {
+        "group": "time_bucket",
+        "time_bucket": "late_afternoon",
+        "trades": 40,
+        "total_pnl": 7960.0,
+        "avg_pnl": 199.0,
+        "win_rate": 0.55,
+        "profit_factor": 3.0249300432459933
+      },
+      {
+        "group": "time_bucket",
+        "time_bucket": "midday",
+        "trades": 60,
+        "total_pnl": 10140.0,
+        "avg_pnl": 169.0,
+        "win_rate": 0.45,
+        "profit_factor": 2.168741355463347
+      },
+      {
+        "group": "time_bucket",
+        "time_bucket": "post_open_morning",
+        "trades": 40,
+        "total_pnl": 6390.0,
+        "avg_pnl": 159.75,
+        "win_rate": 0.575,
+        "profit_factor": 1.7639885222381635
+      },
+      {
+        "group": "right",
+        "right": "C",
+        "trades": 89,
+        "total_pnl": 6382.0,
+        "avg_pnl": 71.70786516853933,
+        "win_rate": 0.5168539325842697,
+        "profit_factor": 1.355820695807315
+      },
+      {
+        "group": "right",
+        "right": "P",
+        "trades": 71,
+        "total_pnl": 15958.0,
+        "avg_pnl": 224.7605633802817,
+        "win_rate": 0.4788732394366197,
+        "profit_factor": 2.4274979872976115
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "first_30",
+        "right": "C",
+        "trades": 18,
+        "total_pnl": -2086.0,
+        "avg_pnl": -115.88888888888889,
+        "win_rate": 0.3888888888888889,
+        "profit_factor": 0.7245113576333861
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "first_30",
+        "right": "P",
+        "trades": 2,
+        "total_pnl": -64.0,
+        "avg_pnl": -32.0,
+        "win_rate": 0.5,
+        "profit_factor": 0.8881118881118881
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "trades": 7,
+        "total_pnl": 1491.0,
+        "avg_pnl": 213.0,
+        "win_rate": 0.7142857142857143,
+        "profit_factor": 4.475524475524476
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "trades": 33,
+        "total_pnl": 6469.0,
+        "avg_pnl": 196.03030303030303,
+        "win_rate": 0.5151515151515151,
+        "profit_factor": 2.8472301541976015
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "midday",
+        "right": "C",
+        "trades": 31,
+        "total_pnl": 3733.0,
+        "avg_pnl": 120.41935483870968,
+        "win_rate": 0.4838709677419355,
+        "profit_factor": 1.8647208709752143
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "midday",
+        "right": "P",
+        "trades": 29,
+        "total_pnl": 6407.0,
+        "avg_pnl": 220.93103448275863,
+        "win_rate": 0.41379310344827586,
+        "profit_factor": 2.46983253039688
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "trades": 33,
+        "total_pnl": 3244.0,
+        "avg_pnl": 98.3030303030303,
+        "win_rate": 0.5757575757575758,
+        "profit_factor": 1.5774296902812388
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "trades": 7,
+        "total_pnl": 3146.0,
+        "avg_pnl": 449.42857142857144,
+        "win_rate": 0.5714285714285714,
+        "profit_factor": 2.1456664238892937
+      }
+    ],
+    "trades": [
+      {
+        "session": "2026-01-02",
+        "decision_time": "2026-01-02T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -852.0,
+        "score": 54.4746208190918
+      },
+      {
+        "session": "2026-01-02",
+        "decision_time": "2026-01-02T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -902.0,
+        "score": -77.5681381225586
+      },
+      {
+        "session": "2026-01-02",
+        "decision_time": "2026-01-02T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -282.0,
+        "score": -71.80730438232422
+      },
+      {
+        "session": "2026-01-02",
+        "decision_time": "2026-01-02T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 578.0,
+        "score": -52.96379470825195
+      },
+      {
+        "session": "2026-01-02",
+        "decision_time": "2026-01-02T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 1388.0,
+        "score": -81.35445404052734
+      },
+      {
+        "session": "2026-01-02",
+        "decision_time": "2026-01-02T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -82.0,
+        "score": -94.24174499511719
+      },
+      {
+        "session": "2026-01-02",
+        "decision_time": "2026-01-02T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 998.0,
+        "score": -125.91349792480469
+      },
+      {
+        "session": "2026-01-02",
+        "decision_time": "2026-01-02T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 18.0,
+        "score": -89.53752899169922
+      },
+      {
+        "session": "2026-01-05",
+        "decision_time": "2026-01-05T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -172.0,
+        "score": -30.961021423339844
+      },
+      {
+        "session": "2026-01-05",
+        "decision_time": "2026-01-05T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 198.0,
+        "score": 50.08158874511719
+      },
+      {
+        "session": "2026-01-05",
+        "decision_time": "2026-01-05T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 378.0,
+        "score": 107.09146118164062
+      },
+      {
+        "session": "2026-01-05",
+        "decision_time": "2026-01-05T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -202.0,
+        "score": -2.769317626953125
+      },
+      {
+        "session": "2026-01-05",
+        "decision_time": "2026-01-05T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 28.0,
+        "score": -53.3559455871582
+      },
+      {
+        "session": "2026-01-05",
+        "decision_time": "2026-01-05T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 88.0,
+        "score": -34.3302116394043
+      },
+      {
+        "session": "2026-01-05",
+        "decision_time": "2026-01-05T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 758.0,
+        "score": -58.24259948730469
+      },
+      {
+        "session": "2026-01-05",
+        "decision_time": "2026-01-05T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -237.0,
+        "score": 87.3867416381836
+      },
+      {
+        "session": "2026-01-06",
+        "decision_time": "2026-01-06T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 1348.0,
+        "score": 56.92941665649414
+      },
+      {
+        "session": "2026-01-06",
+        "decision_time": "2026-01-06T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -622.0,
+        "score": -79.8021469116211
+      },
+      {
+        "session": "2026-01-06",
+        "decision_time": "2026-01-06T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -232.0,
+        "score": 93.97177124023438
+      },
+      {
+        "session": "2026-01-06",
+        "decision_time": "2026-01-06T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 978.0,
+        "score": 13.051125526428223
+      },
+      {
+        "session": "2026-01-06",
+        "decision_time": "2026-01-06T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 288.0,
+        "score": -27.708608627319336
+      },
+      {
+        "session": "2026-01-06",
+        "decision_time": "2026-01-06T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 488.0,
+        "score": 3.7128560543060303
+      },
+      {
+        "session": "2026-01-06",
+        "decision_time": "2026-01-06T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -232.0,
+        "score": -69.59066772460938
+      },
+      {
+        "session": "2026-01-06",
+        "decision_time": "2026-01-06T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -42.0,
+        "score": -35.17770004272461
+      },
+      {
+        "session": "2026-01-07",
+        "decision_time": "2026-01-07T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -462.0,
+        "score": 13.177055358886719
+      },
+      {
+        "session": "2026-01-07",
+        "decision_time": "2026-01-07T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 638.0,
+        "score": 63.2934455871582
+      },
+      {
+        "session": "2026-01-07",
+        "decision_time": "2026-01-07T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 298.0,
+        "score": 77.4306869506836
+      },
+      {
+        "session": "2026-01-07",
+        "decision_time": "2026-01-07T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -232.0,
+        "score": -44.76227569580078
+      },
+      {
+        "session": "2026-01-07",
+        "decision_time": "2026-01-07T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -427.0,
+        "score": -94.30481719970703
+      },
+      {
+        "session": "2026-01-07",
+        "decision_time": "2026-01-07T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -247.0,
+        "score": -73.45510864257812
+      },
+      {
+        "session": "2026-01-07",
+        "decision_time": "2026-01-07T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 818.0,
+        "score": -56.70758056640625
+      },
+      {
+        "session": "2026-01-07",
+        "decision_time": "2026-01-07T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 658.0,
+        "score": 34.01161193847656
+      },
+      {
+        "session": "2026-01-08",
+        "decision_time": "2026-01-08T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 358.0,
+        "score": 45.870628356933594
+      },
+      {
+        "session": "2026-01-08",
+        "decision_time": "2026-01-08T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -52.0,
+        "score": -40.313262939453125
+      },
+      {
+        "session": "2026-01-08",
+        "decision_time": "2026-01-08T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -162.0,
+        "score": -24.12515640258789
+      },
+      {
+        "session": "2026-01-08",
+        "decision_time": "2026-01-08T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -232.0,
+        "score": -102.421142578125
+      },
+      {
+        "session": "2026-01-08",
+        "decision_time": "2026-01-08T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 218.0,
+        "score": -39.2694091796875
+      },
+      {
+        "session": "2026-01-08",
+        "decision_time": "2026-01-08T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -62.0,
+        "score": -88.33385467529297
+      },
+      {
+        "session": "2026-01-08",
+        "decision_time": "2026-01-08T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -112.0,
+        "score": -121.66964721679688
+      },
+      {
+        "session": "2026-01-08",
+        "decision_time": "2026-01-08T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -387.0,
+        "score": -41.71017837524414
+      },
+      {
+        "session": "2026-01-09",
+        "decision_time": "2026-01-09T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -382.0,
+        "score": -106.38165283203125
+      },
+      {
+        "session": "2026-01-09",
+        "decision_time": "2026-01-09T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 228.0,
+        "score": -52.578365325927734
+      },
+      {
+        "session": "2026-01-09",
+        "decision_time": "2026-01-09T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 618.0,
+        "score": -5.636462688446045
+      },
+      {
+        "session": "2026-01-09",
+        "decision_time": "2026-01-09T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 478.0,
+        "score": -30.654985427856445
+      },
+      {
+        "session": "2026-01-09",
+        "decision_time": "2026-01-09T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -302.0,
+        "score": -70.38446807861328
+      },
+      {
+        "session": "2026-01-09",
+        "decision_time": "2026-01-09T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 248.0,
+        "score": 6.318836688995361
+      },
+      {
+        "session": "2026-01-09",
+        "decision_time": "2026-01-09T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 158.0,
+        "score": -21.811311721801758
+      },
+      {
+        "session": "2026-01-09",
+        "decision_time": "2026-01-09T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -182.0,
+        "score": -34.74283981323242
+      },
+      {
+        "session": "2026-01-12",
+        "decision_time": "2026-01-12T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 958.0,
+        "score": 6.4156928062438965
+      },
+      {
+        "session": "2026-01-12",
+        "decision_time": "2026-01-12T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 88.0,
+        "score": 31.800769805908203
+      },
+      {
+        "session": "2026-01-12",
+        "decision_time": "2026-01-12T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 278.0,
+        "score": 126.02738189697266
+      },
+      {
+        "session": "2026-01-12",
+        "decision_time": "2026-01-12T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -42.0,
+        "score": 70.97066497802734
+      },
+      {
+        "session": "2026-01-12",
+        "decision_time": "2026-01-12T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 158.0,
+        "score": 57.63742446899414
+      },
+      {
+        "session": "2026-01-12",
+        "decision_time": "2026-01-12T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 18.0,
+        "score": 18.68893814086914
+      },
+      {
+        "session": "2026-01-12",
+        "decision_time": "2026-01-12T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 328.0,
+        "score": -3.393096446990967
+      },
+      {
+        "session": "2026-01-12",
+        "decision_time": "2026-01-12T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 123.0,
+        "score": -10.116472244262695
+      },
+      {
+        "session": "2026-01-13",
+        "decision_time": "2026-01-13T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -782.0,
+        "score": -61.68258285522461
+      },
+      {
+        "session": "2026-01-13",
+        "decision_time": "2026-01-13T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -62.0,
+        "score": -71.184326171875
+      },
+      {
+        "session": "2026-01-13",
+        "decision_time": "2026-01-13T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 398.0,
+        "score": 53.529911041259766
+      },
+      {
+        "session": "2026-01-13",
+        "decision_time": "2026-01-13T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -42.0,
+        "score": -62.980831146240234
+      },
+      {
+        "session": "2026-01-13",
+        "decision_time": "2026-01-13T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 958.0,
+        "score": 8.099384307861328
+      },
+      {
+        "session": "2026-01-13",
+        "decision_time": "2026-01-13T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 148.0,
+        "score": -38.344200134277344
+      },
+      {
+        "session": "2026-01-13",
+        "decision_time": "2026-01-13T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -72.0,
+        "score": -73.04840087890625
+      },
+      {
+        "session": "2026-01-13",
+        "decision_time": "2026-01-13T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 548.0,
+        "score": -24.807018280029297
+      },
+      {
+        "session": "2026-01-14",
+        "decision_time": "2026-01-14T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -782.0,
+        "score": -83.89124298095703
+      },
+      {
+        "session": "2026-01-14",
+        "decision_time": "2026-01-14T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 2218.0,
+        "score": -86.44039916992188
+      },
+      {
+        "session": "2026-01-14",
+        "decision_time": "2026-01-14T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -932.0,
+        "score": -120.18492126464844
+      },
+      {
+        "session": "2026-01-14",
+        "decision_time": "2026-01-14T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -412.0,
+        "score": -78.71315002441406
+      },
+      {
+        "session": "2026-01-14",
+        "decision_time": "2026-01-14T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 98.0,
+        "score": -53.697757720947266
+      },
+      {
+        "session": "2026-01-14",
+        "decision_time": "2026-01-14T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 378.0,
+        "score": -60.366798400878906
+      },
+      {
+        "session": "2026-01-14",
+        "decision_time": "2026-01-14T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -162.0,
+        "score": -141.1930389404297
+      },
+      {
+        "session": "2026-01-14",
+        "decision_time": "2026-01-14T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -372.0,
+        "score": -99.6213607788086
+      },
+      {
+        "session": "2026-01-15",
+        "decision_time": "2026-01-15T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -262.0,
+        "score": -27.647539138793945
+      },
+      {
+        "session": "2026-01-15",
+        "decision_time": "2026-01-15T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 188.0,
+        "score": -5.738637924194336
+      },
+      {
+        "session": "2026-01-15",
+        "decision_time": "2026-01-15T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 98.0,
+        "score": -14.622897148132324
+      },
+      {
+        "session": "2026-01-15",
+        "decision_time": "2026-01-15T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -292.0,
+        "score": -26.842674255371094
+      },
+      {
+        "session": "2026-01-15",
+        "decision_time": "2026-01-15T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -122.0,
+        "score": -55.37995529174805
+      },
+      {
+        "session": "2026-01-15",
+        "decision_time": "2026-01-15T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -92.0,
+        "score": -110.87203979492188
+      },
+      {
+        "session": "2026-01-15",
+        "decision_time": "2026-01-15T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1168.0,
+        "score": -112.51962280273438
+      },
+      {
+        "session": "2026-01-15",
+        "decision_time": "2026-01-15T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1248.0,
+        "score": 55.30265426635742
+      },
+      {
+        "session": "2026-01-16",
+        "decision_time": "2026-01-16T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -872.0,
+        "score": -61.84904098510742
+      },
+      {
+        "session": "2026-01-16",
+        "decision_time": "2026-01-16T15:17:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -352.0,
+        "score": -111.12638854980469
+      },
+      {
+        "session": "2026-01-16",
+        "decision_time": "2026-01-16T16:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 848.0,
+        "score": -46.233604431152344
+      },
+      {
+        "session": "2026-01-16",
+        "decision_time": "2026-01-16T16:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -407.0,
+        "score": -101.40521240234375
+      },
+      {
+        "session": "2026-01-16",
+        "decision_time": "2026-01-16T17:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -292.0,
+        "score": -90.67518615722656
+      },
+      {
+        "session": "2026-01-16",
+        "decision_time": "2026-01-16T18:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -232.0,
+        "score": -31.37859344482422
+      },
+      {
+        "session": "2026-01-16",
+        "decision_time": "2026-01-16T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 28.0,
+        "score": -30.682151794433594
+      },
+      {
+        "session": "2026-01-16",
+        "decision_time": "2026-01-16T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 418.0,
+        "score": 56.77203369140625
+      },
+      {
+        "session": "2026-01-20",
+        "decision_time": "2026-01-20T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1132.0,
+        "score": -102.03727722167969
+      },
+      {
+        "session": "2026-01-20",
+        "decision_time": "2026-01-20T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 1198.0,
+        "score": -129.32789611816406
+      },
+      {
+        "session": "2026-01-20",
+        "decision_time": "2026-01-20T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -572.0,
+        "score": -114.98845672607422
+      },
+      {
+        "session": "2026-01-20",
+        "decision_time": "2026-01-20T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 288.0,
+        "score": -77.07911682128906
+      },
+      {
+        "session": "2026-01-20",
+        "decision_time": "2026-01-20T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 508.0,
+        "score": -83.4505615234375
+      },
+      {
+        "session": "2026-01-20",
+        "decision_time": "2026-01-20T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 1908.0,
+        "score": -114.03810119628906
+      },
+      {
+        "session": "2026-01-20",
+        "decision_time": "2026-01-20T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 708.0,
+        "score": -64.26128387451172
+      },
+      {
+        "session": "2026-01-20",
+        "decision_time": "2026-01-20T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -2.0,
+        "score": -108.56324768066406
+      },
+      {
+        "session": "2026-01-21",
+        "decision_time": "2026-01-21T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 958.0,
+        "score": -72.02276611328125
+      },
+      {
+        "session": "2026-01-21",
+        "decision_time": "2026-01-21T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -972.0,
+        "score": -62.05852127075195
+      },
+      {
+        "session": "2026-01-21",
+        "decision_time": "2026-01-21T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -752.0,
+        "score": -83.0452651977539
+      },
+      {
+        "session": "2026-01-21",
+        "decision_time": "2026-01-21T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 2068.0,
+        "score": -77.66472625732422
+      },
+      {
+        "session": "2026-01-21",
+        "decision_time": "2026-01-21T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -502.0,
+        "score": -52.1657829284668
+      },
+      {
+        "session": "2026-01-21",
+        "decision_time": "2026-01-21T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -622.0,
+        "score": -127.6265640258789
+      },
+      {
+        "session": "2026-01-21",
+        "decision_time": "2026-01-21T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -517.0,
+        "score": -118.16645812988281
+      },
+      {
+        "session": "2026-01-21",
+        "decision_time": "2026-01-21T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1608.0,
+        "score": 111.05064392089844
+      },
+      {
+        "session": "2026-01-22",
+        "decision_time": "2026-01-22T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -862.0,
+        "score": -25.523250579833984
+      },
+      {
+        "session": "2026-01-22",
+        "decision_time": "2026-01-22T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -842.0,
+        "score": -100.2407455444336
+      },
+      {
+        "session": "2026-01-22",
+        "decision_time": "2026-01-22T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 508.0,
+        "score": 43.31727600097656
+      },
+      {
+        "session": "2026-01-22",
+        "decision_time": "2026-01-22T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -262.0,
+        "score": -83.0865478515625
+      },
+      {
+        "session": "2026-01-22",
+        "decision_time": "2026-01-22T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -182.0,
+        "score": -37.92717361450195
+      },
+      {
+        "session": "2026-01-22",
+        "decision_time": "2026-01-22T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 8.0,
+        "score": -100.38262939453125
+      },
+      {
+        "session": "2026-01-22",
+        "decision_time": "2026-01-22T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 308.0,
+        "score": -79.71906280517578
+      },
+      {
+        "session": "2026-01-22",
+        "decision_time": "2026-01-22T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 978.0,
+        "score": -89.70460510253906
+      },
+      {
+        "session": "2026-01-23",
+        "decision_time": "2026-01-23T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 88.0,
+        "score": -14.923973083496094
+      },
+      {
+        "session": "2026-01-23",
+        "decision_time": "2026-01-23T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 928.0,
+        "score": -53.52246856689453
+      },
+      {
+        "session": "2026-01-23",
+        "decision_time": "2026-01-23T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -282.0,
+        "score": 22.662731170654297
+      },
+      {
+        "session": "2026-01-23",
+        "decision_time": "2026-01-23T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -82.0,
+        "score": -105.47795104980469
+      },
+      {
+        "session": "2026-01-23",
+        "decision_time": "2026-01-23T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 1408.0,
+        "score": -85.08695983886719
+      },
+      {
+        "session": "2026-01-23",
+        "decision_time": "2026-01-23T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -452.0,
+        "score": -89.61134338378906
+      },
+      {
+        "session": "2026-01-23",
+        "decision_time": "2026-01-23T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -202.0,
+        "score": -54.47170639038086
+      },
+      {
+        "session": "2026-01-23",
+        "decision_time": "2026-01-23T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 228.0,
+        "score": -18.076248168945312
+      },
+      {
+        "session": "2026-01-26",
+        "decision_time": "2026-01-26T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 1428.0,
+        "score": -21.32796859741211
+      },
+      {
+        "session": "2026-01-26",
+        "decision_time": "2026-01-26T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 78.0,
+        "score": 52.96759796142578
+      },
+      {
+        "session": "2026-01-26",
+        "decision_time": "2026-01-26T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -92.0,
+        "score": 96.62962341308594
+      },
+      {
+        "session": "2026-01-26",
+        "decision_time": "2026-01-26T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 168.0,
+        "score": 92.7226333618164
+      },
+      {
+        "session": "2026-01-26",
+        "decision_time": "2026-01-26T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -247.0,
+        "score": 60.43121337890625
+      },
+      {
+        "session": "2026-01-26",
+        "decision_time": "2026-01-26T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 198.0,
+        "score": 54.205055236816406
+      },
+      {
+        "session": "2026-01-26",
+        "decision_time": "2026-01-26T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 58.0,
+        "score": 7.3777546882629395
+      },
+      {
+        "session": "2026-01-26",
+        "decision_time": "2026-01-26T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -52.0,
+        "score": -51.200889587402344
+      },
+      {
+        "session": "2026-01-27",
+        "decision_time": "2026-01-27T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 348.0,
+        "score": -0.7148904800415039
+      },
+      {
+        "session": "2026-01-27",
+        "decision_time": "2026-01-27T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 568.0,
+        "score": 38.064022064208984
+      },
+      {
+        "session": "2026-01-27",
+        "decision_time": "2026-01-27T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 28.0,
+        "score": 52.314693450927734
+      },
+      {
+        "session": "2026-01-27",
+        "decision_time": "2026-01-27T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -302.0,
+        "score": -13.798731803894043
+      },
+      {
+        "session": "2026-01-27",
+        "decision_time": "2026-01-27T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -262.0,
+        "score": -35.19292068481445
+      },
+      {
+        "session": "2026-01-27",
+        "decision_time": "2026-01-27T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -402.0,
+        "score": -73.81383514404297
+      },
+      {
+        "session": "2026-01-27",
+        "decision_time": "2026-01-27T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -157.0,
+        "score": -89.42977142333984
+      },
+      {
+        "session": "2026-01-27",
+        "decision_time": "2026-01-27T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 28.0,
+        "score": -9.68222427368164
+      },
+      {
+        "session": "2026-01-28",
+        "decision_time": "2026-01-28T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "P",
+        "pnl": 508.0,
+        "score": -104.90875244140625
+      },
+      {
+        "session": "2026-01-28",
+        "decision_time": "2026-01-28T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 338.0,
+        "score": -111.13045501708984
+      },
+      {
+        "session": "2026-01-28",
+        "decision_time": "2026-01-28T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 448.0,
+        "score": -125.88732147216797
+      },
+      {
+        "session": "2026-01-28",
+        "decision_time": "2026-01-28T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -22.0,
+        "score": -49.283973693847656
+      },
+      {
+        "session": "2026-01-28",
+        "decision_time": "2026-01-28T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -292.0,
+        "score": -58.08627700805664
+      },
+      {
+        "session": "2026-01-28",
+        "decision_time": "2026-01-28T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -312.0,
+        "score": -62.10649490356445
+      },
+      {
+        "session": "2026-01-28",
+        "decision_time": "2026-01-28T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -42.0,
+        "score": -82.71399688720703
+      },
+      {
+        "session": "2026-01-28",
+        "decision_time": "2026-01-28T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -692.0,
+        "score": -89.4778060913086
+      },
+      {
+        "session": "2026-01-29",
+        "decision_time": "2026-01-29T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1012.0,
+        "score": -111.27078247070312
+      },
+      {
+        "session": "2026-01-29",
+        "decision_time": "2026-01-29T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 2888.0,
+        "score": -80.65214538574219
+      },
+      {
+        "session": "2026-01-29",
+        "decision_time": "2026-01-29T16:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 1298.0,
+        "score": -134.9776153564453
+      },
+      {
+        "session": "2026-01-29",
+        "decision_time": "2026-01-29T16:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 1468.0,
+        "score": -16.66106414794922
+      },
+      {
+        "session": "2026-01-29",
+        "decision_time": "2026-01-29T17:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -762.0,
+        "score": -71.14351654052734
+      },
+      {
+        "session": "2026-01-29",
+        "decision_time": "2026-01-29T18:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -212.0,
+        "score": -120.5768814086914
+      },
+      {
+        "session": "2026-01-29",
+        "decision_time": "2026-01-29T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 378.0,
+        "score": 39.03937530517578
+      },
+      {
+        "session": "2026-01-29",
+        "decision_time": "2026-01-29T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -267.0,
+        "score": -24.925825119018555
+      },
+      {
+        "session": "2026-01-30",
+        "decision_time": "2026-01-30T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "P",
+        "pnl": -572.0,
+        "score": -103.55133819580078
+      },
+      {
+        "session": "2026-01-30",
+        "decision_time": "2026-01-30T15:18:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -712.0,
+        "score": -115.51661682128906
+      },
+      {
+        "session": "2026-01-30",
+        "decision_time": "2026-01-30T16:03:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -542.0,
+        "score": -135.55584716796875
+      },
+      {
+        "session": "2026-01-30",
+        "decision_time": "2026-01-30T16:48:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -42.0,
+        "score": -46.953956604003906
+      },
+      {
+        "session": "2026-01-30",
+        "decision_time": "2026-01-30T17:33:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 1838.0,
+        "score": -51.24542236328125
+      },
+      {
+        "session": "2026-01-30",
+        "decision_time": "2026-01-30T18:19:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 2418.0,
+        "score": -139.56654357910156
+      },
+      {
+        "session": "2026-01-30",
+        "decision_time": "2026-01-30T19:04:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 328.0,
+        "score": -1.1244615316390991
+      },
+      {
+        "session": "2026-01-30",
+        "decision_time": "2026-01-30T19:49:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -202.0,
+        "score": -102.16755676269531
+      }
+    ]
+  },
+  "validation": {
+    "metrics": {
+      "trades": 152,
+      "total_pnl": 15536.0,
+      "avg_pnl": 102.21052631578948,
+      "median_pnl": -62.0,
+      "win_rate": 0.46710526315789475,
+      "profit_factor": 1.3635682860619676,
+      "max_drawdown": -4676.0,
+      "sessions_traded": 19,
+      "mean_daily_pnl": 817.6842105263158,
+      "median_daily_pnl": 369.0,
+      "positive_day_fraction": 0.5789473684210527
+    },
+    "groups": [
+      {
+        "group": "time_bucket",
+        "time_bucket": "first_30",
+        "trades": 19,
+        "total_pnl": 4072.0,
+        "avg_pnl": 214.31578947368422,
+        "win_rate": 0.3684210526315789,
+        "profit_factor": 1.4334681711730892
+      },
+      {
+        "group": "time_bucket",
+        "time_bucket": "late_afternoon",
+        "trades": 38,
+        "total_pnl": 6144.0,
+        "avg_pnl": 161.68421052631578,
+        "win_rate": 0.5526315789473685,
+        "profit_factor": 1.8600223964165734
+      },
+      {
+        "group": "time_bucket",
+        "time_bucket": "midday",
+        "trades": 57,
+        "total_pnl": 2086.0,
+        "avg_pnl": 36.59649122807018,
+        "win_rate": 0.42105263157894735,
+        "profit_factor": 1.1446000277277137
+      },
+      {
+        "group": "time_bucket",
+        "time_bucket": "post_open_morning",
+        "trades": 38,
+        "total_pnl": 3234.0,
+        "avg_pnl": 85.10526315789474,
+        "win_rate": 0.5,
+        "profit_factor": 1.2748130523453434
+      },
+      {
+        "group": "right",
+        "right": "C",
+        "trades": 94,
+        "total_pnl": 12767.0,
+        "avg_pnl": 135.81914893617022,
+        "win_rate": 0.44680851063829785,
+        "profit_factor": 1.4718208359510698
+      },
+      {
+        "group": "right",
+        "right": "P",
+        "trades": 58,
+        "total_pnl": 2769.0,
+        "avg_pnl": 47.741379310344826,
+        "win_rate": 0.5,
+        "profit_factor": 1.17667325974606
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "first_30",
+        "right": "C",
+        "trades": 19,
+        "total_pnl": 4072.0,
+        "avg_pnl": 214.31578947368422,
+        "win_rate": 0.3684210526315789,
+        "profit_factor": 1.4334681711730892
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "trades": 15,
+        "total_pnl": 3765.0,
+        "avg_pnl": 251.0,
+        "win_rate": 0.5333333333333333,
+        "profit_factor": 2.5500205846027173
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "trades": 23,
+        "total_pnl": 2379.0,
+        "avg_pnl": 103.43478260869566,
+        "win_rate": 0.5652173913043478,
+        "profit_factor": 1.504559915164369
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "midday",
+        "right": "C",
+        "trades": 33,
+        "total_pnl": 1654.0,
+        "avg_pnl": 50.121212121212125,
+        "win_rate": 0.3939393939393939,
+        "profit_factor": 1.1939038686987105
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "midday",
+        "right": "P",
+        "trades": 24,
+        "total_pnl": 432.0,
+        "avg_pnl": 18.0,
+        "win_rate": 0.4583333333333333,
+        "profit_factor": 1.0732700135685211
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "trades": 27,
+        "total_pnl": 3276.0,
+        "avg_pnl": 121.33333333333333,
+        "win_rate": 0.5185185185185185,
+        "profit_factor": 1.488517745302714
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "trades": 11,
+        "total_pnl": -42.0,
+        "avg_pnl": -3.8181818181818183,
+        "win_rate": 0.45454545454545453,
+        "profit_factor": 0.99170288423548
+      }
+    ],
+    "trades": [
+      {
+        "session": "2026-02-02",
+        "decision_time": "2026-02-02T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 3058.0,
+        "score": -114.6651840209961
+      },
+      {
+        "session": "2026-02-02",
+        "decision_time": "2026-02-02T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 148.0,
+        "score": -18.536685943603516
+      },
+      {
+        "session": "2026-02-02",
+        "decision_time": "2026-02-02T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 118.0,
+        "score": 61.25636291503906
+      },
+      {
+        "session": "2026-02-02",
+        "decision_time": "2026-02-02T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 758.0,
+        "score": 39.53472900390625
+      },
+      {
+        "session": "2026-02-02",
+        "decision_time": "2026-02-02T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -72.0,
+        "score": 33.77226638793945
+      },
+      {
+        "session": "2026-02-02",
+        "decision_time": "2026-02-02T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 48.0,
+        "score": 59.451148986816406
+      },
+      {
+        "session": "2026-02-02",
+        "decision_time": "2026-02-02T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -42.0,
+        "score": 28.544034957885742
+      },
+      {
+        "session": "2026-02-02",
+        "decision_time": "2026-02-02T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 808.0,
+        "score": -25.606807708740234
+      },
+      {
+        "session": "2026-02-03",
+        "decision_time": "2026-02-03T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -792.0,
+        "score": -34.6014289855957
+      },
+      {
+        "session": "2026-02-03",
+        "decision_time": "2026-02-03T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -642.0,
+        "score": -52.222633361816406
+      },
+      {
+        "session": "2026-02-03",
+        "decision_time": "2026-02-03T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -852.0,
+        "score": -35.72784423828125
+      },
+      {
+        "session": "2026-02-03",
+        "decision_time": "2026-02-03T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -842.0,
+        "score": -121.92796325683594
+      },
+      {
+        "session": "2026-02-03",
+        "decision_time": "2026-02-03T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 678.0,
+        "score": -104.08717346191406
+      },
+      {
+        "session": "2026-02-03",
+        "decision_time": "2026-02-03T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -1092.0,
+        "score": -75.98499298095703
+      },
+      {
+        "session": "2026-02-03",
+        "decision_time": "2026-02-03T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 258.0,
+        "score": -55.80226135253906
+      },
+      {
+        "session": "2026-02-03",
+        "decision_time": "2026-02-03T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 1258.0,
+        "score": -66.29631042480469
+      },
+      {
+        "session": "2026-02-04",
+        "decision_time": "2026-02-04T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -352.0,
+        "score": -100.29610443115234
+      },
+      {
+        "session": "2026-02-04",
+        "decision_time": "2026-02-04T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 268.0,
+        "score": -83.11637878417969
+      },
+      {
+        "session": "2026-02-04",
+        "decision_time": "2026-02-04T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -1122.0,
+        "score": -86.15999603271484
+      },
+      {
+        "session": "2026-02-04",
+        "decision_time": "2026-02-04T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -822.0,
+        "score": -141.0253448486328
+      },
+      {
+        "session": "2026-02-04",
+        "decision_time": "2026-02-04T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -622.0,
+        "score": -96.70370483398438
+      },
+      {
+        "session": "2026-02-04",
+        "decision_time": "2026-02-04T18:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 778.0,
+        "score": -133.98800659179688
+      },
+      {
+        "session": "2026-02-04",
+        "decision_time": "2026-02-04T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 2048.0,
+        "score": -135.43251037597656
+      },
+      {
+        "session": "2026-02-04",
+        "decision_time": "2026-02-04T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -372.0,
+        "score": -75.3171615600586
+      },
+      {
+        "session": "2026-02-05",
+        "decision_time": "2026-02-05T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1782.0,
+        "score": -134.18553161621094
+      },
+      {
+        "session": "2026-02-05",
+        "decision_time": "2026-02-05T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -362.0,
+        "score": -98.85003662109375
+      },
+      {
+        "session": "2026-02-05",
+        "decision_time": "2026-02-05T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 848.0,
+        "score": -133.33145141601562
+      },
+      {
+        "session": "2026-02-05",
+        "decision_time": "2026-02-05T16:48:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 1308.0,
+        "score": -124.86995697021484
+      },
+      {
+        "session": "2026-02-05",
+        "decision_time": "2026-02-05T17:33:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 698.0,
+        "score": -85.94369506835938
+      },
+      {
+        "session": "2026-02-05",
+        "decision_time": "2026-02-05T18:18:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 388.0,
+        "score": -118.60103607177734
+      },
+      {
+        "session": "2026-02-05",
+        "decision_time": "2026-02-05T19:04:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -762.0,
+        "score": -129.59173583984375
+      },
+      {
+        "session": "2026-02-05",
+        "decision_time": "2026-02-05T19:49:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -722.0,
+        "score": -100.48599243164062
+      },
+      {
+        "session": "2026-02-06",
+        "decision_time": "2026-02-06T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 848.0,
+        "score": -135.01812744140625
+      },
+      {
+        "session": "2026-02-06",
+        "decision_time": "2026-02-06T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 698.0,
+        "score": -66.2866439819336
+      },
+      {
+        "session": "2026-02-06",
+        "decision_time": "2026-02-06T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 948.0,
+        "score": -125.67916107177734
+      },
+      {
+        "session": "2026-02-06",
+        "decision_time": "2026-02-06T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -492.0,
+        "score": -35.05419921875
+      },
+      {
+        "session": "2026-02-06",
+        "decision_time": "2026-02-06T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -182.0,
+        "score": -21.50794792175293
+      },
+      {
+        "session": "2026-02-06",
+        "decision_time": "2026-02-06T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -142.0,
+        "score": -62.95628356933594
+      },
+      {
+        "session": "2026-02-06",
+        "decision_time": "2026-02-06T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -42.0,
+        "score": 49.92881774902344
+      },
+      {
+        "session": "2026-02-06",
+        "decision_time": "2026-02-06T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 238.0,
+        "score": -71.26805114746094
+      },
+      {
+        "session": "2026-02-09",
+        "decision_time": "2026-02-09T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 1728.0,
+        "score": -90.66426086425781
+      },
+      {
+        "session": "2026-02-09",
+        "decision_time": "2026-02-09T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 1408.0,
+        "score": -59.55898666381836
+      },
+      {
+        "session": "2026-02-09",
+        "decision_time": "2026-02-09T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 298.0,
+        "score": -70.44518280029297
+      },
+      {
+        "session": "2026-02-09",
+        "decision_time": "2026-02-09T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -62.0,
+        "score": -53.17171859741211
+      },
+      {
+        "session": "2026-02-09",
+        "decision_time": "2026-02-09T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -292.0,
+        "score": 4.29323673248291
+      },
+      {
+        "session": "2026-02-09",
+        "decision_time": "2026-02-09T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -162.0,
+        "score": 52.56194305419922
+      },
+      {
+        "session": "2026-02-09",
+        "decision_time": "2026-02-09T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 648.0,
+        "score": 22.085163116455078
+      },
+      {
+        "session": "2026-02-09",
+        "decision_time": "2026-02-09T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -377.0,
+        "score": -46.49761199951172
+      },
+      {
+        "session": "2026-02-10",
+        "decision_time": "2026-02-10T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -172.0,
+        "score": -91.73986053466797
+      },
+      {
+        "session": "2026-02-10",
+        "decision_time": "2026-02-10T15:19:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 158.0,
+        "score": -85.7094955444336
+      },
+      {
+        "session": "2026-02-10",
+        "decision_time": "2026-02-10T16:04:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -372.0,
+        "score": 21.928543090820312
+      },
+      {
+        "session": "2026-02-10",
+        "decision_time": "2026-02-10T16:49:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -392.0,
+        "score": -118.7562484741211
+      },
+      {
+        "session": "2026-02-10",
+        "decision_time": "2026-02-10T17:34:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 658.0,
+        "score": -81.43974304199219
+      },
+      {
+        "session": "2026-02-10",
+        "decision_time": "2026-02-10T18:19:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 38.0,
+        "score": -103.87623596191406
+      },
+      {
+        "session": "2026-02-10",
+        "decision_time": "2026-02-10T19:04:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -132.0,
+        "score": -47.6388053894043
+      },
+      {
+        "session": "2026-02-10",
+        "decision_time": "2026-02-10T19:49:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 38.0,
+        "score": -5.226950645446777
+      },
+      {
+        "session": "2026-02-11",
+        "decision_time": "2026-02-11T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -922.0,
+        "score": -92.46903991699219
+      },
+      {
+        "session": "2026-02-11",
+        "decision_time": "2026-02-11T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -902.0,
+        "score": -80.736328125
+      },
+      {
+        "session": "2026-02-11",
+        "decision_time": "2026-02-11T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 138.0,
+        "score": -49.83113479614258
+      },
+      {
+        "session": "2026-02-11",
+        "decision_time": "2026-02-11T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 58.0,
+        "score": -106.366455078125
+      },
+      {
+        "session": "2026-02-11",
+        "decision_time": "2026-02-11T17:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 548.0,
+        "score": -91.67927551269531
+      },
+      {
+        "session": "2026-02-11",
+        "decision_time": "2026-02-11T18:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -22.0,
+        "score": -74.99755859375
+      },
+      {
+        "session": "2026-02-11",
+        "decision_time": "2026-02-11T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 408.0,
+        "score": -18.164897918701172
+      },
+      {
+        "session": "2026-02-11",
+        "decision_time": "2026-02-11T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 698.0,
+        "score": -81.51600646972656
+      },
+      {
+        "session": "2026-02-12",
+        "decision_time": "2026-02-12T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -602.0,
+        "score": -68.07843780517578
+      },
+      {
+        "session": "2026-02-12",
+        "decision_time": "2026-02-12T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -852.0,
+        "score": -133.7996368408203
+      },
+      {
+        "session": "2026-02-12",
+        "decision_time": "2026-02-12T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 2598.0,
+        "score": -115.92212677001953
+      },
+      {
+        "session": "2026-02-12",
+        "decision_time": "2026-02-12T16:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -412.0,
+        "score": -133.5257110595703
+      },
+      {
+        "session": "2026-02-12",
+        "decision_time": "2026-02-12T17:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -682.0,
+        "score": -87.69180297851562
+      },
+      {
+        "session": "2026-02-12",
+        "decision_time": "2026-02-12T18:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 808.0,
+        "score": -62.62500762939453
+      },
+      {
+        "session": "2026-02-12",
+        "decision_time": "2026-02-12T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 68.0,
+        "score": -70.34073638916016
+      },
+      {
+        "session": "2026-02-12",
+        "decision_time": "2026-02-12T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -557.0,
+        "score": -107.65755462646484
+      },
+      {
+        "session": "2026-02-13",
+        "decision_time": "2026-02-13T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -142.0,
+        "score": -128.68988037109375
+      },
+      {
+        "session": "2026-02-13",
+        "decision_time": "2026-02-13T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 48.0,
+        "score": -77.76384735107422
+      },
+      {
+        "session": "2026-02-13",
+        "decision_time": "2026-02-13T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 828.0,
+        "score": -116.82051086425781
+      },
+      {
+        "session": "2026-02-13",
+        "decision_time": "2026-02-13T16:48:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -722.0,
+        "score": -115.84044647216797
+      },
+      {
+        "session": "2026-02-13",
+        "decision_time": "2026-02-13T17:33:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -212.0,
+        "score": -120.79143524169922
+      },
+      {
+        "session": "2026-02-13",
+        "decision_time": "2026-02-13T18:18:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 428.0,
+        "score": -129.67294311523438
+      },
+      {
+        "session": "2026-02-13",
+        "decision_time": "2026-02-13T19:03:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -552.0,
+        "score": -134.53680419921875
+      },
+      {
+        "session": "2026-02-13",
+        "decision_time": "2026-02-13T19:48:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1268.0,
+        "score": -101.0576400756836
+      },
+      {
+        "session": "2026-02-17",
+        "decision_time": "2026-02-17T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1572.0,
+        "score": -79.47341918945312
+      },
+      {
+        "session": "2026-02-17",
+        "decision_time": "2026-02-17T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -1102.0,
+        "score": -86.91345977783203
+      },
+      {
+        "session": "2026-02-17",
+        "decision_time": "2026-02-17T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 2918.0,
+        "score": -141.21258544921875
+      },
+      {
+        "session": "2026-02-17",
+        "decision_time": "2026-02-17T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -282.0,
+        "score": -99.22811126708984
+      },
+      {
+        "session": "2026-02-17",
+        "decision_time": "2026-02-17T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 748.0,
+        "score": -71.230224609375
+      },
+      {
+        "session": "2026-02-17",
+        "decision_time": "2026-02-17T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -852.0,
+        "score": -104.44410705566406
+      },
+      {
+        "session": "2026-02-17",
+        "decision_time": "2026-02-17T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -542.0,
+        "score": -111.73282623291016
+      },
+      {
+        "session": "2026-02-17",
+        "decision_time": "2026-02-17T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1128.0,
+        "score": -104.03079986572266
+      },
+      {
+        "session": "2026-02-18",
+        "decision_time": "2026-02-18T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 2748.0,
+        "score": -108.05581665039062
+      },
+      {
+        "session": "2026-02-18",
+        "decision_time": "2026-02-18T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -602.0,
+        "score": 9.541593551635742
+      },
+      {
+        "session": "2026-02-18",
+        "decision_time": "2026-02-18T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -282.0,
+        "score": 8.224138259887695
+      },
+      {
+        "session": "2026-02-18",
+        "decision_time": "2026-02-18T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -192.0,
+        "score": -22.626419067382812
+      },
+      {
+        "session": "2026-02-18",
+        "decision_time": "2026-02-18T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 28.0,
+        "score": -92.66709899902344
+      },
+      {
+        "session": "2026-02-18",
+        "decision_time": "2026-02-18T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -452.0,
+        "score": -4.238003253936768
+      },
+      {
+        "session": "2026-02-18",
+        "decision_time": "2026-02-18T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1348.0,
+        "score": -137.67349243164062
+      },
+      {
+        "session": "2026-02-18",
+        "decision_time": "2026-02-18T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 8.0,
+        "score": -25.50511932373047
+      },
+      {
+        "session": "2026-02-19",
+        "decision_time": "2026-02-19T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 18.0,
+        "score": -70.8882064819336
+      },
+      {
+        "session": "2026-02-19",
+        "decision_time": "2026-02-19T15:21:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -502.0,
+        "score": -127.86017608642578
+      },
+      {
+        "session": "2026-02-19",
+        "decision_time": "2026-02-19T16:06:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -722.0,
+        "score": -71.65066528320312
+      },
+      {
+        "session": "2026-02-19",
+        "decision_time": "2026-02-19T16:51:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -652.0,
+        "score": -77.9376449584961
+      },
+      {
+        "session": "2026-02-19",
+        "decision_time": "2026-02-19T17:36:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 1128.0,
+        "score": -105.30455017089844
+      },
+      {
+        "session": "2026-02-19",
+        "decision_time": "2026-02-19T18:21:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -772.0,
+        "score": -121.34825134277344
+      },
+      {
+        "session": "2026-02-19",
+        "decision_time": "2026-02-19T19:06:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 468.0,
+        "score": -121.4289779663086
+      },
+      {
+        "session": "2026-02-19",
+        "decision_time": "2026-02-19T19:51:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -537.0,
+        "score": -81.15238189697266
+      },
+      {
+        "session": "2026-02-20",
+        "decision_time": "2026-02-20T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 4818.0,
+        "score": -97.69024658203125
+      },
+      {
+        "session": "2026-02-20",
+        "decision_time": "2026-02-20T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -1452.0,
+        "score": -38.722965240478516
+      },
+      {
+        "session": "2026-02-20",
+        "decision_time": "2026-02-20T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -362.0,
+        "score": -130.3068389892578
+      },
+      {
+        "session": "2026-02-20",
+        "decision_time": "2026-02-20T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -792.0,
+        "score": -125.31913757324219
+      },
+      {
+        "session": "2026-02-20",
+        "decision_time": "2026-02-20T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -722.0,
+        "score": -44.89830017089844
+      },
+      {
+        "session": "2026-02-20",
+        "decision_time": "2026-02-20T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 2128.0,
+        "score": -116.45686340332031
+      },
+      {
+        "session": "2026-02-20",
+        "decision_time": "2026-02-20T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 548.0,
+        "score": -45.19315719604492
+      },
+      {
+        "session": "2026-02-20",
+        "decision_time": "2026-02-20T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -517.0,
+        "score": -78.86844635009766
+      },
+      {
+        "session": "2026-02-23",
+        "decision_time": "2026-02-23T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1142.0,
+        "score": -77.24826049804688
+      },
+      {
+        "session": "2026-02-23",
+        "decision_time": "2026-02-23T15:18:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 1848.0,
+        "score": -132.9099884033203
+      },
+      {
+        "session": "2026-02-23",
+        "decision_time": "2026-02-23T16:03:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -62.0,
+        "score": -67.52860260009766
+      },
+      {
+        "session": "2026-02-23",
+        "decision_time": "2026-02-23T16:48:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -542.0,
+        "score": -87.17652893066406
+      },
+      {
+        "session": "2026-02-23",
+        "decision_time": "2026-02-23T17:33:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 968.0,
+        "score": -58.25157165527344
+      },
+      {
+        "session": "2026-02-23",
+        "decision_time": "2026-02-23T18:18:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 698.0,
+        "score": -141.06996154785156
+      },
+      {
+        "session": "2026-02-23",
+        "decision_time": "2026-02-23T19:03:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -577.0,
+        "score": -29.89150619506836
+      },
+      {
+        "session": "2026-02-23",
+        "decision_time": "2026-02-23T19:49:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -457.0,
+        "score": -137.45278930664062
+      },
+      {
+        "session": "2026-02-24",
+        "decision_time": "2026-02-24T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 248.0,
+        "score": -70.74940490722656
+      },
+      {
+        "session": "2026-02-24",
+        "decision_time": "2026-02-24T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 1018.0,
+        "score": -118.46387481689453
+      },
+      {
+        "session": "2026-02-24",
+        "decision_time": "2026-02-24T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -82.0,
+        "score": 15.438101768493652
+      },
+      {
+        "session": "2026-02-24",
+        "decision_time": "2026-02-24T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 1048.0,
+        "score": -141.83448791503906
+      },
+      {
+        "session": "2026-02-24",
+        "decision_time": "2026-02-24T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -102.0,
+        "score": -46.35030746459961
+      },
+      {
+        "session": "2026-02-24",
+        "decision_time": "2026-02-24T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -132.0,
+        "score": -66.34495544433594
+      },
+      {
+        "session": "2026-02-24",
+        "decision_time": "2026-02-24T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -282.0,
+        "score": 27.30368423461914
+      },
+      {
+        "session": "2026-02-24",
+        "decision_time": "2026-02-24T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 298.0,
+        "score": -87.21571350097656
+      },
+      {
+        "session": "2026-02-25",
+        "decision_time": "2026-02-25T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -482.0,
+        "score": -62.480018615722656
+      },
+      {
+        "session": "2026-02-25",
+        "decision_time": "2026-02-25T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 28.0,
+        "score": 65.40479278564453
+      },
+      {
+        "session": "2026-02-25",
+        "decision_time": "2026-02-25T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 368.0,
+        "score": 81.84912872314453
+      },
+      {
+        "session": "2026-02-25",
+        "decision_time": "2026-02-25T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -112.0,
+        "score": 22.596723556518555
+      },
+      {
+        "session": "2026-02-25",
+        "decision_time": "2026-02-25T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 178.0,
+        "score": -113.17566680908203
+      },
+      {
+        "session": "2026-02-25",
+        "decision_time": "2026-02-25T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 18.0,
+        "score": -75.25060272216797
+      },
+      {
+        "session": "2026-02-25",
+        "decision_time": "2026-02-25T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -142.0,
+        "score": -71.58233642578125
+      },
+      {
+        "session": "2026-02-25",
+        "decision_time": "2026-02-25T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 8.0,
+        "score": 25.338897705078125
+      },
+      {
+        "session": "2026-02-26",
+        "decision_time": "2026-02-26T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1422.0,
+        "score": -88.61373901367188
+      },
+      {
+        "session": "2026-02-26",
+        "decision_time": "2026-02-26T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -342.0,
+        "score": -80.87250518798828
+      },
+      {
+        "session": "2026-02-26",
+        "decision_time": "2026-02-26T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -852.0,
+        "score": -119.41316223144531
+      },
+      {
+        "session": "2026-02-26",
+        "decision_time": "2026-02-26T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -472.0,
+        "score": -76.12025451660156
+      },
+      {
+        "session": "2026-02-26",
+        "decision_time": "2026-02-26T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -612.0,
+        "score": -97.8251724243164
+      },
+      {
+        "session": "2026-02-26",
+        "decision_time": "2026-02-26T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 2058.0,
+        "score": -37.96660614013672
+      },
+      {
+        "session": "2026-02-26",
+        "decision_time": "2026-02-26T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 1268.0,
+        "score": -63.29379653930664
+      },
+      {
+        "session": "2026-02-26",
+        "decision_time": "2026-02-26T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 178.0,
+        "score": -135.89959716796875
+      },
+      {
+        "session": "2026-02-27",
+        "decision_time": "2026-02-27T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -12.0,
+        "score": -132.82054138183594
+      },
+      {
+        "session": "2026-02-27",
+        "decision_time": "2026-02-27T15:17:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 318.0,
+        "score": -97.33942413330078
+      },
+      {
+        "session": "2026-02-27",
+        "decision_time": "2026-02-27T16:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -302.0,
+        "score": -135.56069946289062
+      },
+      {
+        "session": "2026-02-27",
+        "decision_time": "2026-02-27T16:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 318.0,
+        "score": -111.08362579345703
+      },
+      {
+        "session": "2026-02-27",
+        "decision_time": "2026-02-27T17:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -82.0,
+        "score": -33.0021858215332
+      },
+      {
+        "session": "2026-02-27",
+        "decision_time": "2026-02-27T18:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -432.0,
+        "score": -131.8126220703125
+      },
+      {
+        "session": "2026-02-27",
+        "decision_time": "2026-02-27T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 298.0,
+        "score": -101.4591064453125
+      },
+      {
+        "session": "2026-02-27",
+        "decision_time": "2026-02-27T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -532.0,
+        "score": -76.22919464111328
+      }
+    ]
+  },
+  "test": {
+    "metrics": {
+      "trades": 176,
+      "total_pnl": 10473.0,
+      "avg_pnl": 59.50568181818182,
+      "median_pnl": -182.0,
+      "win_rate": 0.4318181818181818,
+      "profit_factor": 1.1684168207767147,
+      "max_drawdown": -8867.0,
+      "sessions_traded": 22,
+      "mean_daily_pnl": 476.04545454545456,
+      "median_daily_pnl": 496.5,
+      "positive_day_fraction": 0.5909090909090909
+    },
+    "groups": [
+      {
+        "group": "time_bucket",
+        "time_bucket": "first_30",
+        "trades": 22,
+        "total_pnl": -6954.0,
+        "avg_pnl": -316.09090909090907,
+        "win_rate": 0.3181818181818182,
+        "profit_factor": 0.5475601821730645
+      },
+      {
+        "group": "time_bucket",
+        "time_bucket": "late_afternoon",
+        "trades": 45,
+        "total_pnl": 8545.0,
+        "avg_pnl": 189.88888888888889,
+        "win_rate": 0.5333333333333333,
+        "profit_factor": 1.8322781727865978
+      },
+      {
+        "group": "time_bucket",
+        "time_bucket": "midday",
+        "trades": 65,
+        "total_pnl": 2320.0,
+        "avg_pnl": 35.69230769230769,
+        "win_rate": 0.4307692307692308,
+        "profit_factor": 1.117088927021298
+      },
+      {
+        "group": "time_bucket",
+        "time_bucket": "post_open_morning",
+        "trades": 44,
+        "total_pnl": 6562.0,
+        "avg_pnl": 149.13636363636363,
+        "win_rate": 0.38636363636363635,
+        "profit_factor": 1.3921357714832079
+      },
+      {
+        "group": "right",
+        "right": "C",
+        "trades": 52,
+        "total_pnl": 436.0,
+        "avg_pnl": 8.384615384615385,
+        "win_rate": 0.38461538461538464,
+        "profit_factor": 1.0168443826301963
+      },
+      {
+        "group": "right",
+        "right": "P",
+        "trades": 124,
+        "total_pnl": 10037.0,
+        "avg_pnl": 80.94354838709677,
+        "win_rate": 0.45161290322580644,
+        "profit_factor": 1.2764937605024655
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "first_30",
+        "right": "C",
+        "trades": 22,
+        "total_pnl": -6954.0,
+        "avg_pnl": -316.09090909090907,
+        "win_rate": 0.3181818181818182,
+        "profit_factor": 0.5475601821730645
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "trades": 3,
+        "total_pnl": 684.0,
+        "avg_pnl": 228.0,
+        "win_rate": 0.3333333333333333,
+        "profit_factor": 2.078864353312303
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "trades": 42,
+        "total_pnl": 7861.0,
+        "avg_pnl": 187.16666666666666,
+        "win_rate": 0.5476190476190477,
+        "profit_factor": 1.816048998235233
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "midday",
+        "right": "C",
+        "trades": 3,
+        "total_pnl": 104.0,
+        "avg_pnl": 34.666666666666664,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 1.2203389830508475
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "midday",
+        "right": "P",
+        "trades": 62,
+        "total_pnl": 2216.0,
+        "avg_pnl": 35.74193548387097,
+        "win_rate": 0.41935483870967744,
+        "profit_factor": 1.1145693309895564
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "trades": 24,
+        "total_pnl": 6602.0,
+        "avg_pnl": 275.0833333333333,
+        "win_rate": 0.4166666666666667,
+        "profit_factor": 1.7017431972789117
+      },
+      {
+        "group": "time_bucket+right",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "trades": 20,
+        "total_pnl": -40.0,
+        "avg_pnl": -2.0,
+        "win_rate": 0.35,
+        "profit_factor": 0.9945399945399945
+      }
+    ],
+    "trades": [
+      {
+        "session": "2026-03-02",
+        "decision_time": "2026-03-02T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 3228.0,
+        "score": -138.6001739501953
+      },
+      {
+        "session": "2026-03-02",
+        "decision_time": "2026-03-02T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 148.0,
+        "score": -94.30140686035156
+      },
+      {
+        "session": "2026-03-02",
+        "decision_time": "2026-03-02T16:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 1598.0,
+        "score": -117.6686019897461
+      },
+      {
+        "session": "2026-03-02",
+        "decision_time": "2026-03-02T16:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -222.0,
+        "score": -62.61427307128906
+      },
+      {
+        "session": "2026-03-02",
+        "decision_time": "2026-03-02T17:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -362.0,
+        "score": -126.58367156982422
+      },
+      {
+        "session": "2026-03-02",
+        "decision_time": "2026-03-02T18:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": -472.0,
+        "score": -18.942974090576172
+      },
+      {
+        "session": "2026-03-02",
+        "decision_time": "2026-03-02T19:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": 1318.0,
+        "score": -87.37177276611328
+      },
+      {
+        "session": "2026-03-02",
+        "decision_time": "2026-03-02T19:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -432.0,
+        "score": -24.276954650878906
+      },
+      {
+        "session": "2026-03-03",
+        "decision_time": "2026-03-03T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1962.0,
+        "score": -111.66870880126953
+      },
+      {
+        "session": "2026-03-03",
+        "decision_time": "2026-03-03T15:17:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -362.0,
+        "score": -122.65132904052734
+      },
+      {
+        "session": "2026-03-03",
+        "decision_time": "2026-03-03T16:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 3038.0,
+        "score": -113.39836120605469
+      },
+      {
+        "session": "2026-03-03",
+        "decision_time": "2026-03-03T16:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 188.0,
+        "score": -24.513072967529297
+      },
+      {
+        "session": "2026-03-03",
+        "decision_time": "2026-03-03T17:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -742.0,
+        "score": -121.94447326660156
+      },
+      {
+        "session": "2026-03-03",
+        "decision_time": "2026-03-03T18:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -892.0,
+        "score": -123.21947479248047
+      },
+      {
+        "session": "2026-03-03",
+        "decision_time": "2026-03-03T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -472.0,
+        "score": -100.03990173339844
+      },
+      {
+        "session": "2026-03-03",
+        "decision_time": "2026-03-03T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 448.0,
+        "score": -79.16744232177734
+      },
+      {
+        "session": "2026-03-04",
+        "decision_time": "2026-03-04T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -102.0,
+        "score": -90.26795959472656
+      },
+      {
+        "session": "2026-03-04",
+        "decision_time": "2026-03-04T15:17:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 1258.0,
+        "score": -138.94754028320312
+      },
+      {
+        "session": "2026-03-04",
+        "decision_time": "2026-03-04T16:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -112.0,
+        "score": -123.33268737792969
+      },
+      {
+        "session": "2026-03-04",
+        "decision_time": "2026-03-04T16:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 788.0,
+        "score": -90.36759185791016
+      },
+      {
+        "session": "2026-03-04",
+        "decision_time": "2026-03-04T17:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -612.0,
+        "score": -106.56843566894531
+      },
+      {
+        "session": "2026-03-04",
+        "decision_time": "2026-03-04T18:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 248.0,
+        "score": -113.97842407226562
+      },
+      {
+        "session": "2026-03-04",
+        "decision_time": "2026-03-04T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "C",
+        "pnl": -202.0,
+        "score": -86.9266128540039
+      },
+      {
+        "session": "2026-03-04",
+        "decision_time": "2026-03-04T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 658.0,
+        "score": -117.60961151123047
+      },
+      {
+        "session": "2026-03-05",
+        "decision_time": "2026-03-05T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 268.0,
+        "score": -83.52842712402344
+      },
+      {
+        "session": "2026-03-05",
+        "decision_time": "2026-03-05T15:18:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -982.0,
+        "score": -140.0592498779297
+      },
+      {
+        "session": "2026-03-05",
+        "decision_time": "2026-03-05T16:03:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -502.0,
+        "score": -119.42117309570312
+      },
+      {
+        "session": "2026-03-05",
+        "decision_time": "2026-03-05T16:48:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 2468.0,
+        "score": -127.07259368896484
+      },
+      {
+        "session": "2026-03-05",
+        "decision_time": "2026-03-05T17:33:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -382.0,
+        "score": -84.7922134399414
+      },
+      {
+        "session": "2026-03-05",
+        "decision_time": "2026-03-05T18:29:00+00:00",
+        "time_bucket": "midday",
+        "right": "C",
+        "pnl": 328.0,
+        "score": -141.0506134033203
+      },
+      {
+        "session": "2026-03-05",
+        "decision_time": "2026-03-05T19:21:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -202.0,
+        "score": -125.65703582763672
+      },
+      {
+        "session": "2026-03-05",
+        "decision_time": "2026-03-05T20:06:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -542.0,
+        "score": -83.46681213378906
+      },
+      {
+        "session": "2026-03-06",
+        "decision_time": "2026-03-06T14:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -582.0,
+        "score": -128.3509063720703
+      },
+      {
+        "session": "2026-03-06",
+        "decision_time": "2026-03-06T15:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 658.0,
+        "score": -130.97964477539062
+      },
+      {
+        "session": "2026-03-06",
+        "decision_time": "2026-03-06T16:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -252.0,
+        "score": -139.21237182617188
+      },
+      {
+        "session": "2026-03-06",
+        "decision_time": "2026-03-06T16:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 718.0,
+        "score": -117.07108306884766
+      },
+      {
+        "session": "2026-03-06",
+        "decision_time": "2026-03-06T17:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -1062.0,
+        "score": -79.06336212158203
+      },
+      {
+        "session": "2026-03-06",
+        "decision_time": "2026-03-06T18:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 658.0,
+        "score": -84.37171173095703
+      },
+      {
+        "session": "2026-03-06",
+        "decision_time": "2026-03-06T19:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -542.0,
+        "score": -134.8675537109375
+      },
+      {
+        "session": "2026-03-06",
+        "decision_time": "2026-03-06T19:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1828.0,
+        "score": -110.52877044677734
+      },
+      {
+        "session": "2026-03-09",
+        "decision_time": "2026-03-09T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -2312.0,
+        "score": -109.32979583740234
+      },
+      {
+        "session": "2026-03-09",
+        "decision_time": "2026-03-09T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 3008.0,
+        "score": -124.14051055908203
+      },
+      {
+        "session": "2026-03-09",
+        "decision_time": "2026-03-09T15:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -712.0,
+        "score": -136.32891845703125
+      },
+      {
+        "session": "2026-03-09",
+        "decision_time": "2026-03-09T15:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -702.0,
+        "score": -93.3531494140625
+      },
+      {
+        "session": "2026-03-09",
+        "decision_time": "2026-03-09T16:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -272.0,
+        "score": -109.70991516113281
+      },
+      {
+        "session": "2026-03-09",
+        "decision_time": "2026-03-09T17:19:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 58.0,
+        "score": -139.35777282714844
+      },
+      {
+        "session": "2026-03-09",
+        "decision_time": "2026-03-09T18:04:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -682.0,
+        "score": -124.97134399414062
+      },
+      {
+        "session": "2026-03-09",
+        "decision_time": "2026-03-09T18:49:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -672.0,
+        "score": -110.6134033203125
+      },
+      {
+        "session": "2026-03-10",
+        "decision_time": "2026-03-10T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1602.0,
+        "score": -78.25503540039062
+      },
+      {
+        "session": "2026-03-10",
+        "decision_time": "2026-03-10T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 3518.0,
+        "score": -122.9822769165039
+      },
+      {
+        "session": "2026-03-10",
+        "decision_time": "2026-03-10T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -352.0,
+        "score": -42.77997970581055
+      },
+      {
+        "session": "2026-03-10",
+        "decision_time": "2026-03-10T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 118.0,
+        "score": -109.31443786621094
+      },
+      {
+        "session": "2026-03-10",
+        "decision_time": "2026-03-10T16:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -622.0,
+        "score": -59.449981689453125
+      },
+      {
+        "session": "2026-03-10",
+        "decision_time": "2026-03-10T17:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -72.0,
+        "score": -84.69998931884766
+      },
+      {
+        "session": "2026-03-10",
+        "decision_time": "2026-03-10T18:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 2748.0,
+        "score": -117.27418518066406
+      },
+      {
+        "session": "2026-03-10",
+        "decision_time": "2026-03-10T18:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 628.0,
+        "score": -74.6119155883789
+      },
+      {
+        "session": "2026-03-11",
+        "decision_time": "2026-03-11T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -582.0,
+        "score": -89.88116455078125
+      },
+      {
+        "session": "2026-03-11",
+        "decision_time": "2026-03-11T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 108.0,
+        "score": -135.7666778564453
+      },
+      {
+        "session": "2026-03-11",
+        "decision_time": "2026-03-11T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -1262.0,
+        "score": -133.7393798828125
+      },
+      {
+        "session": "2026-03-11",
+        "decision_time": "2026-03-11T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -712.0,
+        "score": -130.2640838623047
+      },
+      {
+        "session": "2026-03-11",
+        "decision_time": "2026-03-11T16:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -642.0,
+        "score": -103.7149887084961
+      },
+      {
+        "session": "2026-03-11",
+        "decision_time": "2026-03-11T17:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 358.0,
+        "score": -125.2228012084961
+      },
+      {
+        "session": "2026-03-11",
+        "decision_time": "2026-03-11T18:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -392.0,
+        "score": -74.33492279052734
+      },
+      {
+        "session": "2026-03-11",
+        "decision_time": "2026-03-11T18:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -282.0,
+        "score": -113.96713256835938
+      },
+      {
+        "session": "2026-03-12",
+        "decision_time": "2026-03-12T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -282.0,
+        "score": -88.40950775146484
+      },
+      {
+        "session": "2026-03-12",
+        "decision_time": "2026-03-12T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 1558.0,
+        "score": -130.6505126953125
+      },
+      {
+        "session": "2026-03-12",
+        "decision_time": "2026-03-12T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 838.0,
+        "score": -138.43951416015625
+      },
+      {
+        "session": "2026-03-12",
+        "decision_time": "2026-03-12T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 538.0,
+        "score": -101.50440979003906
+      },
+      {
+        "session": "2026-03-12",
+        "decision_time": "2026-03-12T16:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -352.0,
+        "score": -79.76909637451172
+      },
+      {
+        "session": "2026-03-12",
+        "decision_time": "2026-03-12T17:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -222.0,
+        "score": -118.7294692993164
+      },
+      {
+        "session": "2026-03-12",
+        "decision_time": "2026-03-12T18:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 218.0,
+        "score": -68.97779846191406
+      },
+      {
+        "session": "2026-03-12",
+        "decision_time": "2026-03-12T18:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -672.0,
+        "score": -100.79559326171875
+      },
+      {
+        "session": "2026-03-13",
+        "decision_time": "2026-03-13T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -932.0,
+        "score": -66.21566772460938
+      },
+      {
+        "session": "2026-03-13",
+        "decision_time": "2026-03-13T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -1492.0,
+        "score": -98.3524169921875
+      },
+      {
+        "session": "2026-03-13",
+        "decision_time": "2026-03-13T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 358.0,
+        "score": -108.12799835205078
+      },
+      {
+        "session": "2026-03-13",
+        "decision_time": "2026-03-13T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -702.0,
+        "score": -129.3079376220703
+      },
+      {
+        "session": "2026-03-13",
+        "decision_time": "2026-03-13T16:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -422.0,
+        "score": -119.57687377929688
+      },
+      {
+        "session": "2026-03-13",
+        "decision_time": "2026-03-13T17:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 1218.0,
+        "score": -107.35994720458984
+      },
+      {
+        "session": "2026-03-13",
+        "decision_time": "2026-03-13T18:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -752.0,
+        "score": -126.06248474121094
+      },
+      {
+        "session": "2026-03-13",
+        "decision_time": "2026-03-13T18:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1448.0,
+        "score": -110.44544219970703
+      },
+      {
+        "session": "2026-03-16",
+        "decision_time": "2026-03-16T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 1068.0,
+        "score": -78.26404571533203
+      },
+      {
+        "session": "2026-03-16",
+        "decision_time": "2026-03-16T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -1172.0,
+        "score": -113.67657470703125
+      },
+      {
+        "session": "2026-03-16",
+        "decision_time": "2026-03-16T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -272.0,
+        "score": -103.43062591552734
+      },
+      {
+        "session": "2026-03-16",
+        "decision_time": "2026-03-16T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 1778.0,
+        "score": -131.81410217285156
+      },
+      {
+        "session": "2026-03-16",
+        "decision_time": "2026-03-16T16:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -912.0,
+        "score": -56.97258758544922
+      },
+      {
+        "session": "2026-03-16",
+        "decision_time": "2026-03-16T17:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -72.0,
+        "score": -90.5218734741211
+      },
+      {
+        "session": "2026-03-16",
+        "decision_time": "2026-03-16T18:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -467.0,
+        "score": -119.41153717041016
+      },
+      {
+        "session": "2026-03-16",
+        "decision_time": "2026-03-16T18:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 588.0,
+        "score": -87.49944305419922
+      },
+      {
+        "session": "2026-03-17",
+        "decision_time": "2026-03-17T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -632.0,
+        "score": -43.32771682739258
+      },
+      {
+        "session": "2026-03-17",
+        "decision_time": "2026-03-17T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 218.0,
+        "score": -91.79145050048828
+      },
+      {
+        "session": "2026-03-17",
+        "decision_time": "2026-03-17T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -842.0,
+        "score": -60.74137878417969
+      },
+      {
+        "session": "2026-03-17",
+        "decision_time": "2026-03-17T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -62.0,
+        "score": -90.81414031982422
+      },
+      {
+        "session": "2026-03-17",
+        "decision_time": "2026-03-17T16:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -252.0,
+        "score": -115.24921417236328
+      },
+      {
+        "session": "2026-03-17",
+        "decision_time": "2026-03-17T17:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -342.0,
+        "score": -138.17926025390625
+      },
+      {
+        "session": "2026-03-17",
+        "decision_time": "2026-03-17T18:04:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 348.0,
+        "score": -141.86817932128906
+      },
+      {
+        "session": "2026-03-17",
+        "decision_time": "2026-03-17T18:49:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -192.0,
+        "score": -78.9247055053711
+      },
+      {
+        "session": "2026-03-18",
+        "decision_time": "2026-03-18T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -662.0,
+        "score": -91.06047821044922
+      },
+      {
+        "session": "2026-03-18",
+        "decision_time": "2026-03-18T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -142.0,
+        "score": -104.97599792480469
+      },
+      {
+        "session": "2026-03-18",
+        "decision_time": "2026-03-18T15:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -392.0,
+        "score": -130.09115600585938
+      },
+      {
+        "session": "2026-03-18",
+        "decision_time": "2026-03-18T15:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -302.0,
+        "score": -117.66355895996094
+      },
+      {
+        "session": "2026-03-18",
+        "decision_time": "2026-03-18T16:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 788.0,
+        "score": -125.02619171142578
+      },
+      {
+        "session": "2026-03-18",
+        "decision_time": "2026-03-18T17:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -882.0,
+        "score": -102.38272857666016
+      },
+      {
+        "session": "2026-03-18",
+        "decision_time": "2026-03-18T18:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1038.0,
+        "score": -115.07886505126953
+      },
+      {
+        "session": "2026-03-18",
+        "decision_time": "2026-03-18T18:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 788.0,
+        "score": -80.18724060058594
+      },
+      {
+        "session": "2026-03-19",
+        "decision_time": "2026-03-19T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 238.0,
+        "score": -97.63616943359375
+      },
+      {
+        "session": "2026-03-19",
+        "decision_time": "2026-03-19T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -432.0,
+        "score": -134.98138427734375
+      },
+      {
+        "session": "2026-03-19",
+        "decision_time": "2026-03-19T15:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -652.0,
+        "score": -134.0830841064453
+      },
+      {
+        "session": "2026-03-19",
+        "decision_time": "2026-03-19T15:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -832.0,
+        "score": -105.91691589355469
+      },
+      {
+        "session": "2026-03-19",
+        "decision_time": "2026-03-19T16:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 858.0,
+        "score": -90.78062438964844
+      },
+      {
+        "session": "2026-03-19",
+        "decision_time": "2026-03-19T17:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -822.0,
+        "score": -106.62548828125
+      },
+      {
+        "session": "2026-03-19",
+        "decision_time": "2026-03-19T18:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 8.0,
+        "score": -123.21194458007812
+      },
+      {
+        "session": "2026-03-19",
+        "decision_time": "2026-03-19T18:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -502.0,
+        "score": -72.92269897460938
+      },
+      {
+        "session": "2026-03-20",
+        "decision_time": "2026-03-20T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1582.0,
+        "score": -113.25948333740234
+      },
+      {
+        "session": "2026-03-20",
+        "decision_time": "2026-03-20T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -762.0,
+        "score": -110.76405334472656
+      },
+      {
+        "session": "2026-03-20",
+        "decision_time": "2026-03-20T15:03:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -102.0,
+        "score": -134.7098388671875
+      },
+      {
+        "session": "2026-03-20",
+        "decision_time": "2026-03-20T15:48:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 48.0,
+        "score": -125.47496795654297
+      },
+      {
+        "session": "2026-03-20",
+        "decision_time": "2026-03-20T16:33:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -292.0,
+        "score": -123.47265625
+      },
+      {
+        "session": "2026-03-20",
+        "decision_time": "2026-03-20T17:18:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 418.0,
+        "score": -115.00277709960938
+      },
+      {
+        "session": "2026-03-20",
+        "decision_time": "2026-03-20T18:03:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1838.0,
+        "score": -127.97731018066406
+      },
+      {
+        "session": "2026-03-20",
+        "decision_time": "2026-03-20T18:48:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 158.0,
+        "score": -68.4025650024414
+      },
+      {
+        "session": "2026-03-23",
+        "decision_time": "2026-03-23T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 1048.0,
+        "score": -116.73664093017578
+      },
+      {
+        "session": "2026-03-23",
+        "decision_time": "2026-03-23T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -742.0,
+        "score": -109.61576843261719
+      },
+      {
+        "session": "2026-03-23",
+        "decision_time": "2026-03-23T15:03:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 2588.0,
+        "score": -109.1928939819336
+      },
+      {
+        "session": "2026-03-23",
+        "decision_time": "2026-03-23T15:48:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 3008.0,
+        "score": -96.82707214355469
+      },
+      {
+        "session": "2026-03-23",
+        "decision_time": "2026-03-23T16:33:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -662.0,
+        "score": -98.70308685302734
+      },
+      {
+        "session": "2026-03-23",
+        "decision_time": "2026-03-23T17:20:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -1022.0,
+        "score": -130.22962951660156
+      },
+      {
+        "session": "2026-03-23",
+        "decision_time": "2026-03-23T18:05:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -532.0,
+        "score": -116.14193725585938
+      },
+      {
+        "session": "2026-03-23",
+        "decision_time": "2026-03-23T18:50:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 878.0,
+        "score": -81.82586669921875
+      },
+      {
+        "session": "2026-03-24",
+        "decision_time": "2026-03-24T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -172.0,
+        "score": -107.26823425292969
+      },
+      {
+        "session": "2026-03-24",
+        "decision_time": "2026-03-24T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": 1768.0,
+        "score": -133.20953369140625
+      },
+      {
+        "session": "2026-03-24",
+        "decision_time": "2026-03-24T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -1112.0,
+        "score": -107.25517272949219
+      },
+      {
+        "session": "2026-03-24",
+        "decision_time": "2026-03-24T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 8.0,
+        "score": -120.3714828491211
+      },
+      {
+        "session": "2026-03-24",
+        "decision_time": "2026-03-24T16:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 2128.0,
+        "score": -108.29071807861328
+      },
+      {
+        "session": "2026-03-24",
+        "decision_time": "2026-03-24T17:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -752.0,
+        "score": -81.62286376953125
+      },
+      {
+        "session": "2026-03-24",
+        "decision_time": "2026-03-24T18:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -782.0,
+        "score": -89.46324920654297
+      },
+      {
+        "session": "2026-03-24",
+        "decision_time": "2026-03-24T18:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -52.0,
+        "score": -91.9801025390625
+      },
+      {
+        "session": "2026-03-25",
+        "decision_time": "2026-03-25T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1182.0,
+        "score": -98.59441375732422
+      },
+      {
+        "session": "2026-03-25",
+        "decision_time": "2026-03-25T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -612.0,
+        "score": -75.0939712524414
+      },
+      {
+        "session": "2026-03-25",
+        "decision_time": "2026-03-25T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "C",
+        "pnl": -1142.0,
+        "score": -119.76426696777344
+      },
+      {
+        "session": "2026-03-25",
+        "decision_time": "2026-03-25T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -582.0,
+        "score": -88.13207244873047
+      },
+      {
+        "session": "2026-03-25",
+        "decision_time": "2026-03-25T16:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -172.0,
+        "score": -108.35749816894531
+      },
+      {
+        "session": "2026-03-25",
+        "decision_time": "2026-03-25T17:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -432.0,
+        "score": -124.91557312011719
+      },
+      {
+        "session": "2026-03-25",
+        "decision_time": "2026-03-25T18:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 178.0,
+        "score": -119.80889129638672
+      },
+      {
+        "session": "2026-03-25",
+        "decision_time": "2026-03-25T18:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 178.0,
+        "score": -116.11762237548828
+      },
+      {
+        "session": "2026-03-26",
+        "decision_time": "2026-03-26T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 1708.0,
+        "score": -115.60957336425781
+      },
+      {
+        "session": "2026-03-26",
+        "decision_time": "2026-03-26T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 1008.0,
+        "score": -115.01522064208984
+      },
+      {
+        "session": "2026-03-26",
+        "decision_time": "2026-03-26T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 418.0,
+        "score": -133.61355590820312
+      },
+      {
+        "session": "2026-03-26",
+        "decision_time": "2026-03-26T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 1058.0,
+        "score": -128.23988342285156
+      },
+      {
+        "session": "2026-03-26",
+        "decision_time": "2026-03-26T16:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -72.0,
+        "score": -108.25776672363281
+      },
+      {
+        "session": "2026-03-26",
+        "decision_time": "2026-03-26T17:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 1148.0,
+        "score": -139.7122344970703
+      },
+      {
+        "session": "2026-03-26",
+        "decision_time": "2026-03-26T18:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -222.0,
+        "score": -102.2828598022461
+      },
+      {
+        "session": "2026-03-26",
+        "decision_time": "2026-03-26T18:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 198.0,
+        "score": -117.11737060546875
+      },
+      {
+        "session": "2026-03-27",
+        "decision_time": "2026-03-27T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1202.0,
+        "score": -127.22004699707031
+      },
+      {
+        "session": "2026-03-27",
+        "decision_time": "2026-03-27T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -302.0,
+        "score": -106.72445678710938
+      },
+      {
+        "session": "2026-03-27",
+        "decision_time": "2026-03-27T15:23:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -232.0,
+        "score": -141.843505859375
+      },
+      {
+        "session": "2026-03-27",
+        "decision_time": "2026-03-27T16:08:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 198.0,
+        "score": -122.4079818725586
+      },
+      {
+        "session": "2026-03-27",
+        "decision_time": "2026-03-27T16:53:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 908.0,
+        "score": -131.5993194580078
+      },
+      {
+        "session": "2026-03-27",
+        "decision_time": "2026-03-27T17:38:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 478.0,
+        "score": -123.17961120605469
+      },
+      {
+        "session": "2026-03-27",
+        "decision_time": "2026-03-27T18:23:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 368.0,
+        "score": -111.01222229003906
+      },
+      {
+        "session": "2026-03-27",
+        "decision_time": "2026-03-27T19:08:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 828.0,
+        "score": -101.64642333984375
+      },
+      {
+        "session": "2026-03-30",
+        "decision_time": "2026-03-30T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": -1582.0,
+        "score": -132.21316528320312
+      },
+      {
+        "session": "2026-03-30",
+        "decision_time": "2026-03-30T14:17:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -972.0,
+        "score": -132.24737548828125
+      },
+      {
+        "session": "2026-03-30",
+        "decision_time": "2026-03-30T15:02:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -132.0,
+        "score": -133.3543701171875
+      },
+      {
+        "session": "2026-03-30",
+        "decision_time": "2026-03-30T15:47:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 948.0,
+        "score": -105.58512115478516
+      },
+      {
+        "session": "2026-03-30",
+        "decision_time": "2026-03-30T16:32:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 808.0,
+        "score": -112.14067840576172
+      },
+      {
+        "session": "2026-03-30",
+        "decision_time": "2026-03-30T17:17:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 48.0,
+        "score": -136.41651916503906
+      },
+      {
+        "session": "2026-03-30",
+        "decision_time": "2026-03-30T18:02:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 308.0,
+        "score": -134.15432739257812
+      },
+      {
+        "session": "2026-03-30",
+        "decision_time": "2026-03-30T18:47:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": 1338.0,
+        "score": -129.1610565185547
+      },
+      {
+        "session": "2026-03-31",
+        "decision_time": "2026-03-31T13:31:00+00:00",
+        "time_bucket": "first_30",
+        "right": "C",
+        "pnl": 858.0,
+        "score": -124.13933563232422
+      },
+      {
+        "session": "2026-03-31",
+        "decision_time": "2026-03-31T14:16:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": 1208.0,
+        "score": -87.61743927001953
+      },
+      {
+        "session": "2026-03-31",
+        "decision_time": "2026-03-31T15:01:00+00:00",
+        "time_bucket": "post_open_morning",
+        "right": "P",
+        "pnl": -692.0,
+        "score": -88.93291473388672
+      },
+      {
+        "session": "2026-03-31",
+        "decision_time": "2026-03-31T15:46:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -772.0,
+        "score": -114.50080871582031
+      },
+      {
+        "session": "2026-03-31",
+        "decision_time": "2026-03-31T16:31:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": -1112.0,
+        "score": -111.91325378417969
+      },
+      {
+        "session": "2026-03-31",
+        "decision_time": "2026-03-31T17:16:00+00:00",
+        "time_bucket": "midday",
+        "right": "P",
+        "pnl": 298.0,
+        "score": -71.85655975341797
+      },
+      {
+        "session": "2026-03-31",
+        "decision_time": "2026-03-31T18:01:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -882.0,
+        "score": -99.0421142578125
+      },
+      {
+        "session": "2026-03-31",
+        "decision_time": "2026-03-31T18:46:00+00:00",
+        "time_bucket": "late_afternoon",
+        "right": "P",
+        "pnl": -792.0,
+        "score": -92.35884094238281
+      }
+    ]
+  }
+}

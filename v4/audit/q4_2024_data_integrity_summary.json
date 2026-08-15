@@ -1,0 +1,49 @@
+{
+  "errors": [],
+  "neural_rows_from_files": 22753,
+  "non_360_decision_row_sessions": {
+    "2024-11-29": 209,
+    "2024-12-24": 224
+  },
+  "processed_files": 64,
+  "range": {
+    "end_date": "2024-12-31",
+    "start_date": "2024-10-01"
+  },
+  "schema_checks": {
+    "bad_strike_files": [],
+    "context_modes": {
+      "official": 64
+    },
+    "context_sources": {
+      "official_index_bars": 64
+    },
+    "root_values": {
+      "SPXW": 11749496
+    },
+    "settlement_values": {
+      "PM": 11749496
+    },
+    "spx_official_files": 64,
+    "spx_rows": 24669,
+    "vix_official_files": 64,
+    "vix_rows": 23491
+  },
+  "sessions_built": 64,
+  "sessions_skipped": [
+    "2024-11-28",
+    "2024-12-25"
+  ],
+  "status": "pass",
+  "summary_totals": {
+    "cbbo_rows": 11749496,
+    "definition_rows": 1089098,
+    "derived_spx_rows": 24669,
+    "derived_vix_rows": 23491,
+    "neural_rows": 22753,
+    "normalized_rows": 11749496,
+    "ohlcv_rows": 1338322,
+    "statistics_rows": 163290
+  },
+  "warnings": []
+}

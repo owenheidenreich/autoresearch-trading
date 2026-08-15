@@ -54,7 +54,17 @@ def shared_term_sessions(
 
     for original in sessions:
         count = original.close.size
-        scale = float(np.abs(np.diff(original.close)).mean() or 1.0)
+        # `float(x or 1.0)` was the earlier idiom and it fails silently on NaN,
+        # because NaN is truthy. A session with fewer than two bars gives an
+        # empty diff and therefore a NaN mean, which then poisons the carried
+        # `level` and turns EVERY later session NaN. On the 247-session corpus
+        # no such session existed; the ten-year corpus has two (2018-06-15 and
+        # 2023-06-16), and the fixture silently lost 1,978 of 2,435 eligible
+        # sessions before this was caught. Found 2026-08-12 by a smoke run.
+        diffs = np.abs(np.diff(original.close))
+        scale = float(diffs.mean()) if diffs.size else 0.0
+        if not np.isfinite(scale) or scale <= 0.0:
+            scale = 1.0
         # A large, slowly wandering level shared by every quantity measured on
         # the session, plus strictly independent increments. The shared term is
         # therefore real and dominant while the path stays a martingale, which

@@ -1,0 +1,70 @@
+{
+  "extra": {
+    "auc_bar": 0.6,
+    "decision": "FAIL",
+    "fold_results": [
+      {
+        "fold_idx": 4,
+        "lr_auc": 0.5915296154120955,
+        "lr_sweep_realized_mean": {
+          "0.05": 0.32356739044189453,
+          "0.10": 0.3296596109867096,
+          "0.20": 0.32629287242889404,
+          "0.30": 0.3262636661529541,
+          "0.50": 0.3245067298412323
+        },
+        "lr_top_decile_lift": 1.0158843053579896,
+        "lr_top_decile_precision": 0.950110864745011,
+        "mlp_auc": 0.5235033158609222,
+        "mlp_sweep_realized_mean": {
+          "0.05": 0.30750706791877747,
+          "0.10": 0.31756383180618286,
+          "0.20": 0.31254100799560547,
+          "0.30": 0.31652745604515076,
+          "0.50": 0.3189467191696167
+        },
+        "mlp_top_decile_lift": 1.0004741583688952,
+        "mlp_top_decile_precision": 0.9356984478935698,
+        "panel_always_on_mean": 0.3093666434288025,
+        "panel_prior_bq_sweep": {
+          "0.05": 0.3372655212879181,
+          "0.10": 0.33415624499320984,
+          "0.20": 0.3212921619415283,
+          "0.30": 0.31882598996162415,
+          "0.50": 0.30978408455848694
+        },
+        "panel_random_top10_mean": 0.3138972818851471,
+        "panel_trivial5_sweep": {
+          "0.05": 0.2899780869483948,
+          "0.10": 0.30057987570762634,
+          "0.20": 0.29256629943847656,
+          "0.30": 0.30625492334365845,
+          "0.50": 0.3148919939994812
+        },
+        "train_base_rate": 0.9159986909140644,
+        "train_n": 204723,
+        "val_base_rate": 0.9352549889135255,
+        "val_n": 9020
+      }
+    ],
+    "lift_bar": 1.5,
+    "representation": "current",
+    "selected_folds": [
+      4
+    ],
+    "strict": false,
+    "verdict": "0/1 folds clear all four criteria (AUC>=0.60, lift>=1.50x, monotone sweep, realized@10% beats prior_bq and trivial5) (required: >=1)\n  fold 4: auc=False lift=False mono=True panel=False \u2192 FAIL"
+  },
+  "provenance": {
+    "cost_model_version": "821db21ddb75673b",
+    "dataset_fingerprint": "unknown",
+    "feature_set_id": "6a76be5276175806",
+    "git_commit": "59db643515333d3c64573251c1f5172bf6d90e67",
+    "label_mode": "fa0048f308f5bd51",
+    "research_tier": true,
+    "schema_version": 1,
+    "sidecar_schema_version": "unknown",
+    "split_recipe": "e6c4bec2283720bc"
+  },
+  "written_at": "2026-04-21T11:43:03-0700"
+}

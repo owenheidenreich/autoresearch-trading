@@ -89,17 +89,96 @@ _KNOBS: tuple[Knob, ...] = (
         name="es_round_trip_friction_points",
         knob_class=FROZEN,
         value=0.358,
-        summary="Measured ES futures round-trip friction, equal to $17.92.",
-        evidence="v5/research/findings/GATE_CHAIN_AUDIT_2026_08_05.md",
-        unfreeze_condition="A new measured spread, fee and slippage study on owned ES data.",
+        summary=(
+            "ES futures round-trip friction, equal to $17.92. Decomposed 2026-08-12: "
+            "0.26835 points ($13.4175) is a MEASURED time-weighted spread of 1.0734 "
+            "ticks in the elevated-volatility quartile, and 0.09 points ($4.50) is an "
+            "ASSUMED retail commission that was never measured. It contains NO "
+            "slippage term. The earlier wording of this field called it a 'spread, fee "
+            "and slippage study', which described a component that was never computed."
+        ),
+        evidence="v5/research/findings/FRICTION_DECOMPOSITION_2026_08_12.md",
+        unfreeze_condition=(
+            "A measured commission for the account that would trade it, replacing the "
+            "assumed $4.50, or a new measured spread study on owned ES data. The "
+            "commission is 25% of this constant, so the 2.4x error already found in "
+            "the option fee moves it only -15% to +35%."
+        ),
     ),
     Knob(
         name="option_round_trip_fee_dollars",
         knob_class=FROZEN,
         value=3.08,
-        summary="Measured SPXW round-trip cost, $1.54 per side.",
+        summary=(
+            "Measured SPXW round-trip FEE, $1.54 per side, from a real IBKR paper "
+            "fill. It contains no spread crossing and no slippage: the measured "
+            "aggressive round trip including spread is $26.48, 8.6x larger. Do not "
+            "read this as the cost of trading an option."
+        ),
         evidence="v4/audit/autoresearch/pathd_phase0b_trackc_paper_transitions_2026_08_04/trackc_transition_evidence.json",
         unfreeze_condition="A new guarded paper round trip measuring per-side cost again.",
+    ),
+    Knob(
+        name="near_atm_correct_call_dollars",
+        knob_class=FROZEN,
+        value=761.0,
+        summary=(
+            "Mean 60-minute net outcome of a near-ATM SPXW contract when the "
+            "directional call was correct, POOLED over 905 sessions and 16,294 "
+            "observations spanning 2022-06 to 2026-07, at a $25 round trip. "
+            "Re-derived 2026-08-13 after the single-year figure of 996.60 proved "
+            "to be the most favourable window rather than the typical one."
+        ),
+        evidence="v4/audit/autoresearch/option_payoff_by_era_2026_08_13/receipt.json",
+        unfreeze_condition=(
+            "A re-derivation on a longer corpus, or a measured per-contract "
+            "spread for the 2022-2025 era to replace the carried $25."
+        ),
+    ),
+    Knob(
+        name="near_atm_wrong_call_dollars",
+        knob_class=FROZEN,
+        value=902.0,
+        summary=(
+            "Mean 60-minute net loss of a near-ATM SPXW contract when the "
+            "directional call was wrong, same pooled population as its "
+            "correct-call twin. Pooled break-even is 54.24%, and it ranges "
+            "51.97% (2024) to 58.90% (2022) across years -- a 6.93-point spread "
+            "that must be reported per era, never pooled alone. See divergence "
+            "axis option_payoff_regime_stability."
+        ),
+        evidence="v4/audit/autoresearch/option_payoff_by_era_2026_08_13/receipt.json",
+        unfreeze_condition=(
+            "A re-derivation on a longer corpus, or a measured per-contract "
+            "spread for the 2022-2025 era to replace the carried $25."
+        ),
+    ),
+    Knob(
+        name="option_correct_call_dollars",
+        knob_class=FROZEN,
+        value=308.17,
+        summary=(
+            "Mean 60-minute option outcome when the directional call was correct, "
+            "at the measured $3.08 fee, over 852 real trajectories."
+        ),
+        evidence="v5/research/findings/GATE_CHAIN_AUDIT_2026_08_05.md",
+        unfreeze_condition=(
+            "A new conditional-outcome study on a larger option trajectory sample."
+        ),
+    ),
+    Knob(
+        name="option_wrong_call_dollars",
+        knob_class=FROZEN,
+        value=425.33,
+        summary=(
+            "Mean 60-minute option loss when the directional call was wrong, at the "
+            "measured $3.08 fee, over 852 real trajectories. With the correct-call "
+            "figure this sets option break-even accuracy at 57.99%."
+        ),
+        evidence="v5/research/findings/GATE_CHAIN_AUDIT_2026_08_05.md",
+        unfreeze_condition=(
+            "A new conditional-outcome study on a larger option trajectory sample."
+        ),
     ),
     # --- clock and causality --------------------------------------------
     Knob(
@@ -167,6 +246,27 @@ _KNOBS: tuple[Knob, ...] = (
         summary="One-sided 95% lower bounds, session-block bootstrap.",
         evidence="v5/research/findings/GATE_CHAIN_AUDIT_2026_08_05.md",
         unfreeze_condition="A pre-registered change made before any outcome is seen.",
+    ),
+    Knob(
+        name="causal_day_hidden_size",
+        knob_class=FROZEN,
+        value=3,
+        summary=(
+            "Hidden width of every causal-day architecture. Frozen at 3 because "
+            "that is the largest width whose parameter counts fit the MEASURED "
+            "evidence budget of 377: at 3 the four comparison architectures are "
+            "226/245/322/341 parameters. At the previously used width of 8 they "
+            "are 676/720/1252/1296 and all four exceed it. The width is set by "
+            "the budget, not chosen for capacity."
+        ),
+        evidence="v5/research/findings/EFFECTIVE_SAMPLE_SIZE_2026_08_14.md",
+        unfreeze_condition=(
+            "A signed re-ruling that re-measures the effective sample size and "
+            "restates every architecture's computed parameter count at the new "
+            "width. Note the dataclass default of 16 is NOT this value and must "
+            "never be relied on: it was the source of a false 2026-08-14 defect "
+            "report that briefly suspended the whole comparison."
+        ),
     ),
     Knob(
         name="minimum_sessions_per_neural_parameter",
@@ -272,6 +372,40 @@ _KNOBS: tuple[Knob, ...] = (
         released_by_gate="G4",
     ),
     Knob(
+        name="moneyness_band",
+        knob_class=SEARCHABLE,
+        choices=("deep_otm", "otm", "near_atm", "itm", "deep_itm"),
+        summary=(
+            "Which part of the strike ladder the bot may buy. Measured 2026-08-13 "
+            "to matter more than any other constraint: break-even is 54.50% in the "
+            "OTM band a $3-8 price filter selects, 50.60% near the money, and "
+            "impossible in deep OTM. The ladder is not monotonic -- deeper ITM is "
+            "worse, because the dollar spread grows faster than the payoff. The "
+            "charter currently pins this implicitly via a price range rather than "
+            "declaring it, which is why it was invisible for months."
+        ),
+        evidence="v4/audit/autoresearch/option_payoff_by_moneyness_2026_08_13/receipt.json",
+        released_by_gate="G2",
+    ),
+    Knob(
+        name="entry_premium_band",
+        knob_class=SEARCHABLE,
+        choices=("any", "exclude_richest_quartile", "cheapest_half", "middle_half"),
+        summary=(
+            "Which part of the entry-premium distribution the bot may buy, as a "
+            "share of spot observed at 09:35. Measured 2026-08-13 over 749 "
+            "sessions: the richest quartile subsequently decays -13.3% against "
+            "-7.1% for the cheapest, and break-even tracks that decay at "
+            "r = -0.934 across half-year periods. Unlike the decay itself, the "
+            "entry premium IS observable at the decision instant, so this is a "
+            "causal filter rather than hindsight. The relationship is not "
+            "monotone across all four quartiles, so it is a partial control: it "
+            "supports avoiding the rich end, not a fine ranking."
+        ),
+        evidence="v4/audit/autoresearch/option_payoff_by_moneyness_2026_08_13/receipt.json",
+        released_by_gate="G2",
+    ),
+    Knob(
         name="abstention_rule",
         knob_class=SEARCHABLE,
         choices=("no_trade_below_entry_threshold", "two_sided_score_band"),
@@ -356,7 +490,10 @@ def by_class(knob_class: str) -> tuple[Knob, ...]:
 
 
 def assert_search_space(
-    params: Mapping[str, Any], *, released_gates: Iterable[str] = ()
+    params: Mapping[str, Any],
+    *,
+    released_gates: Iterable[str] = (),
+    released_by_amendment: Mapping[str, str] | None = None,
 ) -> None:
     """Refuse a proposed search that touches anything it may not touch.
 
@@ -367,6 +504,18 @@ def assert_search_space(
     """
 
     released = set(released_gates)
+    # A signed charter amendment may release a SEARCHABLE knob the way a gate
+    # does. It may NOT release a FROZEN or UNCERTIFIED one, and it may not widen
+    # a declared space -- an amendment changes what the bot is permitted to try,
+    # never what the evidence says. The mapping is knob name -> amendment path,
+    # so a receipt can name which signed document opened each degree of freedom.
+    amended = dict(released_by_amendment or {})
+    unknown_amended = sorted(set(amended) - set(REGISTRY))
+    if unknown_amended:
+        raise KnobError(
+            "amendment releases knobs that are not registered: "
+            + ", ".join(unknown_amended)
+        )
     problems: list[str] = []
     for name, value in sorted(params.items()):
         knob = REGISTRY.get(name)
@@ -384,9 +533,10 @@ def assert_search_space(
                 f"{name}: UNCERTIFIED and unusable. Required: {knob.unfreeze_condition}"
             )
             continue
-        if knob.released_by_gate not in released:
+        if knob.released_by_gate not in released and name not in amended:
             problems.append(
-                f"{name}: SEARCHABLE but gate {knob.released_by_gate} has not passed"
+                f"{name}: SEARCHABLE but gate {knob.released_by_gate} has not "
+                "passed and no signed amendment releases it"
             )
             continue
         if not knob.permits(value):
