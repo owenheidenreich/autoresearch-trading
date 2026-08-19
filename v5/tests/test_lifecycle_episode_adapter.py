@@ -38,13 +38,15 @@ from v5.research.lifecycle_episode_adapter import (
     build_episode,
 )
 
-CORPUS_ROOT = Path("/Volumes/AR_TRADING_DATA/lifecycle_corpus_2022-06-01_2026-07-31")
+# The SPX-parity-tape corpus, per the owner's 2026-08-19 ruling. The ES-tape
+# corpus beside it is superseded and must not be read by anything downstream.
+CORPUS_ROOT = Path("/Volumes/AR_TRADING_DATA/lifecycle_corpus_spx_tape_2022-06-01_2026-07-31")
 BACKFILL_QUOTES = Path("/Volumes/AR_TRADING_DATA/lifecycle_repaired_2022-06-01_2025-07-31")
 OWNED_QUOTES = Path(
     "/Users/och/.autoresearch-trading/pathd_2025-08-01_2026-07-31/aligned/normalized"
 )
 BUILD_RECEIPT = Path(
-    "v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/corpus_build_receipt_attempt1.json"
+    "v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/corpus_build_spx_tape_receipt.json"
 )
 BACKFILL_SESSION = "2022-06-01"
 OWNED_SESSION = "2026-07-30"
@@ -442,3 +444,75 @@ def test_statistics_fit_only_on_the_sessions_they_are_given() -> None:
     assert (stats.contract_scale > 0.0).all()
     with pytest.raises(EpisodeAdapterError, match="at least one session"):
         FeatureStatistics.fit(index, [])
+
+
+@needs_corpus
+def test_the_corpus_declares_the_spx_tape_the_owner_ruled_for() -> None:
+    """Owner ruling 2026-08-19: no futures input reaches the policy.
+
+    The pinned builder names its columns `es_*` and may not be edited, so the
+    stamp is the only thing that keeps the provenance legible. A corpus that
+    quietly reverted to the ES tape would pass every other test in this file.
+    """
+
+    row = _index()[BACKFILL_SESSION]
+    for table in ("candles", "ladder", "candidates"):
+        stamps = pd.read_parquet(row.table(table), columns=["tape_source"])["tape_source"]
+        assert set(stamps.unique()) == {"spx_parity_spot"}
+
+
+@needs_corpus
+def test_a_one_minute_snapshot_reports_no_intra_minute_range(
+    statistics: FeatureStatistics,
+) -> None:
+    """open=high=low=close is a statement about the source, not a lost column.
+
+    The four channels the member reads are all functions of the close series and
+    must still vary; the anatomy channels the design already barred are the ones
+    allowed to be constant.
+    """
+
+    row = _index()[BACKFILL_SESSION]
+    candles = pd.read_parquet(row.table("candles"))
+    for column in ("open", "high", "low"):
+        np.testing.assert_allclose(
+            candles[column].to_numpy(float), candles["close"].to_numpy(float)
+        )
+    assert (candles["volume"] == 0.0).all()
+
+    features = _session_features(row)
+    frame = pd.DataFrame(features.candle_values, columns=list(CANDLE_FEATURES))
+    for channel in (
+        "close_from_session_open_points",
+        "range_position",
+        "return_1m",
+        "realised_vol_15m",
+    ):
+        assert frame[channel].nunique() > 100
+    for barred in ("body_points", "upper_wick_points", "lower_wick_points", "volume"):
+        assert frame[barred].nunique() == 1
+
+
+@needs_corpus
+def test_the_superseded_es_tape_corpus_is_refused_by_the_adapter() -> None:
+    """The ES-tape corpus is still on disk and builds perfectly normal episodes.
+
+    That is exactly why this refusal is mechanical rather than a naming
+    convention: an untagged corpus is refused by name, because "no stamp" is the
+    state that means ES.
+    """
+
+    superseded = Path("/Volumes/AR_TRADING_DATA/lifecycle_corpus_2022-06-01_2026-07-31")
+    if not superseded.is_dir():  # pragma: no cover - only present on the build machine
+        pytest.skip("superseded corpus already removed")
+    row = _index()[BACKFILL_SESSION]
+    stale = CorpusSession(
+        session=row.session,
+        era=row.era,
+        settlement_source=row.settlement_source,
+        settlement_spx=row.settlement_spx,
+        quote_path=row.quote_path,
+        corpus_root=superseded,
+    )
+    with pytest.raises(EpisodeAdapterError, match="predates the 2026-08-19 SPX-tape ruling"):
+        build_episode(stale, FeatureStatistics.identity(), with_paths=False)

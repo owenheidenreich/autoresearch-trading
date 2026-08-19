@@ -1255,3 +1255,82 @@ tuned by peeking. The one fitted object was the owner-authorized throwaway era p
   source**, and the **event calendar** (§4). Remaining §6.3 items are declaration content for 4a
   itself — D7's ≈0.55 bar with per-field ablation, per-block executable economics, and stating that
   the chain features are band-local.
+
+### Two owner rulings close the open questions; the tape is rebuilt from SPX, 2026-08-19.
+
+- **RULING 1 — the tape is SPX-derived (parity spot), not ES.** The active policy is SPXW/SPX-only
+  with no futures input. The owner's reasoning is provenance rather than arithmetic, and it is worth
+  recording in full because it overrides a measurement: the basis genuinely cancels in the four
+  difference-based tape channels the member reads — the pre-fit review measured tape-only era-probe
+  AUC at 0.413 and this session measured `move_from_open_points` correlating at **1.0000** between the
+  two tapes — but *"provenance is what a future session inherits, and 'the candles are ES' is exactly
+  the kind of quiet inconsistency that gets discovered mid-fit and forces a rebuild."*
+- **RULING 2 — the event calendar is CLOSED, and closed by operating rule rather than by a model
+  change.** No calendar data will be acquired and no feature is admitted. Pre-open releases (08:30 ET)
+  need no feature because the print lands before the first decision minute at 09:31, so the model
+  already reads the aftermath — the only part it could trade. FOMC days are handled by **not running
+  the bot**. Two diagnostic-only Phase-5 reporting requirements follow and neither gates anything:
+  keep the event-day flag so the first assumption is *verified* rather than assumed, and report
+  results **with FOMC sessions excluded alongside the all-sessions figures**, because the corpus still
+  contains FOMC days the model will have learned from. Recorded in the memo §4 so a future session
+  does not rediscover "the model cannot see the calendar" and propose solving it again.
+- **The rebuild is narrower than it looks, and that was verified before a byte was written.** Only
+  `candles` and `minutes` depend on the tape: the ladder, the candidates, every label and the atlas
+  are computed from the quote file's own `underlying_price` and were already SPX-denominated.
+  Building one session both ways and comparing frames: **`ladder`, `candidates` and `atlas` are
+  identical, `candles` and `minutes` are not.** So the 9,758-candidate exit-law equality, the per-era
+  base rates, the effective-sample-size measurement and every label finding in the pre-fit review
+  survive the rebuild untouched.
+- **A new op emits the tape in the ES file shape so the pinned builder needs no edit** —
+  [`build_parity_spot_candles.py`](../../ops/build_parity_spot_candles.py), 8 tests. `build_session`
+  is inside the semantic freeze; a test asserts that the pinned `prepare_es` accepts the emitted
+  frame, which is what makes the swap free.
+- **The clock offset is the load-bearing detail.** An ES bar stamped `t` is knowable at `t+1`; a
+  `cbbo-1m` snapshot stamped `t` *is* the market at `t`. So bar `t` is filled from the snapshot at
+  `t+1` — bar 09:30 from the 09:31 snapshot through bar 15:59 from the 16:00 snapshot. Exactly 390
+  bars from exactly 390 quote minutes, and every bar stays first-readable one minute after the state
+  it describes. Coverage is **390/390 minutes on every sampled session in both eras**.
+- **Open, high and low equal the close, and that is a statement rather than a defect.** A one-minute
+  CBBO snapshot is a single observation of the index; there is no intra-minute range and inventing
+  one would be fabrication. All four channels the member reads are functions of the close series.
+  Volume is 0 because the index has no volume — which the design already required, having barred
+  every volume channel for exactly this reason.
+- **The corpus now stamps `tape_source` on every table.** The pinned builder writes the values into
+  columns named `es_open`/`es_close` and may not be edited to rename them, so the stamp beside them is
+  what stops a later session reading `es_close` and concluding the policy takes a futures input it was
+  ruled out of. Read from the candle file rather than assumed, and a file declaring two sources is
+  refused.
+- **A 132.5-point one-minute step appeared in the tape receipt and was chased down rather than
+  accepted.** It is real: **2025-04-09 at 13:20 ET**, the tariff-pause announcement, corroborated by
+  the independent ES tape at 130.2 points and matching session ranges (527.1 SPX vs 532.8 ES,
+  one-minute return correlation 0.957). The next two — 2025-04-07 at 10:10 (78.7 vs ES 79.8) and
+  2024-08-05 at 10:00 (51.1 vs ES 47.5) — are the rumour spike and the carry unwind, correlations
+  0.996 and 0.993. Median session max step is 7.3 points and only 18 of 1,014 sessions exceed 30.
+  Internal consistency worth noting: 2025-04-09 and 2025-04-10 are also the two **zero-candidate**
+  sessions, because options were priced out of the $2,000 ticket cap on exactly those days.
+- **The `| tail` trap fired a fourth time in this job and the receipt caught it again.** The first
+  rebuild launch reported **exit code 0 while the process had crashed** on `ModuleNotFoundError` —
+  running a script sets `sys.path[0]` to the script's directory, not the working directory. Nothing
+  was built and no receipt was written, which is how it was caught. Exit codes remain worthless here.
+- **The rebuild landed and the verification is stronger than the plan called for.** 1,014/1,014
+  sessions, gate PASS, 0 failed. The per-era base rates come back **byte-for-byte identical** to the
+  ES-tape build — owned `0.31798940639675255`, backfill `0.30587513284382517`, to seventeen
+  significant figures — which is the labels themselves confirming they did not move. A 41-session
+  sample across the whole span then compares every frame: **`ladder`, `candidates` and `atlas`
+  identical, `candles` and `minutes` changed, `tape_source` = `spx_parity_spot` everywhere. 0
+  mismatches.** The adapter's exit-law equality re-runs on the new corpus at max |diff| 0.000000000.
+- **The era probe was re-run against the rebuilt corpus, and its chain half is now a control.**
+  Because the ladder is identical, the chain-field numbers must reproduce exactly — and they do:
+  dispersion-only **0.4548** and chain-six **0.4813**, unchanged to four decimals. Only the tape
+  probes move, and barely: review tape 0.4133 → **0.4170**, member tape 0.4135 → **0.4175**, member
+  state 0.4319 → **0.4322**. All far below the ≈0.55 bar D7 will be set at. Swapping the tape cost
+  nothing in era-blindness.
+- **The superseded ES-tape corpus is refused mechanically rather than renamed.** Moving data is a
+  tier-1 decision, and a naming convention is defeated by one mistyped path anyway — so the adapter
+  now refuses any corpus whose candles lack `tape_source = spx_parity_spot`, and refuses an
+  **untagged** corpus by name, because "no stamp" is exactly the state that means ES. The old corpus
+  is still on disk and still builds perfectly ordinary-looking episodes, which is why the check had to
+  be mechanical. **Recommended to the owner: rename or remove
+  `lifecycle_corpus_2022-06-01_2026-07-31` once satisfied.**
+- **1,049 tests green, `check_project.py` green.** No fit, no spend, no vendor contact, no pinned file
+  edited. Boundary 3 still stands: Phase 4a awaits owner confirmation.

@@ -161,3 +161,28 @@ def test_optional_provenance_columns_are_detected_from_the_schema(tmp_path: Path
     assert set(pd.read_parquet(path, columns=[]).columns) == set()  # the trap
     schema = set(pq.ParquetFile(path).schema_arrow.names)
     assert {"underlying_price_source", "underlying_carry_minutes"} <= schema
+
+
+def test_the_tape_source_is_read_from_the_candle_file_not_assumed(tmp_path: Path) -> None:
+    """Owner ruling 2026-08-19: the corpus must say what its tape is made of.
+
+    The pinned builder writes the values into `es_*` column names and may not be
+    edited to rename them, so the stamp beside them is the only thing that stops
+    a later session reading `es_close` and concluding the policy takes a futures
+    input it was ruled out of.
+    """
+
+    es = tmp_path / "2024-03-15.es_c_0.ohlcv-1m.parquet"
+    frame = pd.DataFrame({"open": [1.0], "high": [1.0], "low": [1.0], "close": [1.0],
+                          "volume": [0.0]})
+    frame.to_parquet(es)
+    assert builder.tape_source(es) == "es_futures"
+
+    frame["tape_source"] = "spx_parity_spot"
+    frame.to_parquet(es)
+    assert builder.tape_source(es) == "spx_parity_spot"
+
+    frame = pd.concat([frame, frame.assign(tape_source="es_futures")], ignore_index=True)
+    frame.to_parquet(es)
+    with pytest.raises(builder.CorpusBuildError, match="declares 2 tape sources"):
+        builder.tape_source(es)

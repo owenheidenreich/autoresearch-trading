@@ -114,6 +114,26 @@ def parity_close(quote_path: Path) -> tuple[float, bool, int]:
     return value, carried, carry_minutes
 
 
+def tape_source(es_path: Path) -> str:
+    """What the chart state is actually made of, read from the file itself.
+
+    Owner ruling 2026-08-19: the tape is SPX parity spot, not ES futures. The
+    pinned `build_session` writes the values into columns named `es_open`,
+    `es_high` and so on, and it may not be edited to rename them -- so the
+    corpus stamps what the tape really is beside them. A later reader seeing
+    `es_close` next to `tape_source=spx_parity_spot` cannot stay misled for
+    long, which is the whole point of the ruling.
+    """
+
+    available = set(pq.ParquetFile(es_path).schema_arrow.names)
+    if "tape_source" not in available:
+        return "es_futures"
+    values = pd.read_parquet(es_path, columns=["tape_source"])["tape_source"].unique()
+    if len(values) != 1:
+        raise CorpusBuildError(f"{es_path.name}: candle file declares {len(values)} tape sources")
+    return str(values[0])
+
+
 def locate(sources: Sequence[EraSource], session: str) -> tuple[EraSource, Path]:
     for source in sources:
         candidate = source.quote_root / f"databento_spxw_0dte_{session}.parquet"
@@ -146,6 +166,7 @@ def build_one(
     else:
         settlement, carried, carry_minutes = parity_close(quote_path)
 
+    tape = tape_source(es_path)
     tables = build_session(quote_path, es_path, settlement_spx=settlement)
     for name in TABLES:
         destination = out_dir / name / f"{session}.parquet"
@@ -154,6 +175,7 @@ def build_one(
         frame = tables[name].copy()
         frame["era"] = source.era
         frame["settlement_source"] = source.settlement_source
+        frame["tape_source"] = tape
         frame.to_parquet(staging, index=False)
         staging.replace(destination)
 
@@ -172,6 +194,7 @@ def build_one(
     return {
         "session": session,
         "classification": "BUILT",
+        "tape_source": tape,
         "era": source.era,
         "settlement_source": source.settlement_source,
         "settlement_spx": settlement,

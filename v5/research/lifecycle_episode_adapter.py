@@ -64,6 +64,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 import torch
 
 from v5.ops.audit_causal_day_coverage import (
@@ -107,6 +108,14 @@ from v5.research.lifecycle_trainer import SessionEpisode
 
 SCHEMA_VERSION = "v5.lifecycle-episode-adapter.v1"
 CORPUS_TABLES = ("candles", "ladder", "candidates")
+
+#: Owner ruling, 2026-08-19: the active policy is SPXW/SPX-only with no futures
+#: input, so the tape must be SPX-derived. The superseded ES-tape corpus is still
+#: on disk beside the current one and is a valid corpus in every other respect --
+#: it would build episodes that look entirely normal. This is checked here rather
+#: than left to the caller passing the right path, because a path is exactly the
+#: kind of thing that gets typed wrong once and noticed mid-fit.
+REQUIRED_TAPE_SOURCE = "spx_parity_spot"
 DEFAULT_HORIZON_MINUTES = 60
 DEFAULT_TRADE_CAP = 2
 
@@ -370,7 +379,30 @@ class SessionFeatures:
     chain_values: np.ndarray
 
 
+def assert_declared_tape(row: CorpusSession) -> None:
+    """Refuse a corpus whose tape is not the one the owner ruled for.
+
+    An untagged corpus is refused by name rather than assumed innocent: the
+    corpus built before the ruling carries no `tape_source` column at all, and
+    "no stamp" is precisely the state that means ES.
+    """
+
+    available = set(pq.ParquetFile(row.table("candles")).schema_arrow.names)
+    if "tape_source" not in available:
+        raise EpisodeAdapterError(
+            f"{row.session}: corpus carries no tape_source stamp, so it predates the "
+            "2026-08-19 SPX-tape ruling; rebuild it with build_parity_spot_candles"
+        )
+    stamps = set(pd.read_parquet(row.table("candles"), columns=["tape_source"])["tape_source"])
+    if stamps != {REQUIRED_TAPE_SOURCE}:
+        raise EpisodeAdapterError(
+            f"{row.session}: tape_source is {sorted(stamps)}, not {REQUIRED_TAPE_SOURCE}; "
+            "the active policy takes no futures input"
+        )
+
+
 def _session_features(row: CorpusSession) -> SessionFeatures:
+    assert_declared_tape(row)
     candles = pd.read_parquet(row.table("candles"))
     ladder = pd.read_parquet(row.table("ladder"))
     if candles.empty:

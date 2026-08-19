@@ -69,9 +69,33 @@ Send these cold, with repository access, and only these.
 - Anything reopening signed law: the $2,000 dollar-stated cap, the 20% breaker, the −40% backstop,
   the compounding account, the entry-then-frozen-exit ordering, the chronology, or the stated target
   (31.65% baseline, 45–50% survival, ≈+14 points).
-- The **event calendar**, the highest-value input the design cannot currently use. It requires a data
-  source, G3 admission and a live-parity proof. Standing instruction: flag event days in Phase 5
-  reporting as a diagnostic only, so its value is measured before it is bought.
+- ~~The **event calendar**, the highest-value input the design cannot currently use.~~
+  **RESOLVED — OWNER RULING, 2026-08-19. Closed; do not reopen.** The event calendar is **not an
+  admitted feature and no calendar data will be acquired.** The question is closed by how the bot
+  will be operated, not by a model change:
+  - **Pre-open releases (CPI and similar, 08:30 ET) need no feature.** The print lands before the
+    first decision minute at 09:31, so its effect is already in the tape the model reads. The model
+    sees the aftermath, which is the only part it could trade.
+  - **FOMC days are handled by not trading.** The owner will not run the bot on FOMC announcement
+    days. This is an operating rule, not a model input.
+
+  Two **diagnostic-only** reporting requirements follow, and neither gates anything. (1) Keep the
+  event-day flag in Phase 5 reporting, so assumption one is *verified* rather than assumed: if losses
+  cluster on pre-open-release mornings despite the print landing before 09:31, the aftermath is not
+  fully absorbed by the open and that is worth knowing; if they do not cluster, the reasoning is
+  confirmed with a number behind it. (2) Report results **with FOMC sessions excluded, alongside the
+  all-sessions figures** — the corpus still contains FOMC days and the model will have learned from
+  them, so there is a mild mismatch between what it trained on and how it will be run, and reporting
+  both makes visible whether the days the owner plans to sit out were carrying the result.
+
+  Recorded here so a future session does not rediscover "the model cannot see the calendar" and
+  propose solving it again. Nothing in this ruling authorizes a purchase, a vendor contact, or a new
+  feature admission.
+- **Tape source — RESOLVED, OWNER RULING 2026-08-19: SPX-derived (parity spot), not ES.** The active
+  policy is SPXW/SPX-only with no futures input. The basis genuinely cancels in the difference-based
+  tape channels today, but **provenance is what a future session inherits**, and "the candles are ES"
+  is exactly the kind of quiet inconsistency that gets discovered mid-fit and forces a rebuild.
+  Implementation is execution (Opus): the corpus tape is rebuilt from parity spot.
 - Any purchase, vendor or broker contact, paper or live order, or unattended job.
 
 
