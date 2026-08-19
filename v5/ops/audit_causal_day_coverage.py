@@ -18,19 +18,32 @@ import json
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 
 from v5.ops.measure_fill_quality import QUOTE_CORPUS
 
 
 ET = "America/New_York"
 CONTRACT_MULTIPLIER = 100.0
-SESSION_START_EQUITY_USD = 10_000.0
-TICKET_CEILING_SHARE = 0.13
-MAX_ENTRY_ASK_USD = SESSION_START_EQUITY_USD * TICKET_CEILING_SHARE
+# The signed 2026-08-16 amendment states the per-trade ceiling in DOLLARS:
+# "one contract, entry premium plus fees at most $2,000", deliberately not a
+# share of equity, because a share drifts upward as the account compounds and
+# would eventually admit the deep-ITM tickets the charter bars.
+#
+# This was previously `SESSION_START_EQUITY_USD * TICKET_CEILING_SHARE`. That
+# expression was inert only because the equity constant was frozen; the
+# 2026-08-16 serial-account repair made equity compound for the first time, so
+# wiring live equity into it would have turned $1,300 into $13,000 at a
+# $100,000 account. The equity constants are deleted rather than left computed
+# but unused, so the ceiling is structurally incapable of drifting.
+# Evidence: research/findings/SCALE_SENSITIVITY_2026_08_16.md
+MAX_ENTRY_TICKET_USD = 2_000.0
+ENTRY_FEES_USD = 3.08
+MAX_ENTRY_ASK_USD = MAX_ENTRY_TICKET_USD - ENTRY_FEES_USD
 QUOTE_AGE_CAP_MS = 90_000.0
 NEAR_ATM_POINTS = 25.0
 
@@ -63,6 +76,16 @@ QUOTE_COLUMNS = (
     "gamma",
     "theta",
     "vega",
+)
+
+# Vendor greeks are *diagnostics only* -- the episode builder recomputes greeks
+# causally from price, so their absence cannot affect any feature or label. The
+# backfill era is normalized from CBBO top-of-book and carries no vendor greeks,
+# while the owned era does; requiring them would refuse three quarters of the
+# corpus for a reporting column.
+VENDOR_GREEK_COLUMNS = ("iv", "delta", "gamma", "theta", "vega")
+REQUIRED_QUOTE_COLUMNS = tuple(
+    column for column in QUOTE_COLUMNS if column not in VENDOR_GREEK_COLUMNS
 )
 
 
@@ -127,7 +150,18 @@ def live_two_sided(frame: pd.DataFrame) -> pd.Series:
 
 
 def eligible_entry(frame: pd.DataFrame) -> pd.Series:
-    """OTM side of near-ATM, live now, within the signed ticket ceiling."""
+    """OTM side of near-ATM, live now, within the signed ticket ceiling.
+
+    **Two independent guards, never one.** The dollar ceiling and the moneyness
+    band are different axes and neither implies the other: measured 2026-08-16,
+    **37.3%** of contracts cheap enough to clear a $2,000 ticket are *in the
+    money*, with the 99th percentile at **+18.4 ITM points**. Collapsing them on
+    the belief that a cheap contract must be out of the money would admit ITM
+    tickets the charter bars. Both conditions below are load-bearing.
+
+    The ceiling is a fixed dollar amount and must never be derived from account
+    equity; see `MAX_ENTRY_TICKET_USD`.
+    """
 
     spot = pd.to_numeric(frame["underlying_price"], errors="coerce").to_numpy(float)
     strike = pd.to_numeric(frame["strike"], errors="coerce").to_numpy(float)
@@ -140,7 +174,8 @@ def eligible_entry(frame: pd.DataFrame) -> pd.Series:
         & (money >= -NEAR_ATM_POINTS)
         & (money < 0.0)
         & np.isfinite(ask)
-        & (ask * CONTRACT_MULTIPLIER <= MAX_ENTRY_ASK_USD)
+        # Premium plus fees, as the signed amendment states the ceiling.
+        & (ask * CONTRACT_MULTIPLIER + ENTRY_FEES_USD <= MAX_ENTRY_TICKET_USD)
         & np.isfinite(ask_size)
         & (ask_size >= 1.0)
     )
@@ -181,7 +216,19 @@ def _distribution(values: Iterable[float]) -> dict[str, float | None]:
 
 def inspect_quote_file(path: Path) -> tuple[dict[str, Any], list[int], list[int]]:
     session = session_from_path(path)
-    frame = pd.read_parquet(path, columns=list(QUOTE_COLUMNS))
+    available = set(pd.read_parquet(path, columns=[]).columns) or set(
+        pq.ParquetFile(path).schema_arrow.names
+    )
+    absent_required = sorted(set(REQUIRED_QUOTE_COLUMNS) - available)
+    if absent_required:
+        raise CoverageError(f"{path} is missing required columns: {absent_required}")
+    frame = pd.read_parquet(
+        path, columns=[column for column in QUOTE_COLUMNS if column in available]
+    )
+    vendor_greeks_present = set(VENDOR_GREEK_COLUMNS) <= available
+    for column in VENDOR_GREEK_COLUMNS:
+        if column not in frame.columns:
+            frame[column] = np.nan
     if frame.empty:
         raise CoverageError(f"empty quote file: {path}")
 
@@ -229,6 +276,7 @@ def inspect_quote_file(path: Path) -> tuple[dict[str, Any], list[int], list[int]
         "ask_size_coverage": _share(rth, "ask_size"),
         "volume_coverage": _share(rth, "volume"),
         "open_interest_coverage": _share(rth, "open_interest"),
+        "vendor_greeks_present": vendor_greeks_present,
         "vendor_iv_coverage": _share(rth, "iv"),
         "vendor_delta_coverage": _share(rth, "delta"),
         "vendor_gamma_coverage": _share(rth, "gamma"),
@@ -277,6 +325,32 @@ def _manifest_digest(files: list[SourceFile]) -> str:
     return hashlib.sha256(canonical_json([asdict(item) for item in files])).hexdigest()
 
 
+def clock_eligible_sessions(receipts: Sequence[Path]) -> set[str]:
+    """Sessions a delivered-clock verification certifies as build-eligible.
+
+    Presence of every required minute is **not** sufficient. A padded early
+    close carries a complete 390-minute clock whose final minutes are a frozen
+    book — measured, 2022-11-25 repeats an identical top-of-book from 13:00 to
+    16:00 — so it satisfies `missing_rth_quote_minutes == 0` while roughly three
+    hours of it are fabricated. Intersecting with the verifier's own eligibility
+    keeps that session out of the corpus instead of relying on a later reader to
+    notice.
+    """
+
+    eligible: set[str] = set()
+    for path in receipts:
+        payload = json.loads(Path(path).read_text())
+        listed = payload.get("build_eligible_sessions")
+        if listed is None:
+            raise CoverageError(
+                f"clock receipt lacks build_eligible_sessions (needs v2+): {path}"
+            )
+        eligible.update(str(session) for session in listed)
+    if not eligible:
+        raise CoverageError("clock receipts certify no eligible session")
+    return eligible
+
+
 def run(
     quote_root: Path,
     es_root: Path,
@@ -284,6 +358,7 @@ def run(
     *,
     supersedes: str | None = None,
     correction: str | None = None,
+    clock_receipts: Sequence[Path] = (),
 ) -> dict[str, Any]:
     quote_files = [
         path
@@ -336,6 +411,19 @@ def run(
         & coverage["es_first_decision_causal_bar_present"].fillna(False)
     )
 
+    # A liveness verdict, when supplied, is ANDed in: the checks above measure
+    # what arrived, not whether it was live. Owner-approved 2026-08-18.
+    clock_excluded: list[str] = []
+    if clock_receipts:
+        certified = clock_eligible_sessions(clock_receipts)
+        clock_ok = coverage["session"].astype(str).isin(certified)
+        clock_excluded = sorted(
+            coverage.loc[coverage["included_for_episode_build"] & ~clock_ok, "session"]
+            .astype(str)
+        )
+        coverage["clock_verified_live"] = clock_ok
+        coverage["included_for_episode_build"] &= clock_ok
+
     sessions = coverage["session"]
     included = coverage[coverage["included_for_episode_build"]]
     context_sessions = {session_from_path(path) for path in context_files}
@@ -357,6 +445,8 @@ def run(
             "entry_moneyness_itm_points": [-NEAR_ATM_POINTS, 0.0],
             "entry_moneyness_upper_bound_exclusive": True,
             "max_entry_ask_usd": MAX_ENTRY_ASK_USD,
+            "max_entry_ticket_usd": MAX_ENTRY_TICKET_USD,
+            "entry_ceiling_basis": "fixed dollars; never a share of equity",
             "minimum_entry_ask_size_contracts": 1.0,
             "quote_age_cap_ms": QUOTE_AGE_CAP_MS,
             "causal_es_bar_at_first_decision": causal_es_bar_minute(FIRST_DECISION_MINUTE),
@@ -377,6 +467,8 @@ def run(
             "excluded_sessions": coverage.loc[
                 ~coverage["included_for_episode_build"], "session"
             ].tolist(),
+            "clock_receipts": [str(path) for path in clock_receipts],
+            "excluded_by_clock_liveness": clock_excluded,
             "all_have_0935_eligible_otm_contract": bool(
                 coverage["first_decision_eligible_contracts"].gt(0).all()
             ),
@@ -469,6 +561,14 @@ def main() -> int:
         ),
     )
     parser.add_argument("--out-dir", type=Path, required=True)
+    parser.add_argument(
+        "--clock-receipt",
+        type=Path,
+        action="append",
+        default=[],
+        dest="clock_receipts",
+        help="delivered-clock verification receipt (repeatable, one per data root)",
+    )
     parser.add_argument("--supersedes", default=None)
     parser.add_argument("--correction", default=None)
     args = parser.parse_args()
@@ -478,6 +578,7 @@ def main() -> int:
         args.out_dir,
         supersedes=args.supersedes,
         correction=args.correction,
+        clock_receipts=args.clock_receipts,
     )
     print(json.dumps(receipt["sessions"], indent=2, sort_keys=True))
     print(args.out_dir / "receipt.json")

@@ -62,15 +62,26 @@ completed causal-day fit remains immutable evidence; it is not retried.
    now tied to a concrete 120-parameter shared entry/exit model rather than “more data” in the abstract.
    No vendor was contacted and nothing was downloaded.
 
-16. **Measured 2026-08-15 — the backfill cannot power the 120-parameter fit.** The known-answer
-   campaign (V2, convergence training; V1 voided as specification-defective by its own diagnostic)
-   planted a representable edge and trained the real 96-parameter entry phase at 243/404/650/890
-   sessions, 40 trials each. Null discipline is perfect (0 entries in 160 null trials), but recovery of
-   the small planted edge never exceeds **40% against the 80% required**, at any size the proposed
-   backfill can produce. The row-43 full-corpus budget convention is falsified for this pipeline; the
-   referee's per-fit objection is confirmed and measured stricter than its own arithmetic. The pending
-   $75 data request loses its stated purpose until a design passes its own rehearsal. Finding:
+16. **Corrected 2026-08-15 after the second-round review — DEVELOPMENT RESULT, capacity claim
+   withdrawn.** Campaigns V1/V2 are development diagnostics of a simplified entry training law, not
+   power measurements: unscaled features under raw-dollar MSE, a last-not-best checkpoint, and
+   process-salted `hash()` seeds that falsified V2's identical-seeds claim. Their measured fact is
+   that **that training law** failed a representable synthetic edge at 243–890 sessions. The backfill
+   and fit stay refused on preflight grounds — no faithful end-to-end known-answer rehearsal has
+   passed — not on a claimed impossibility; the branch is blocked, not closed. V3 (production-mirrored
+   training law, actual fold-prefix grid, SHA-256 seeds, per-trial records, runner-verified
+   declaration) asks the narrow question whether the V2 failure was conditioning. Finding:
    [CAPACITY_KNOWN_ANSWER_2026_08_15](../../research/findings/CAPACITY_KNOWN_ANSWER_2026_08_15.md).
+
+17. **Owner strategic ruling, 2026-08-15 — the long-single-leg route is closed as the active route;
+   the program pivots to a defined-risk short-vertical census.** A strategic decision memo (read-only,
+   GOAL.md's game restriction temporarily suspended for analysis on owner instruction) compared four
+   routes; the owner selected the pivot and instructed: census only, $0, owned data, no purchase or
+   broker contact, **STOP the options program if nothing clears even fee-only execution.** Rows
+   332/338/340/341 continue to bar every long-single-leg retry. The new job is STATUS row 44 with its
+   own packet at [`v5/work/short-vertical-census/`](../../history/jobs/short-vertical-census/PLAN.md); the trading-side
+   charter amendment is drafted and unsigned. This packet stays open only for V3's completion record
+   and the unsigned protocol amendment draft.
 
 ## Current hard constraints
 

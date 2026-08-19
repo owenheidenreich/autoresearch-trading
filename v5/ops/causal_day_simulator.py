@@ -243,8 +243,19 @@ def simulate_session(
     terminal_zero_recovery: bool = False,
     minute_features: pd.DataFrame | None = None,
     capture_replay_state: bool = False,
+    starting_equity_usd: float = STARTING_EQUITY_USD,
 ) -> SimulationResult:
-    """Replay one session under the frozen minute/fill/account laws."""
+    """Replay one session under the frozen minute/fill/account laws.
+
+    ``starting_equity_usd`` is the account this session opens with. The charter
+    declares a **serial, compounding** account, so a multi-session walk must
+    pass the prior session's ending cash here. It defaulted to a constant before
+    2026-08-16, which silently re-seeded $10,000 every session and measured the
+    daily breaker against that constant rather than against real equity.
+    """
+
+    if not (starting_equity_usd > 0.0):
+        raise SimulatorError("session starting equity must be positive")
 
     if trade_cap not in (1, 2, 3):
         raise SimulatorError("trade_cap must be one of the declared 1/2/3 family")
@@ -274,7 +285,7 @@ def simulate_session(
             raise SimulatorError(f"{session}: duplicate causal feature minute")
         feature_rows = {str(row["minute"]): row for _, row in scoped.iterrows()}
 
-    cash = STARTING_EQUITY_USD
+    cash = starting_equity_usd
     realised = 0.0
     position: Position | None = None
     trades_opened = 0
@@ -357,7 +368,7 @@ def simulate_session(
         )
         event(minute, role, Action("SELL", position.contract_id, reason), "filled_bid", fill_price=exit_bid)
         position = None
-        if risk_mode == "ticket_and_breaker" and realised <= -STARTING_EQUITY_USD * DAILY_BREAKER_SHARE:
+        if risk_mode == "ticket_and_breaker" and realised <= -starting_equity_usd * DAILY_BREAKER_SHARE:
             breaker_triggered = True
 
     def settle_terminal(minute: str, settlement_spx: float, role: str) -> None:
@@ -416,7 +427,7 @@ def simulate_session(
             intrinsic=intrinsic,
         )
         position = None
-        if risk_mode == "ticket_and_breaker" and realised <= -STARTING_EQUITY_USD * DAILY_BREAKER_SHARE:
+        if risk_mode == "ticket_and_breaker" and realised <= -starting_equity_usd * DAILY_BREAKER_SHARE:
             breaker_triggered = True
 
     def settle_zero_recovery(minute: str, role: str, terminal_spx: float | None) -> None:
@@ -469,7 +480,7 @@ def simulate_session(
             "zero_recovery_sensitivity",
         )
         position = None
-        if risk_mode == "ticket_and_breaker" and realised <= -STARTING_EQUITY_USD * DAILY_BREAKER_SHARE:
+        if risk_mode == "ticket_and_breaker" and realised <= -starting_equity_usd * DAILY_BREAKER_SHARE:
             breaker_triggered = True
 
     for minute in QUOTE_MINUTES:
@@ -672,7 +683,7 @@ def simulate_session(
         session=session,
         risk_mode=risk_mode,
         trade_cap=trade_cap,
-        starting_equity_usd=STARTING_EQUITY_USD,
+        starting_equity_usd=starting_equity_usd,
         ending_cash_usd=ending,
         realised_pnl_usd=realised,
         trades=pd.DataFrame(trade_rows),
@@ -680,4 +691,69 @@ def simulate_session(
         considered_ladder=pd.DataFrame(considered_rows),
         blocked_terminal_position=blocked_terminal,
         unresolved_position=position,
+    )
+
+
+@dataclass
+class SerialAccountResult:
+    """A chronological walk of one compounding account across sessions."""
+
+    sessions: list[SimulationResult]
+    starting_equity_usd: float
+    ending_equity_usd: float
+    ruined: bool
+
+    @property
+    def session_pnl_usd(self) -> list[float]:
+        return [float(r.realised_pnl_usd) for r in self.sessions]
+
+
+def simulate_serial_account(
+    sessions: list[str],
+    replay_session,
+    *,
+    starting_equity_usd: float = STARTING_EQUITY_USD,
+    survival_floor_share: float = 0.50,
+) -> SerialAccountResult:
+    """Walk sessions in order, carrying equity forward.
+
+    The charter's account is serial and compounding: each session opens with the
+    prior session's ending cash. `replay_session(session, equity)` must return a
+    `SimulationResult` produced with `starting_equity_usd=equity`.
+
+    A session whose terminal position could not be resolved reports
+    `ending_cash_usd is None`; its realised P&L still carries, so the walk uses
+    realised rather than silently restarting the account.
+    """
+
+    if not sessions:
+        raise SimulatorError("a serial account walk needs at least one session")
+    if list(sessions) != sorted(sessions):
+        raise SimulatorError("serial account sessions must be in chronological order")
+
+    equity = float(starting_equity_usd)
+    floor = survival_floor_share * float(starting_equity_usd)
+    results: list[SimulationResult] = []
+    ruined = False
+    for session in sessions:
+        result = replay_session(session, equity)
+        if float(result.starting_equity_usd) != equity:
+            raise SimulatorError(
+                f"{session}: replay opened at {result.starting_equity_usd} but the "
+                f"account carried {equity}; the account must not re-seed"
+            )
+        results.append(result)
+        equity = (
+            float(result.ending_cash_usd)
+            if result.ending_cash_usd is not None
+            else equity + float(result.realised_pnl_usd)
+        )
+        if equity <= floor:
+            ruined = True
+            break
+    return SerialAccountResult(
+        sessions=results,
+        starting_equity_usd=float(starting_equity_usd),
+        ending_equity_usd=equity,
+        ruined=ruined,
     )

@@ -1,0 +1,74 @@
+{
+  "authorization": {
+    "ledger_reopening": "v5/governance/LEDGER_REOPENING_DRAWDOWN_LIFECYCLE_2026_08_15.md",
+    "signed": "2026-08-15, owner in conversation",
+    "stop_override": "v5/governance/STOP_OVERRIDE_DRAWDOWN_LIFECYCLE_2026_08_15.md"
+  },
+  "calibration": {
+    "path": "/Volumes/AR_TRADING_DATA/derived/drawdown_calibration_v1.parquet",
+    "sha256": "83384d6f842791b84e9e8d85e2d6a95df2ab2e1d0355b3490eaf6746c28ee61d",
+    "source": "32,976 owned random-entry 60-minute quote paths over 251 sessions under the declared stop-or-hold law; exported 2026-08-15 from quoted_exit_paths.parquet"
+  },
+  "decision_rule": {
+    "PREFLIGHT_FAILED_NULL_FALSE_PASS": "null Wilson upper >= 0.05",
+    "PREFLIGHT_FAILED_UNDERPOWERED": "recovery < 0.80",
+    "PREFLIGHT_PASSED": "recovery >= 0.80 AND null Wilson upper < 0.05",
+    "binding": "Only PREFLIGHT_PASSED satisfies kill condition 1 of the signed reopening; any failure keeps the real fit refused."
+  },
+  "declaration_sha256": "596f7b5fa03d646871e5f6bb6ba5a8b2879fe983272deba70c1bc6eec9fae8a7",
+  "development_probes_disclosure": "Before freezing, outcome-blind synthetic probe grids ran under seed prefixes 'timing-probe', 'probe-grid' and 'null-probe-t4' to calibrate effect_slope_minimum and trades_per_session_target. The campaign seed bank ('drawdown-preflight-v1') is disjoint from every probe prefix, honoring the capacity-campaign no-seed-reuse rule.",
+  "evidence_path": "v4/audit/autoresearch/drawdown_preflight_2026_08_15/receipt.json",
+  "implementation_hashes": {
+    "v5/ops/run_drawdown_preflight.py": "5f4ab22c00792e5ea2b56f07f07d2e155f8cb08b804b51447378beda4314e252",
+    "v5/research/capacity_campaign.py": "b7d63fec222877797c9b6755e1ede762a1027052fc507f84d96ad553d86ef63a",
+    "v5/research/causal_day_architectures.py": "5a18f0097cc4fbf136cdf1a2a90cc149280ac0774c80e0ac77f061fffd3301df",
+    "v5/research/causal_day_compact_interaction.py": "88277e1abc5e380d82ef1791bcde58ec00ee78ed96f19279c95738fc67adc687",
+    "v5/research/causal_day_tensorizer.py": "9df7210af2c7fb29e3f4c8210bdbb9186311c948f3f7022a593edd433560cc8e",
+    "v5/research/drawdown_preflight.py": "20b6c86cd4fad704d62edd02eb4234ab20cca55e13ef1d10956abb0f4eb42571"
+  },
+  "law": {
+    "alpha": 0.05,
+    "autocorrelation_minutes": 20.0,
+    "base_clean_rate": 0.3183,
+    "bootstrap_draws": 20000,
+    "distractor_sd": 1.0,
+    "effect_slope_minimum": 0.1,
+    "effect_slope_null": 0.0,
+    "eligible_nodes": 6,
+    "family_size": 3,
+    "feature_clip": 10.0,
+    "gradient_clip": 5.0,
+    "label_session_shock_sd": 0.066,
+    "ladder_nodes": 16,
+    "learning_rate": 0.003,
+    "max_epochs": 400,
+    "max_trades_per_session": 2,
+    "min_selected_trades": 20,
+    "minibatch_rows": 8192,
+    "minutes_per_session": 150,
+    "null_false_pass_wilson_upper_limit": 0.05,
+    "null_trials": 60,
+    "observation_noise_sd": 0.5,
+    "planted_trials": 40,
+    "plateau_patience": 20,
+    "plateau_tolerance": 0.0001,
+    "probability_clip": [
+      0.02,
+      0.98
+    ],
+    "probability_floor": 0.342,
+    "recovery_rate_required": 0.8,
+    "required_positive_blocks": 4,
+    "score_blocks": 5,
+    "score_sessions": 150,
+    "sessions_total": 250,
+    "trades_per_session_target": 4.0,
+    "train_sessions": 100,
+    "weight_decay": 0.0001
+  },
+  "law_sha256": "e479f8df8fddaf597a9b7e98cea31e8a889731e4d0b2ae732c4dffd7ea3fb765",
+  "question": "Can the exact drawdown-ordered lifecycle pipeline \u2014 48-parameter compact_interaction_entry trained under the production law on the clean-run label (+50% before -30% within 60m), frozen rank+floor selector, serial one-position account, full gate with session bootstrap at alpha 0.05/3 and 4/5 chronological blocks \u2014 recover a planted minimum-size edge in >=80% of trials with zero full-gate false passes across 60 null worlds?",
+  "schema_version": "v5.drawdown-preflight-declaration.v1",
+  "seed_law": "stable_seed('drawdown-preflight-v1', arm, trial_index)",
+  "sensitivity_statement": "The planted minimum (slope 0.10, selector target 4/session) realizes ~52% selected precision against the 31.8% base. A passing preflight therefore certifies the real experiment can detect edges of roughly +20pp precision lift; a real negative rules out edges of that size and NOTHING SMALLER. Break-even (+2.4pp) remains far below the detectable floor, as the reopening's section 2 requires stating."
+}

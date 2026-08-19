@@ -1,0 +1,58 @@
+{
+  "authorization": "v5/governance/DEVELOPMENT_CHARTER_2026_08.md",
+  "created_on": "2026-08-15",
+  "declaration_sha256": "3801b84ea5290787d52bdf449db9ffed74303d4b2c07ea6f8b1892b55220d280",
+  "destination": {
+    "layout": "raw/databento/opra_spxw_definition/YYYY-MM-DD.definition.parquet and raw/databento/opra_spxw_cbbo_1m/YYYY-MM-DD.cbbo-1m.parquet",
+    "must_be_new": true,
+    "root": "/Users/och/.autoresearch-trading/lifecycle_spxw_quote_backfill_2022-06-01_2025-07-31"
+  },
+  "hard_cap_usd": 75.0,
+  "hard_rails": {
+    "abort_if_estimate_above_usd": 75.0,
+    "exact_preflight_before_download": true,
+    "no_broker_contact": true,
+    "no_model_fit": true,
+    "no_orders": true,
+    "no_other_vendor_request": true,
+    "no_post_2026_08_05_sessions": true
+  },
+  "implementation_sha256": "a634a412cd0841ece01d247b3ca10650d8b2198e2122c7910c4fcf1747acb3aa",
+  "job": "46 lifecycle-training",
+  "qc_contract": {
+    "missing_or_empty_schema_is_degraded_and_must_be_classified_before_corpus_build": true,
+    "no_future_expiry_instrument_is_eligible": true,
+    "required_schemas_per_selected_session": [
+      "definition",
+      "cbbo-1m"
+    ],
+    "saved_cbbo_rows_must_map_to_own_session_expiry": true,
+    "saved_definition_rows_must_map_to_own_session_expiry": true
+  },
+  "request": {
+    "cbbo_window": "09:30 through 16:00 America/New_York, DST-aware",
+    "dataset": "OPRA.PILLAR",
+    "definition_window": "00:00:00Z through 00:00:00Z next UTC day",
+    "parent": "SPXW.OPT",
+    "same_day_rule": "A saved row must have a valid SPXW OSI symbol whose own YYMMDD expiry equals its session. No trading-calendar membership is used.",
+    "schemas": [
+      "definition",
+      "cbbo-1m"
+    ],
+    "stype_in": "parent"
+  },
+  "schema_version": "v5.lifecycle-quote-backfill-declaration.v1",
+  "semantic_freeze": {
+    "freeze_sha256": "71463cc0eeb4e242e43307e19a926ea4e258fd45a254c389e5a27110923893c4",
+    "path": "v5/work/lifecycle-training/PREACQUISITION_SEMANTIC_FREEZE_V1.json"
+  },
+  "semantic_freeze_rule": "Changing this declaration, the acquisition runner, the source inventory, request schemas, OSI filter, session bounds, or destination after a vendor cost preflight cancels the preflight and requires a fresh owner decision.",
+  "source_ohlcv_inventory": {
+    "end": "2025-07-31",
+    "inclusion": "all and only source parquet files in range with Parquet metadata num_rows > 0",
+    "nonempty_sessions": 794,
+    "root": "/Volumes/AR_TRADING_DATA/spxw_0dte_2022-06-01_2026-07-31/raw",
+    "sessions_sha256": "a4ef1b874b52274cf47aec1e4eb48355032767fb54129fb7332666dda857319a",
+    "start": "2022-06-01"
+  }
+}

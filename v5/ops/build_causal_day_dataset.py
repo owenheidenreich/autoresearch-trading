@@ -60,6 +60,8 @@ from v5.research import greeks as gk
 ET = "America/New_York"
 HORIZONS = (60, 90, 120)
 ITM_DEPTHS = (0, 10, 20, 30)
+FIRST_TOUCH_GAINS = (0.30, 0.50, 1.00)
+FIRST_TOUCH_LOSS = -0.30
 LOOKBACKS = (1, 3, 5, 15, 30, 60, 120)
 STATE_NODES = np.arange(-25.0, 25.1, 5.0)
 NODE_TOLERANCE = 2.5 + 1e-9
@@ -414,6 +416,53 @@ def _nan_extreme(path: np.ndarray, valid: np.ndarray, kind: str) -> np.ndarray:
     raise ValueError(kind)
 
 
+def _first_touch_order(
+    returns: np.ndarray,
+    valid: np.ndarray,
+    *,
+    gain: float,
+    loss: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Label gain-before-loss without inventing a result across missing quotes.
+
+    A label is one when the first observed threshold crossing is the gain, zero
+    when loss arrives first or the complete horizon touches neither, and NaN
+    only when the path becomes unobservable before either event. A same-minute
+    double touch is unresolvable at minute cadence and is deliberately unknown.
+    """
+
+    labels = np.full(len(returns), np.nan, dtype=float)
+    gain_minutes = np.full(len(returns), np.nan, dtype=float)
+    loss_minutes = np.full(len(returns), np.nan, dtype=float)
+    for row, (path, usable) in enumerate(zip(returns, valid, strict=True)):
+        outcome_known = False
+        for minute, (value, is_valid) in enumerate(zip(path, usable, strict=True), 1):
+            if not is_valid or not np.isfinite(value):
+                break
+            gain_hit, loss_hit = value >= gain, value <= loss
+            if gain_hit:
+                gain_minutes[row] = float(minute)
+            if loss_hit:
+                loss_minutes[row] = float(minute)
+            if gain_hit and loss_hit:
+                outcome_known = True
+                break
+            if gain_hit:
+                labels[row] = 1.0
+                outcome_known = True
+                break
+            if loss_hit:
+                labels[row] = 0.0
+                outcome_known = True
+                break
+        else:
+            labels[row] = 0.0
+            outcome_known = True
+        if outcome_known and np.isfinite(gain_minutes[row]) and np.isfinite(loss_minutes[row]):
+            labels[row] = np.nan
+    return labels, gain_minutes, loss_minutes
+
+
 def attach_candidate_outcomes(
     candidates: pd.DataFrame,
     quotes: pd.DataFrame,
@@ -471,6 +520,25 @@ def attach_candidate_outcomes(
         - result["entry_ask_usd"].to_numpy(float)[:, None]
         - FEES_PER_ROUND_TRIP_USD
     )
+
+    # The first-touch member is defined on quote mids, while its execution
+    # accounting remains separately ask-in/bid-out. It never removes a
+    # candidate for a missing future row: that target becomes unknown instead.
+    entry_mid = result["entry_mid_usd"].to_numpy(float) / CONTRACT_MULTIPLIER
+    option_return_path = mid[raw_path_index.clip(max=n_minutes - 1), columns[:, None]]
+    option_return_path = option_return_path / entry_mid[:, None] - 1.0
+    first_touch_valid = path_valid & np.isfinite(option_return_path)
+    for gain in FIRST_TOUCH_GAINS:
+        label, gain_minute, loss_minute = _first_touch_order(
+            option_return_path[:, :60],
+            first_touch_valid[:, :60],
+            gain=gain,
+            loss=FIRST_TOUCH_LOSS,
+        )
+        gain_name = f"{int(gain * 100)}pct"
+        result[f"first_touch_{gain_name}_before_loss_30pct_60m"] = label
+        result[f"first_touch_{gain_name}_minute_60m"] = gain_minute
+        result[f"first_touch_loss_30pct_minute_{gain_name}_60m"] = loss_minute
 
     for horizon in HORIZONS:
         inside = path_valid & (steps[None, :] <= horizon)

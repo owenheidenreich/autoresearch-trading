@@ -229,3 +229,14 @@ Send concise progress updates during long work. At each completed loop, report o
 Continue until breakthrough A is met. Mark the goal blocked only when the same exact Tier-1
 condition has prevented meaningful progress for the required repeated-goal threshold and every safe
 alternative is exhausted. Mark it complete only when the breakthrough evidence and durable records exist.
+
+---
+
+## Program stop, 2026-08-15 — this goal is terminated by the owner's pre-committed condition
+
+After the strategic decision memo, the owner pivoted the program to a single $0 defined-risk
+short-vertical census (STATUS row 44) with the instruction: "Proceed only with the preregistered $0
+defined-risk short-vertical census on owned data — no purchase, broker contact, or trading — and
+STOP the options program if nothing clears even fee-only execution." Nothing cleared. Options-
+strategy development is stopped; no cycle under this goal may start. Reopening conditions live in
+the census's do-not-retest ledger row. The breakthrough loop above is preserved as history.

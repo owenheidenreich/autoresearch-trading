@@ -125,6 +125,8 @@ market_events.jsonl
 # Run-scoped autoresearch packets are generated local evidence. Governed
 # amendment packets must be named exceptions and committed intentionally.
 /v4/audit/autoresearch/*/
+!/v4/audit/autoresearch/capacity_known_answer_2026_08_15/
+!/v4/audit/autoresearch/capacity_known_answer_2026_08_15/**
 !/v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/
 !/v4/audit/autoresearch/pathd_phase0_feature_certification_2026_08_04/**
 !/v4/audit/autoresearch/protocol101_ft2_10_entry_gate_convexity_amendment/

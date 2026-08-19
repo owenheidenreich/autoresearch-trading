@@ -1,0 +1,69 @@
+{
+  "classification": "DEVELOPMENT DIAGNOSTIC. Bound by the synthetic development firewall: V1/V2 worlds and results influenced this harness, so no confirmation status is possible for any V1-V3 world. This campaign cannot authorize a fit or purchase, cannot certify full-pipeline power, and cannot close the lifecycle member or strategy class.",
+  "created_on": "2026-08-15",
+  "declaration_sha256": "2e860db75eb50cb9698b094369b78e6ad88d46efd82e52a3cd76fd78643e0087",
+  "first_trial_seeds_check": {
+    "capacity-v3|243|null|0": 3531141335,
+    "capacity-v3|890|edge_medium|39": 9720465
+  },
+  "implementation_sha256": "b7d63fec222877797c9b6755e1ede762a1027052fc507f84d96ad553d86ef63a",
+  "integrity": {
+    "money_spent": false,
+    "real_economics_opened": false,
+    "real_targets_opened": false,
+    "vendor_contacted": false
+  },
+  "known_limits_carried": [
+    "Entry phase only; stateless per-minute scoring; no serial account, occupancy, controls or session-level inference.",
+    "WAIT trained toward zero, not the derived slot value of the frozen protocol.",
+    "Value noise still the declared $100 independent-per-minute law pending A11 calibration; results bind only this noise law.",
+    "Recovery fraction-of-oracle is a representation diagnostic, not gate power."
+  ],
+  "law": {
+    "autocorrelation_minutes": 20.0,
+    "base_drag_usd": 15.0,
+    "distractor_sd": 1.0,
+    "effect_medium_usd_per_sd": 120.0,
+    "effect_small_usd_per_sd": 40.0,
+    "eligible_nodes": 6,
+    "feature_clip": 10.0,
+    "gradient_clip": 5.0,
+    "ladder_nodes": 16,
+    "learning_rate": 0.003,
+    "max_epochs": 400,
+    "minibatch_rows": 8192,
+    "minutes_per_session": 150,
+    "null_entry_rate_tolerance": 0.05,
+    "observation_noise_sd": 0.5,
+    "plateau_patience": 20,
+    "plateau_tolerance": 0.0001,
+    "recovery_fraction_of_oracle": 0.5,
+    "recovery_rate_required": 0.8,
+    "score_sessions": 120,
+    "signal_feature": "body_points",
+    "spread_high_usd": 10.0,
+    "spread_low_usd": 2.0,
+    "target_scale_usd": 1000.0,
+    "training_sessions": [
+      243,
+      404,
+      526,
+      648,
+      769,
+      890
+    ],
+    "trials_per_cell": 40,
+    "value_noise_usd": 100.0,
+    "weight_decay": 0.0001
+  },
+  "law_sha256": "15d8aff92fdd11570477adc13c4064403e41f15a0622ad74f0c0ae19c93a0aae",
+  "question": "Was the V2 learning failure a conditioning artifact of the simplified training law? Under the production-mirrored law (training-world standardisation with clipping, dollar targets scaled by 1000, Smooth-L1, AdamW with weight decay, gradient clipping, best-checkpoint restoration), what fraction of trials recover the same planted representable entry edge at the actual fold-prefix sizes 243/404/526/648/769/890?",
+  "runner_sha256": "5456c9c04b16b58081aa16bd9840daae83fb440fbd6673149950e8f5f0dbabdb",
+  "schema_version": "v5.capacity-known-answer-declaration.v3",
+  "seed_law": "trial_seed = stable_seed('capacity-v3', sessions, world, trial) with SHA-256; score world seed = stable_seed('score-world', trial_seed). Process-stable; every per-trial seed is recorded in the receipt.",
+  "supersedes": {
+    "classification_of_predecessors": "Both reclassified DEVELOPMENT by the 2026-08-15 second-round external review. V2's identical-seeds claim was false: seeds derived via process-salted hash() were not reproducible across processes (verified empirically). V2 also returned the terminal model instead of the best checkpoint and trained raw-dollar MSE through unscaled features.",
+    "v1_declaration_sha256": "d8cd12f16b02d03733da48c730efa906242aec30812bfb9feb5f6046e2004d28",
+    "v2_declaration_sha256": "2cf5c2a162f2ab77b031c0013e6e6948321e4666f9fdf9f0ad0fdcceea20e130"
+  }
+}

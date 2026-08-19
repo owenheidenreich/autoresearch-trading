@@ -1,0 +1,60 @@
+{
+  "acceptable_ruin_threshold": {
+    "definition": "probability of equity breaching 50% of starting capital within 252 sessions",
+    "value": 0.05,
+    "why": "The charter's survival floor is 50%, and the project's existing risk machinery already declares a 5% tolerance for breaker firing. Reusing 5% keeps this study on the tolerance convention the project already signed rather than inventing one."
+  },
+  "assumes_hypothetical_edge": "Win rate is a swept PARAMETER, not a measurement. This study cannot and must not be read as evidence that an edge exists; every measurement on this population at random entry is negative.",
+  "classification": "READ-ONLY MODEL-FREE SIMULATION STUDY",
+  "created_on": "2026-08-16",
+  "declaration_sha256": "b6b36b28a28843c7d88543c6b7f1dee37f734cfffb4244f3ac6475608bdffd3e",
+  "evidence_path": "v4/audit/autoresearch/scale_sensitivity_2026_08_16/receipt.json",
+  "family": {
+    "accounts_usd": [
+      10000,
+      25000,
+      50000,
+      100000
+    ],
+    "paths": 20000,
+    "sessions_per_path": 252,
+    "size": 28,
+    "win_rates": [
+      0.3,
+      0.35,
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6
+    ]
+  },
+  "implementation_hashes": {
+    "v5/ops/run_scale_sensitivity.py": "b0684de1e28cd9db7d8fc3792b09886949a4c09c9f08598f203540b5fecdb63b",
+    "v5/research/scale_sensitivity.py": "7676d3009df51e90b707869a6ecc71d6c0f2342a9297d5e1052ea6a5bf10178a"
+  },
+  "job": "46 lifecycle-training",
+  "law_sha256": "5db6ee3c4b9d57a1eb5799957bad82b0852217b74938dc33be5f9f9804434f56",
+  "law_simulated": {
+    "daily_breaker_share": 0.2,
+    "declared_stop": 0.4,
+    "max_trades_per_session": 2,
+    "premium_cap_usd": 2000.0,
+    "survival_floor_share": 0.5
+  },
+  "population": {
+    "explicitly_not": "no parametric distribution and no quantile grid; a quantile grid trims the right tail and biased an earlier generation of these numbers pessimistic by 6-19%",
+    "law": "per-trade (ticket, net) PAIRS measured under the declared -40% stop else 60-minute hold, restricted to ticket+fees <= $2,000; resampled as pairs so the joint distribution of size and outcome is preserved",
+    "source": "/Volumes/AR_TRADING_DATA/derived/quoted_exit_paths.parquet"
+  },
+  "question": "As a serial compounding account grows from $10,000 toward $100,000 under the signed 2026-08-16 risk law, does the strategy degrade, can the model drift into deep-ITM tickets, and where do the risk constraints stop binding?",
+  "questions_predeclared": [
+    "Q1 does the dollar cap hold as equity compounds, and can any interaction admit deep ITM",
+    "Q2 realised trades per session at each account level; is the 20% breaker mis-sized at $10k",
+    "Q3 win rate required for ruin <= the declared threshold, per account",
+    "Q4 does per-trade P&L move with account size (it should not)",
+    "Q5 the equity at which breaker and cap stop binding"
+  ],
+  "schema_version": "v5.scale-sensitivity-declaration.v1",
+  "seed_law": "stable_seed('scale-sensitivity-v1', account_usd, win_rate)"
+}

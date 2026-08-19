@@ -1,0 +1,92 @@
+{
+  "approval": "v5/governance/BACKFILL_V2_APPROVAL_2026_08_16.md",
+  "authorization": "v5/governance/DEVELOPMENT_CHARTER_2026_08.md",
+  "created_on": "2026-08-16",
+  "declaration_sha256": "65607a7185523d4cf0d7b514eed88b7f4df4ebd5d6594c57d55eae664d65fd07",
+  "destination": {
+    "root": "/Volumes/AR_TRADING_DATA/lifecycle_spxw_quote_backfill_2022-06-01_2025-07-31_closing_bar_fixed"
+  },
+  "hard_cap_usd": 22.0,
+  "hard_rails": {
+    "abort_if_estimate_above_usd": 75.0,
+    "exact_preflight_before_download": true,
+    "no_broker_contact": true,
+    "no_model_fit": true,
+    "no_orders": true,
+    "no_other_vendor_request": true,
+    "no_post_2026_08_05_sessions": true
+  },
+  "implementation_dependencies": [
+    {
+      "path": "v5/ops/download_spxw_history.py",
+      "reason": "supplies the definition window via _bounds; the runner hash alone never covered it",
+      "sha256": "a634a412cd0841ece01d247b3ca10650d8b2198e2122c7910c4fcf1747acb3aa"
+    }
+  ],
+  "implementation_sha256": "30fe611f8a176a6982a9bd49cba3be4b9d444f515a0d8ac9ae0dcd4ecb5089b3",
+  "job": "46 lifecycle-training",
+  "measured_scope_evidence": {
+    "full_ladder_spot_checks": {
+      "2022-06-01": {
+        "cbbo_usd": 0.0215,
+        "ladder_symbols": 362
+      },
+      "2024-03-15": {
+        "cbbo_usd": 0.0483,
+        "ladder_symbols": 812
+      },
+      "2025-07-31": {
+        "cbbo_usd": 0.0476,
+        "ladder_symbols": 988
+      }
+    },
+    "parent_scope_mean_usd_per_session": 0.8483,
+    "probe_receipt": "v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/request_scope_probe.json"
+  },
+  "qc_contract": {
+    "missing_or_empty_schema_is_degraded_and_must_be_classified_before_corpus_build": true,
+    "no_future_expiry_instrument_is_eligible": true,
+    "required_schemas_per_selected_session": [
+      "definition",
+      "cbbo-1m"
+    ],
+    "saved_cbbo_rows_must_map_to_own_session_expiry": true,
+    "saved_definition_rows_must_map_to_own_session_expiry": true
+  },
+  "request": {
+    "cbbo_close_minute": "16:01",
+    "cbbo_stype_in": "raw_symbol",
+    "cbbo_window": "09:30 through 16:01 America/New_York, DST-aware",
+    "dataset": "OPRA.PILLAR",
+    "definition_parent": "SPXW.OPT",
+    "definition_stype_in": "parent",
+    "definition_window": "00:00:00Z through 00:00:00Z next UTC day",
+    "ladder_resolution": "symbology.resolve(parent=SPXW.OPT, stype_out=instrument_id) for the session, then keep only symbols whose own OSI expiry equals the session date",
+    "same_day_rule": "A requested and saved row must have a valid SPXW OSI symbol whose own YYMMDD expiry equals its session. No trading-calendar membership is used. The rule is applied at request time, not only after saving.",
+    "schemas": [
+      "definition",
+      "cbbo-1m"
+    ]
+  },
+  "schema_version": "v5.lifecycle-quote-backfill-declaration.v2",
+  "semantic_freeze_rule": "Changing this declaration, the acquisition runner, the source inventory, request schemas, OSI filter, session bounds, or destination after a vendor cost preflight cancels the preflight and requires a fresh owner decision.",
+  "source_ohlcv_inventory": {
+    "end": "2025-07-31",
+    "inclusion": "all and only source parquet files in range with Parquet metadata num_rows > 0",
+    "nonempty_sessions": 794,
+    "root": "/Volumes/AR_TRADING_DATA/spxw_0dte_2022-06-01_2026-07-31/raw",
+    "sessions_sha256": "a4ef1b874b52274cf47aec1e4eb48355032767fb54129fb7332666dda857319a",
+    "start": "2022-06-01"
+  },
+  "spend_context": {
+    "already_spent_usd": 19.245,
+    "charter_ceiling_usd": 75.0,
+    "note": "Owner authorized the full re-request at roughly $19.29 on 2026-08-17. The cap is set to $22.00 rather than the charter's $75.00 so the authorization binds mechanically; cumulative spend stays at or below $41.25 of the $75.00 charter ceiling.",
+    "this_declaration_cap_usd": 22.0
+  },
+  "supersedes": {
+    "declaration_path": "v5/work/lifecycle-training/BACKFILL_DECLARATION_V4.json",
+    "declaration_sha256": "30ad430b0bf3ac65a51822befb9641915cf497823587c123b69e11abc1818e18",
+    "reason": "V4's cbbo window ended at 16:00 and vendor ranges are half-open, so the bar stamped 16:00:00 - covering event minute 15:59, the minute terminal accounting reads - was never delivered. Measured on V4's own output: 389 bars per contract instead of 390, ts_recv 09:31-15:59, 0 of 62 sampled sessions carrying a 16:00 row. V4's acquisition receipt remains an immutable record of what it requested and paid for."
+  }
+}

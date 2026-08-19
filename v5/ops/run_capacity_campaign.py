@@ -1,12 +1,15 @@
-"""Run the known-answer capacity campaign and write its receipt.
+"""Run the known-answer development harness and write its receipt.
 
 Usage:
-    ./.venv/bin/python v5/ops/run_capacity_campaign.py --out <receipt.json>
-    ./.venv/bin/python v5/ops/run_capacity_campaign.py --smoke   # timing only
+    ./.venv/bin/python -m v5.ops.run_capacity_campaign \
+        --declaration v5/work/entry-exit-attribution/<DECLARATION>.json
+    ./.venv/bin/python -m v5.ops.run_capacity_campaign --smoke   # timing only
 
-The smoke mode exists to size the compute before the declaration is frozen; it
-runs a shrunken law, reports elapsed seconds, and deliberately discards all
-metrics so nothing is read before the declaration hash exists.
+The runner refuses to execute unless the declaration's law hash and
+implementation hashes match the code that is about to run, and it binds the
+declaration hash, per-trial results, seeds and software environment into the
+receipt. Smoke mode sizes compute before a declaration is frozen; it runs a
+shrunken law and discards all metrics.
 """
 from __future__ import annotations
 
@@ -14,21 +17,53 @@ import argparse
 import dataclasses
 import hashlib
 import json
+import platform
 import time
 from pathlib import Path
+
+import numpy
+import torch
 
 from v5.research.capacity_campaign import (
     LAW,
     CampaignLaw,
     run_trial,
+    stable_seed,
     wilson_lower,
+    wilson_upper,
 )
 
 REPO = Path(__file__).resolve().parents[2]
+IMPLEMENTATION = REPO / "v5" / "research" / "capacity_campaign.py"
+RUNNER = Path(__file__).resolve()
 
 
 def _file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _environment() -> dict:
+    return {
+        "python": platform.python_version(),
+        "numpy": numpy.__version__,
+        "torch": torch.__version__,
+        "platform": platform.platform(),
+        "seed_derivation": "sha256, process-stable; PYTHONHASHSEED irrelevant",
+    }
+
+
+def verify_declaration(path: Path, law: CampaignLaw) -> dict:
+    declaration = json.loads(path.read_text())
+    problems = []
+    if declaration["law_sha256"] != law.sha256():
+        problems.append("declared law hash does not match the built CampaignLaw")
+    if declaration["implementation_sha256"] != _file_sha256(IMPLEMENTATION):
+        problems.append("declared implementation hash does not match capacity_campaign.py")
+    if declaration.get("runner_sha256") != _file_sha256(RUNNER):
+        problems.append("declared runner hash does not match run_capacity_campaign.py")
+    if problems:
+        raise SystemExit("declaration mismatch: " + "; ".join(problems))
+    return declaration
 
 
 def run(law: CampaignLaw, *, quiet: bool = False) -> dict:
@@ -43,7 +78,7 @@ def run(law: CampaignLaw, *, quiet: bool = False) -> dict:
             started = time.time()
             trials = []
             for trial in range(law.trials_per_cell):
-                seed = hash((sessions, world_name, trial)) % (2**31)
+                seed = stable_seed("capacity-v3", sessions, world_name, trial)
                 trials.append(
                     run_trial(
                         training_sessions=sessions,
@@ -53,7 +88,7 @@ def run(law: CampaignLaw, *, quiet: bool = False) -> dict:
                     )
                 )
             recovered = sum(t.recovered for t in trials)
-            clean = sum(t.null_clean for t in trials)
+            abstained = sum(t.null_abstained for t in trials)
             cell = {
                 "training_sessions": sessions,
                 "world": world_name,
@@ -63,9 +98,12 @@ def run(law: CampaignLaw, *, quiet: bool = False) -> dict:
                 "recovery_rate_wilson_lower": wilson_lower(
                     recovered, law.trials_per_cell
                 ),
-                "null_clean_rate": clean / law.trials_per_cell,
-                "null_clean_rate_wilson_lower": wilson_lower(
-                    clean, law.trials_per_cell
+                "null_abstention_rate": abstained / law.trials_per_cell,
+                "null_abstention_wilson_lower": wilson_lower(
+                    abstained, law.trials_per_cell
+                ),
+                "entry_rate_wilson_upper": wilson_upper(
+                    law.trials_per_cell - abstained, law.trials_per_cell
                 ),
                 "mean_oof_policy_ev_per_minute": sum(
                     t.oof_policy_ev_per_minute for t in trials
@@ -82,54 +120,33 @@ def run(law: CampaignLaw, *, quiet: bool = False) -> dict:
                 )
                 / law.trials_per_cell,
                 "elapsed_seconds": round(time.time() - started, 1),
+                "trial_records": [dataclasses.asdict(t) for t in trials],
             }
             cells.append(cell)
             if not quiet:
                 print(
                     f"n={sessions} {world_name}: recovery {cell['recovery_rate']:.2f}"
-                    f" clean {cell['null_clean_rate']:.2f}"
+                    f" abstain {cell['null_abstention_rate']:.2f}"
                     f" ev {cell['mean_oof_policy_ev_per_minute']:.2f}"
                     f"/{cell['mean_oracle_ev_per_minute']:.2f}"
                     f" ({cell['elapsed_seconds']}s)",
                     flush=True,
                 )
 
-    smallest_supported = None
-    for sessions in law.training_sessions:
-        small = next(
-            c
-            for c in cells
-            if c["training_sessions"] == sessions and c["world"] == "edge_small"
-        )
-        null = next(
-            c
-            for c in cells
-            if c["training_sessions"] == sessions and c["world"] == "null"
-        )
-        if (
-            small["recovery_rate"] >= law.recovery_rate_required
-            and null["null_clean_rate"] >= law.null_clean_rate_required
-        ):
-            smallest_supported = sessions
-            break
-
     return {
-        "schema_version": "v5.capacity-known-answer.v1",
+        "schema_version": "v5.capacity-known-answer.v3",
+        "classification": (
+            "DEVELOPMENT DIAGNOSTIC of the entry training law on one synthetic "
+            "task. Not a power measurement, not a full-pipeline rehearsal; "
+            "cannot close the lifecycle member or authorize a fit or purchase."
+        ),
         "created_on": time.strftime("%Y-%m-%d"),
         "law": dataclasses.asdict(law),
         "law_sha256": law.sha256(),
-        "implementation_sha256": _file_sha256(
-            REPO / "v5" / "research" / "capacity_campaign.py"
-        ),
+        "implementation_sha256": _file_sha256(IMPLEMENTATION),
+        "runner_sha256": _file_sha256(RUNNER),
+        "environment": _environment(),
         "cells": cells,
-        "verdict": {
-            "smallest_supported_training_sessions_small_edge": smallest_supported,
-            "decision_rule": (
-                "smallest n with edge_small recovery_rate >= "
-                f"{law.recovery_rate_required} and null clean_rate >= "
-                f"{law.null_clean_rate_required}"
-            ),
-        },
         "integrity": {
             "real_targets_opened": False,
             "real_economics_opened": False,
@@ -141,6 +158,7 @@ def run(law: CampaignLaw, *, quiet: bool = False) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--declaration", type=Path, default=None)
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--smoke", action="store_true")
     arguments = parser.parse_args()
@@ -162,7 +180,15 @@ def main() -> None:
         )
         return
 
+    if arguments.declaration is None:
+        raise SystemExit("a real run requires --declaration")
+    declaration = verify_declaration(arguments.declaration, LAW)
+
     receipt = run(LAW)
+    receipt["declaration_path"] = str(
+        arguments.declaration.resolve().relative_to(REPO)
+    )
+    receipt["declaration_sha256"] = declaration["declaration_sha256"]
     body = json.dumps(receipt, indent=2, sort_keys=True)
     receipt["receipt_sha256"] = hashlib.sha256(body.encode()).hexdigest()
     out = arguments.out or (
@@ -171,7 +197,7 @@ def main() -> None:
         / "audit"
         / "autoresearch"
         / "capacity_known_answer_2026_08_15"
-        / "receipt_v2.json"
+        / "receipt_v3.json"
     )
     if out.exists():
         raise SystemExit(f"refusing to overwrite existing receipt {out}")

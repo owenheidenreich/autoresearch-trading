@@ -1,24 +1,25 @@
-"""Known-answer capacity campaign for the compact shared lifecycle entry phase.
+"""Known-answer development harness for the compact shared lifecycle entry phase.
 
-The 2026-08-15 external adversarial review found that the 120-parameter
-lifecycle design is compared against a full-corpus evidence budget although its
-own chronology trains the first outer fit on a 404-session prefix, and that the
-20-observations-per-parameter rule this project inherited was never measured.
-This module measures the capacity law instead of arguing about it: it plants a
-synthetic entry edge the architecture can provably represent, trains the real
-entry phase on n sessions, and reads recovery and null discipline against the
-generator's true expected values, which are known exactly because we own the
-world.
+Classification: DEVELOPMENT DIAGNOSTIC, never a binding power measurement.
+The 2026-08-15 second-round external review established that campaigns V1 and
+V2 measured a simplified, badly-conditioned training implementation rather
+than data capacity: raw-dollar MSE through unscaled features, an early stop
+that returned the deteriorated last model instead of the best checkpoint, and
+process-salted `hash()` seeds that made the declared seed bank irreproducible.
+
+This version mirrors the production training law of
+`v5/ops/train_causal_day_action_value.py`: SHA-256 stable seeds, training-world
+feature standardisation with clipping, dollar targets scaled by 1000,
+Smooth-L1 loss, AdamW with weight decay, gradient clipping, and best-checkpoint
+restoration. Its verdicts still bind only the exact synthetic task, effect
+family, noise law and training law tested; they can never close the lifecycle
+member, certify full-pipeline power, or authorize a fit or purchase.
 
 Nothing here touches real targets, real economics, a vendor, or reserved data.
-Worlds are synthetic; their dependence structure is calibrated to the measured
-autocorrelation and noise scale recorded in
-`research/findings/EFFECTIVE_SAMPLE_SIZE_2026_08_14.md` (10-27 minute
-autocorrelation times) and the print-artifact finding (parity-residual SD
-$102.60 against a ~$20-26 round trip).
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import math
@@ -50,6 +51,18 @@ SPREAD_INDEX = LADDER_FEATURES.index("spread")
 ASK_INDEX = LADDER_FEATURES.index("ask")
 
 
+def stable_seed(*values: object) -> int:
+    """SHA-256 seed derivation, mirroring the production trainer.
+
+    Never use language-runtime `hash()`: it is salted per process, which made
+    the V1/V2 seed banks irreproducible and falsified V2's identical-seeds
+    declaration claim.
+    """
+
+    digest = hashlib.sha256("|".join(map(str, values)).encode()).digest()
+    return int.from_bytes(digest[:4], "little")
+
+
 @dataclass(frozen=True)
 class CampaignLaw:
     """Every constant a trial depends on; hashed into the declaration."""
@@ -68,17 +81,22 @@ class CampaignLaw:
     effect_small_usd_per_sd: float = 40.0
     effect_medium_usd_per_sd: float = 120.0
     score_sessions: int = 120
-    training_sessions: tuple[int, ...] = (243, 404, 650, 890)
+    # The actual entry-training prefix sizes of the frozen five-fold split at
+    # a 1,011-session corpus, plus the owned-corpus anchor 243.
+    training_sessions: tuple[int, ...] = (243, 404, 526, 648, 769, 890)
     trials_per_cell: int = 40
     max_epochs: int = 400
     plateau_tolerance: float = 1e-4
     plateau_patience: int = 20
     minibatch_rows: int = 8192
-    learning_rate: float = 0.01
+    learning_rate: float = 0.003
+    weight_decay: float = 1e-4
+    gradient_clip: float = 5.0
+    target_scale_usd: float = 1000.0
+    feature_clip: float = 10.0
     recovery_fraction_of_oracle: float = 0.5
     recovery_rate_required: float = 0.8
     null_entry_rate_tolerance: float = 0.05
-    null_clean_rate_required: float = 0.95
 
     def sha256(self) -> str:
         payload = json.dumps(asdict(self), sort_keys=True).encode()
@@ -96,6 +114,52 @@ class World:
     realized_entry_usd: Tensor  # (rows, ladder_nodes); NaN off the entry mask
     true_entry_ev_usd: Tensor  # (rows, ladder_nodes); NaN off the entry mask
     sessions: int
+
+
+@dataclass(frozen=True)
+class WorldScaler:
+    """Training-world standardisation for candle and ladder features."""
+
+    candle_mean: Tensor
+    candle_sd: Tensor
+    ladder_mean: Tensor
+    ladder_sd: Tensor
+
+    @staticmethod
+    def fit(world: World) -> "WorldScaler":
+        candles = world.batch.candles.reshape(-1, world.batch.candles.shape[-1])
+        ladder = world.batch.ladder.reshape(-1, world.batch.ladder.shape[-1])
+        return WorldScaler(
+            candle_mean=candles.mean(dim=0),
+            candle_sd=candles.std(dim=0).clamp(min=1e-6),
+            ladder_mean=ladder.mean(dim=0),
+            ladder_sd=ladder.std(dim=0).clamp(min=1e-6),
+        )
+
+    def apply(self, world: World, *, clip: float) -> World:
+        batch = world.batch
+        candles = ((batch.candles - self.candle_mean) / self.candle_sd).clamp(
+            -clip, clip
+        )
+        ladder = ((batch.ladder - self.ladder_mean) / self.ladder_sd).clamp(
+            -clip, clip
+        )
+        return World(
+            batch=CausalPolicyBatch(
+                candles=candles,
+                candle_mask=batch.candle_mask,
+                ladder=ladder,
+                ladder_mask=batch.ladder_mask,
+                entry_action_mask=batch.entry_action_mask,
+                account=batch.account,
+                position=batch.position,
+                clock=batch.clock,
+                roles=batch.roles,
+            ),
+            realized_entry_usd=world.realized_entry_usd,
+            true_entry_ev_usd=world.true_entry_ev_usd,
+            sessions=world.sessions,
+        )
 
 
 def _clock_matrix(minutes: int) -> np.ndarray:
@@ -211,20 +275,23 @@ def _row_batch(world: World, rows: Tensor) -> CausalPolicyBatch:
     )
 
 
+@dataclass(frozen=True)
+class TrainingRecord:
+    epochs_run: int
+    stop_epoch_of_best: int
+    best_loss: float
+
+
 def train_entry_phase(
     world: World, *, seed: int, law: CampaignLaw = LAW
-) -> CompactSharedLifecyclePolicy:
-    """Fit the real entry phase: exit head stays frozen, as the protocol orders.
+) -> tuple[CompactSharedLifecyclePolicy, TrainingRecord]:
+    """Fit the real entry phase under the production-mirrored training law.
 
-    The loss is the protocol's Phase-A value law: masked entry logits regress
-    on realized entry dollars and WAIT regresses on its structural floor $0.
-
-    Training runs to convergence rather than a fixed epoch count — the V1
-    campaign proved a frozen 60-epoch budget binds before sample size does
-    (receipt `capacity_known_answer_2026_08_15/receipt.json`). The stop reads
-    only the epoch-mean training loss, so it is outcome-blind: it stops after
-    `plateau_patience` consecutive epochs whose relative improvement is below
-    `plateau_tolerance`, or at `max_epochs`.
+    Exit head frozen, as the protocol orders. Smooth-L1 on dollar targets
+    scaled by `target_scale_usd`, AdamW, gradient clipping, and an
+    outcome-blind plateau stop that RESTORES the best-loss checkpoint — the V2
+    trainer returned the deteriorated terminal state, which biased recovery
+    down. The stop reads training loss only and never touches the score world.
     """
 
     torch.manual_seed(seed)
@@ -232,48 +299,69 @@ def train_entry_phase(
     for parameter in model.exit.parameters():
         parameter.requires_grad_(False)
     trainable = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.Adam(trainable, lr=law.learning_rate)
+    optimizer = torch.optim.AdamW(
+        trainable, lr=law.learning_rate, weight_decay=law.weight_decay
+    )
     rows = world.batch.batch_size
     generator = torch.Generator().manual_seed(seed)
+    scale = law.target_scale_usd
+    smooth_l1 = torch.nn.SmoothL1Loss()
     best_loss = math.inf
+    best_state = copy.deepcopy(model.state_dict())
+    best_epoch = 0
     stale_epochs = 0
-    for _ in range(law.max_epochs):
+    epochs_run = 0
+    for epoch in range(law.max_epochs):
+        epochs_run = epoch + 1
         order = torch.randperm(rows, generator=generator)
         epoch_loss = 0.0
         batches = 0
         for start in range(0, rows, law.minibatch_rows):
             index = order[start : start + law.minibatch_rows]
             scores = model(_row_batch(world, index))
-            target = world.realized_entry_usd[index]
+            target = world.realized_entry_usd[index] / scale
             mask = world.batch.entry_action_mask[index]
             predicted = scores.contract_logits
-            entry_loss = torch.mean((predicted[mask] - target[mask]) ** 2)
-            wait_loss = torch.mean(scores.abstain_logits**2)
+            entry_loss = smooth_l1(predicted[mask], target[mask])
+            wait_loss = smooth_l1(
+                scores.abstain_logits, torch.zeros_like(scores.abstain_logits)
+            )
             loss = entry_loss + wait_loss
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(trainable, law.gradient_clip)
             optimizer.step()
             epoch_loss += float(loss)
             batches += 1
         epoch_loss /= max(batches, 1)
         if epoch_loss < best_loss * (1.0 - law.plateau_tolerance):
             best_loss = epoch_loss
+            best_state = copy.deepcopy(model.state_dict())
+            best_epoch = epoch
             stale_epochs = 0
         else:
             stale_epochs += 1
             if stale_epochs >= law.plateau_patience:
                 break
-    return model.eval()
+    model.load_state_dict(best_state)
+    return model.eval(), TrainingRecord(
+        epochs_run=epochs_run,
+        stop_epoch_of_best=best_epoch,
+        best_loss=best_loss,
+    )
 
 
 @dataclass(frozen=True)
 class TrialResult:
+    seed: int
     oof_policy_ev_per_minute: float
     oracle_ev_per_minute: float
     entry_rate: float
     train_apparent_edge_usd: float
     recovered: bool
-    null_clean: bool
+    null_abstained: bool
+    epochs_run: int
+    stop_epoch_of_best: int
 
 
 @torch.no_grad()
@@ -282,18 +370,29 @@ def evaluate(
     train_world: World,
     score_world: World,
     *,
+    seed: int = 0,
+    training: TrainingRecord | None = None,
     law: CampaignLaw = LAW,
 ) -> TrialResult:
-    def policy_metrics(world: World) -> tuple[Tensor, Tensor, Tensor]:
+    """Score the policy against the generator's truth.
+
+    This is a stateless per-minute diagnostic: no serial account, occupancy,
+    controls, or session-level inference. `recovered` and `null_abstained`
+    are development statistics for the entry training law only — abstention in
+    a world where every entry is negative by construction is NOT a
+    full-pipeline false-pass rate.
+    """
+
+    def policy_metrics(world: World) -> tuple[Tensor, Tensor]:
         scores = model(world.batch)
         predicted = scores.contract_logits.masked_fill(
             ~world.batch.entry_action_mask, -torch.inf
         )
         best, node = predicted.max(dim=1)
         enter = best > scores.abstain_logits
-        return enter, node, best
+        return enter, node
 
-    enter, node, _ = policy_metrics(score_world)
+    enter, node = policy_metrics(score_world)
     picked_ev = score_world.true_entry_ev_usd[
         torch.arange(len(node)), node
     ].nan_to_num()
@@ -301,24 +400,30 @@ def evaluate(
     oracle = score_world.true_entry_ev_usd.nan_to_num(nan=-torch.inf).max(dim=1).values
     oracle_ev = torch.clamp(oracle, min=0.0)
 
-    train_enter, train_node, _ = policy_metrics(train_world)
+    train_enter, train_node = policy_metrics(train_world)
     train_realized = train_world.realized_entry_usd[
         torch.arange(len(train_node)), train_node
     ].nan_to_num()
     taken = train_enter.sum().clamp(min=1).to(torch.float32)
-    apparent = (torch.where(train_enter, train_realized, torch.zeros_like(train_realized)).sum() / taken)
+    apparent = (
+        torch.where(train_enter, train_realized, torch.zeros_like(train_realized)).sum()
+        / taken
+    )
 
     result_policy = float(policy_ev.mean())
     result_oracle = float(oracle_ev.mean())
     entry_rate = float(enter.to(torch.float32).mean())
     return TrialResult(
+        seed=seed,
         oof_policy_ev_per_minute=result_policy,
         oracle_ev_per_minute=result_oracle,
         entry_rate=entry_rate,
         train_apparent_edge_usd=float(apparent),
         recovered=result_policy >= law.recovery_fraction_of_oracle * result_oracle
         and result_oracle > 0.0,
-        null_clean=entry_rate <= law.null_entry_rate_tolerance,
+        null_abstained=entry_rate <= law.null_entry_rate_tolerance,
+        epochs_run=training.epochs_run if training else 0,
+        stop_epoch_of_best=training.stop_epoch_of_best if training else 0,
     )
 
 
@@ -340,11 +445,21 @@ def run_trial(
     score_world = generate_world(
         sessions=law.score_sessions,
         effect_usd_per_sd=effect_usd_per_sd,
-        seed=trial_seed + 1_000_000,
+        seed=stable_seed("score-world", trial_seed),
         law=law,
     )
-    model = train_entry_phase(train_world, seed=trial_seed, law=law)
-    return evaluate(model, train_world, score_world, law=law)
+    scaler = WorldScaler.fit(train_world)
+    scaled_train = scaler.apply(train_world, clip=law.feature_clip)
+    scaled_score = scaler.apply(score_world, clip=law.feature_clip)
+    model, record = train_entry_phase(scaled_train, seed=trial_seed, law=law)
+    return evaluate(
+        model,
+        scaled_train,
+        scaled_score,
+        seed=trial_seed,
+        training=record,
+        law=law,
+    )
 
 
 def wilson_lower(successes: int, trials: int, z: float = 1.6449) -> float:
@@ -357,15 +472,26 @@ def wilson_lower(successes: int, trials: int, z: float = 1.6449) -> float:
     return (centre - margin) / denominator
 
 
+def wilson_upper(successes: int, trials: int, z: float = 1.6449) -> float:
+    if trials == 0:
+        return 1.0
+    p = successes / trials
+    denominator = 1.0 + z * z / trials
+    centre = p + z * z / (2 * trials)
+    margin = z * math.sqrt(p * (1.0 - p) / trials + z * z / (4 * trials * trials))
+    return (centre + margin) / denominator
+
+
 def reference_weights(
     effect_usd_per_sd: float, law: CampaignLaw = LAW
 ) -> CompactSharedLifecyclePolicy:
     """Hand-built weights proving the planted edge is representable.
 
-    `direction(state) * side` carries `effect * x * side` through a small
-    linearised tanh; `contract_base` carries the per-contract drag. If these
-    weights recover most of the oracle, a failed trained fit is a sample-size
-    result rather than an architecture excuse.
+    Constructed for UNSCALED worlds: `direction(state) * side` carries
+    `effect * x * side` through a small linearised tanh; `contract_base`
+    carries the per-contract drag. If these weights recover most of the
+    oracle, a failed trained fit is a training-law result rather than an
+    architecture excuse.
     """
 
     epsilon = 0.05

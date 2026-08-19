@@ -47,7 +47,10 @@ import numpy as np
 # amending to make an occupancy cell fit.
 DAILY_BREAKER = 0.05
 SURVIVAL_FLOOR = 0.50
-CHARTER_PREMIUM_SHARE = 0.13
+CHARTER_PREMIUM_SHARE = 0.13  # superseded 2026-08-16; retained to reproduce prior receipts
+# The signed 2026-08-16 amendment states the ceiling in DOLLARS. A share of
+# equity drifts as the account compounds; a dollar ceiling cannot.
+CHARTER_PREMIUM_CEILING_USD = 2_000.0
 SESSIONS_PER_YEAR = 252
 
 # Starting account sizes to report. The bot buys one contract, so the account is
@@ -94,7 +97,7 @@ def simulate(
     paths: int,
     rng: np.random.Generator,
     daily_breaker: float = DAILY_BREAKER,
-    premium_ceiling: float = CHARTER_PREMIUM_SHARE,
+    premium_ceiling_usd: float = CHARTER_PREMIUM_CEILING_USD,
 ) -> dict:
     """One year of sessions, ``paths`` times over, in dollars.
 
@@ -102,9 +105,17 @@ def simulate(
     premium and the account only changes how much of the account that is. Both
     charter limits are measured against session-starting equity.
 
-    ``daily_breaker`` and ``premium_ceiling`` default to the signed charter
+    ``daily_breaker`` and ``premium_ceiling_usd`` default to the signed charter
     values and are parameters only so that a proposed amendment can be measured
     against the same machinery rather than argued for.
+
+    The ceiling is in **dollars**, not a share of equity. It was a share until
+    2026-08-16, which meant it widened as the account compounded — at a $100,000
+    account a 13% share is $13,000 and buys deep ITM. The signed amendment
+    states the ceiling in dollars precisely so it cannot drift, and this
+    simulator now matches it. Affordability is
+    ``min(ceiling, session-starting equity)``: the ceiling binds the ticket, and
+    a small account additionally cannot buy what it cannot afford.
     """
 
     equity = np.full(paths, account_usd)
@@ -121,10 +132,11 @@ def simulate(
         wins = resample(rng, win_quantiles_usd, (paths, trades_per_session))
         losses = resample(rng, loss_quantiles_usd, (paths, trades_per_session))
         dollars = np.where(correct, wins, losses)
-        # The charter caps one ticket at 13% of session-starting equity, so an
-        # account too small to hold the average near-ATM contract cannot open
-        # the position at all.
-        affordable = start * premium_ceiling >= mean_premium_usd
+        # The charter caps one ticket at a fixed dollar amount, and an account
+        # smaller than the contract cannot open the position regardless. The
+        # binding limit is therefore the lesser of the two, and the ceiling term
+        # does not grow with equity.
+        affordable = np.minimum(premium_ceiling_usd, start) >= mean_premium_usd
         for t in range(trades_per_session):
             active = alive & ~tripped & affordable
             if not active.any():
@@ -140,10 +152,10 @@ def simulate(
     return {
         "account_usd": account_usd,
         "daily_breaker": daily_breaker,
-        "premium_ceiling": premium_ceiling,
+        "premium_ceiling_usd": premium_ceiling_usd,
         "ticket_share_of_account": round(mean_premium_usd / account_usd, 4),
         "affordable_under_the_charter_ceiling": bool(
-            account_usd * premium_ceiling >= mean_premium_usd
+            min(premium_ceiling_usd, account_usd) >= mean_premium_usd
         ),
         "nominal_trades_per_session": trades_per_session,
         "realised_trades_per_session": round(float(trades_taken.mean() / sessions), 2),

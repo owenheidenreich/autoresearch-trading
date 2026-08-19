@@ -810,3 +810,136 @@ or known-answer fixtures.
   measurement, A3 exposure firewall, A4 serial breaker, A5 duration-matched exit control, A6 quote
   admissibility and decision clock, A7 clustered session-level estimand, A8 semantic freeze and
   closure scope). Awaiting owner signature; nothing adopted, no fit, no purchase, no vendor contact.
+
+### Second-round external review — capacity claim withdrawn; V3 development diagnostic, 2026-08-15.
+
+- The referee's second round is substantially correct and the record is corrected in place. Verified
+  against the repo before acceptance: (1) the V1/V2 receipts were git-ignored and absent from commit
+  `1cbf1fbb` despite being cited — `.gitignore` now carries an explicit exception and the receipts are
+  tracked; (2) seed derivation used process-salted `hash()` — two processes produced different values
+  for the same expression, so V2's identical-seeds declaration claim was false and neither campaign is
+  reproducible from its code; (3) the V2 trainer returned the terminal model rather than the best
+  checkpoint; (4) the harness skipped the production trainer's standardisation, target scaling,
+  Smooth-L1, AdamW and gradient clipping, so poor recovery may be a conditioning artifact.
+- The finding is retitled **DEVELOPMENT RESULT** and six claims are withdrawn, including "the backfill
+  cannot power the 120-parameter fit", the one-sided-failure claim, and the falsification of the 20:1
+  rule. The defensible statement: the simplified entry training law failed a representable synthetic
+  edge at the tested sizes. **Operational decision unchanged: no purchase, no fit — the branch is
+  blocked on preflight grounds, not closed.**
+- Amendment draft revised to revision 2: A1/A2 replaced with the referee's narrower language (and A1
+  now states V1–V3 do not satisfy it), A6 bound to named numeric receipts, A8 extended to
+  pre-acquisition freezing and the dependency tree, revision 1's divergence rejection reversed as A9,
+  and four new amendments added (A10 seeds/checkpoint/verification, A11 calibration identity, A12
+  null/comparator/QC semantics, A13 evidence publication). Awaiting owner signature.
+- Harness rebuilt to production-mirrored conditioning with SHA-256 seeds, per-trial records, runner
+  declaration verification and best-checkpoint restore; 10 harness tests green. V3 (declaration
+  `2e860db7…`) launched on the actual fold-prefix grid 243/404/526/648/769/890 to answer one narrow
+  development question: was the V2 failure conditioning? No vendor contact, spend, real targets or
+  economics.
+
+### Owner strategic ruling — pivot to the defined-risk short-vertical census, 2026-08-15.
+
+- On owner instruction, a read-only strategic decision memo evaluated the shortest defensible path to
+  a working system, with GOAL.md's no-alternate-game restriction temporarily suspended for analysis
+  only. Verdict offered: amend and pivot to defined-risk short verticals via a $0 preregistered census
+  with STOP as its failure state. **The owner selected the pivot and instructed: "Proceed only with
+  the preregistered $0 defined-risk short-vertical census on owned data — no purchase, broker contact,
+  or trading — and STOP the options program if nothing clears even fee-only execution."**
+- Registered STATUS row 44 and the packet `v5/work/short-vertical-census/`. The census law is frozen in
+  `CENSUS_DECLARATION_V1.json` (`5d37a8f5…`): 36 cells (2 sides × 2 widths × 3 OTM distances × 3 entry
+  windows), both legs causal from the entry snapshot, hold to validated cash settlement, touch and
+  fee-only accounting plus a passive diagnostic, $500 max-loss abstention law, 20k-draw session
+  bootstrap at 0.05/36, SHA-256 seeds, runner verifies implementation hashes before executing.
+  7 census tests green; the run is in progress on the 243 coverage-included sessions.
+- Drafted the trading-side charter amendment
+  `governance/CHARTER_AMENDMENT_DEFINED_RISK_VERTICALS_2026_08_15.md` (UNSIGNED) replacing the
+  long-premium-only clause with a defined-risk-only clause capped at $500 max loss and a serial daily
+  breaker. Signing it authorizes no fit, purchase, contact or order.
+- The long-single-leg route stays closed as the active route; rows 332/338/340/341 bind. V3 of the
+  capacity development harness continues in the background and will be recorded within its declared
+  development scope.
+
+### Program stop — the census answered and the owner's pre-committed condition fired, 2026-08-15.
+
+- Job 44's census closed `STOP_CONDITION_MET_NO_CELL_CLEARS_FEE_ONLY` (best fee-only cell
+  +$14.85/session against a −$30.59 corrected bound; touch erases the sign). Per the owner's
+  instruction, options-strategy development is STOPPED. STATUS carries the notice; the census packet
+  is retired to `v5/history/jobs/short-vertical-census/`; §17 is settled by measurement.
+- This packet remains open solely to record V3 of the capacity development harness when it completes;
+  it authorizes no further research.
+
+### Owner continuation instruction after the STOP; drawdown-ordered lifecycle design priced, 2026-08-15.
+
+- In a separate session, after an evidence audit of the path-dependent lifecycle hypothesis and after
+  being shown explicitly that the census STOP and ledger rows 340/341 bar the work, the owner
+  instructed: **"continue trying to create a model that can trade 0dte options long calls and long
+  puts"**, with the design: entry selects for least predicted post-entry drawdown (not beyond −30%);
+  exit cuts thesis-violating trades early and captures profits on runners.
+- Recorded as an override-in-substance requiring signature to take effect. Two UNSIGNED drafts issued:
+  `governance/STOP_OVERRIDE_DRAWDOWN_LIFECYCLE_2026_08_15.md` (narrow, preflight-gated, spent on any
+  kill) and `governance/LEDGER_REOPENING_DRAWDOWN_LIFECYCLE_2026_08_15.md` (label family = first-touch
+  ordering {+30%,+50%,+100%} before −30% within 60m, 29–50-parameter entry model, declared
+  stop-or-clock exit law in phase one, exit fitted only on surviving entries in phase two, five
+  pre-committed kills, one shot). **No gate, knob, ledger row or status entry was edited; rows 340/341
+  bind unchanged until signature.**
+- Advisory label pricing measured from `AR_TRADING_DATA/derived/quoted_exit_paths.parquet`
+  (32,976 random-entry 60-minute quote paths, 251 sessions; mid-based ordering, ask-in/bid-out
+  dollars, $3.08 fees; advisory — to be recomputed under the frozen declaration): median path MAE is
+  **−44%**, so a −30% floor is selective by construction. Clean-runner base rates / break-even
+  precisions: +30% before −30% = **44.5% / 48.1%** (W +$395, L −$366); +50% before −30% =
+  **31.8% / 34.7%** (+$636 / −$338); +100% before −30% = **14.8% / 16.8%** (+$1,195 / −$241).
+  Break-even gaps +2.0 to +3.6pp are the smallest this project has priced; the corpus can certify
+  only ~+6–10pp, so a negative reads "no large edge."
+- No fit, no threshold tuning, no reserved sessions, no spend, no vendor or broker contact. Next
+  action if the owner signs both drafts: build and run the known-answer preflight for this exact
+  pipeline (production training law, SHA-256 seeds, best-checkpoint restore); the real fit only after
+  it passes.
+
+### Signatures, preflight, and the same-day UNDERPOWERED close, 2026-08-15.
+
+- The owner signed both instruments in conversation ("signed.", twice): the STOP override and the
+  scoped reopening of rows 340/341 for the drawdown-ordered lifecycle experiment. Signature
+  blocks record it; the signed bytes are otherwise unedited.
+- Job 45 registered (STATUS row 45, packet `v5/work/drawdown-lifecycle/`). Calibration exported
+  from 32,976 owned quote paths (`drawdown_calibration_v1.parquet`, sha `83384d6f…`): base
+  clean rate 31.8% at +50%/−30%, winners +$641 SD $1,086, losers −$333 SD $239 — the −30% stop
+  cuts loser dispersion $613→$239 and is real tail control.
+- Built the binding known-answer preflight (`research/drawdown_preflight.py`, runner, 14 tests
+  green): production-mirrored trainer, SHA-256 seeds, best-checkpoint restore, frozen rank+floor
+  selector, serial $10k walk, full gate (0.05/3 session bootstrap, 4/5 blocks, ≥20 trades).
+  Outcome-blind probe grids calibrated the minimum planted effect (slope 0.10, selector target
+  4/session ≈ +20pp selected precision); campaign seed bank disjoint from all probe prefixes.
+  Declaration `PREFLIGHT_DECLARATION_V1.json`, self-hash `596f7b5f…`, verified by the runner.
+- **Verdict: `PREFLIGHT_FAILED_UNDERPOWERED`.** Recovery 25/40 = 62% (Wilson upper 73.9%) against
+  80% required; the models learned the planted edge (selected precision ≈52%) and the gate still
+  could not certify it. Nulls perfect: 0/60 full-gate false passes (Wilson upper 4.31%), lucky
+  positive null means up to +$78/session refused by the corrected bound. Receipt:
+  `v4/audit/autoresearch/drawdown_preflight_2026_08_15/receipt.json`.
+- Consequences recorded: kill 1 fired before any real outcome; the override and reopening are
+  spent by their own terms; the 08-15 program STOP resumes; ledger row appended; finding at
+  `research/findings/DRAWDOWN_PREFLIGHT_2026_08_15.md`. The one arithmetic lever recorded without
+  recommendation: ~2,500 owned quote sessions drop the certifiable precision floor to ≈+8pp
+  (~$1,220 at recorded rates, Tier-1, and the preflight must pass at that geometry first).
+- No real fit, no real economics, no vendor or broker contact, no spend, no reserved sessions.
+
+### Owner-approved plan for the next Opus run — lifecycle training under a development charter, 2026-08-15.
+
+- The owner requested and approved a complete execution plan for a future Opus session (to run at
+  the next usage reset): **train the SPXW 0DTE entry+exit lifecycle AI on the full ownable quote
+  corpus.** Plan file: `~/.claude/plans/develop-a-plan-for-smooth-hare.md` (hand to Opus verbatim).
+- Owner decisions embedded in the approval, taken by explicit AskUserQuestion answers: (1) data
+  budget **$75 hard cap** — the priced 794-session same-day definitions+CBBO backfill
+  (2022-06-01→2025-07-31, est. $44.59) and nothing else; (2) **development mode** — training and
+  budgeted alpha-ledger iteration authorized, sub-certification results route to diagnosis, never
+  auto-STOP; certification moves to forward paper evidence; (3) scope **through paper-ready** —
+  trained model + validation packet + parity harness + dormant attended live-shadow/paper launch
+  kit; no broker/vendor contact and no order submission in that run.
+- The plan instructs Opus to write `governance/DEVELOPMENT_CHARTER_2026_08.md` as Phase 0, citing
+  this approval as the signature event, adopting protocol amendments A1–A13 rev 2, and
+  re-scoping the 08-15 STOP and the do-not-retest rows to bar closed *measurement claims* rather
+  than model *construction*. One correction this entry supersedes: the previous entry's "~$1,220
+  for ~2,500 sessions" lever — the actually purchasable same-day 0DTE quote backfill is 794
+  sessions at ≤$75 (`SPXW_0DTE_CBBO_BACKFILL_ESTIMATE_V1.json`); the $1,220 figure was a
+  full-chain-corpus estimate from the G1 row and does not apply to this branch.
+- Nothing was executed today under this plan: no purchase, no fit, no charter written. This entry
+  exists so the future session finds the approval on the record.

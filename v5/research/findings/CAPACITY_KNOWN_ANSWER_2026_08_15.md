@@ -1,106 +1,105 @@
-# The capacity law, measured: the backfill cannot power the 120-parameter fit
+# DEVELOPMENT RESULT — the entry training law failed a synthetic harness; the capacity claim is withdrawn
 
-**2026-08-15.** Owner-directed follow-up to the external adversarial review of the frozen
-`compact_shared_lifecycle` protocol. The review claimed the 120-parameter design exceeds its per-fit
-evidence budget (linear-scaled conservative budgets ~49–107 parameters against a 96-parameter entry
-phase), and separately that the 20-observations-per-parameter rule this project inherited was never
-measured. The owner chose to measure rather than rule. This is the measurement.
+**2026-08-15, corrected the same day after the second-round external review.** The first version of
+this finding was titled "the backfill cannot power the 120-parameter fit." That conclusion was an
+overclaim and is withdrawn. What the campaigns actually established is narrower:
 
-## One sentence for the bot
+> **The simplified, badly-conditioned entry training implementation used by campaigns V1 and V2
+> failed to learn one dense synthetic linear signal reliably at 243–890 training sessions. This
+> blocks that training law. It does not establish that the proposed backfill cannot power the
+> architecture, the complete lifecycle pipeline, or the long-option strategy class.**
 
-If we bought the proposed 794-session quote backfill today and ran the one permitted fit, the
-experiment would most likely miss a real modest edge even if one existed — the known-answer rehearsal
-of that experiment fails its own recovery requirement at every training size the backfill can produce,
-so the purchase no longer buys what it was requested for.
+The operational decision is unchanged and correctly grounded either way: **no purchase and no fit**,
+because the proposed experiment has not passed a faithful known-answer preflight. The branch is
+**blocked, not closed**.
 
-## What was done
+## Withdrawn claims
 
-A known-answer campaign in the G1 tradition: plant an edge whose size and location we control, run the
-real machinery, and ask whether it finds what is provably there — before any real data is at stake.
+The following statements from the first version are withdrawn as unsupported by what was measured:
 
-- **Worlds:** synthetic sessions calibrated to the measured dependence structure (20-minute
-  autocorrelation time from the effective-sample-size finding; $100 value noise from the print-artifact
-  finding; $15 + spread drag from the measured cost bars). In null worlds every possible entry loses;
-  in edge worlds a planted signal makes correctly-sided entries pay $40 (small) or $120 (medium) per
-  standard deviation of the signal.
-- **Model:** the actual `CompactSharedLifecyclePolicy` entry phase — 96 trainable parameters, exit
-  head frozen, exactly as the frozen protocol orders its first training stage.
-- **Provably fair test:** hand-built weights inside the same architecture reach 81–87% of the oracle,
-  so the planted edge is representable, and a trained fit that misses it failed to *learn*, not to
-  *represent*. The recovery bar (half the oracle's value) is attainable by construction.
-- **Training law:** V1 froze a 60-epoch budget and was voided by its own evidence — recovery plateaued
-  at 23% while a controlled diagnostic tripling the budget moved a 404-session fit from 0% to 46% of
-  oracle. V2 trains to an outcome-blind plateau of the training loss (tolerance 1e-4, patience 20,
-  cap 400 epochs). Both declarations were hashed before outcomes were read; both receipts stand.
-- **Grid:** training sessions 243 / 404 / 650 / 890 × worlds null / small / medium × 40 seeded trials,
-  scored on 120 held-out sessions against the generator's true expected values. 480 fits per campaign.
+1. *"The backfill cannot power the 120-parameter fit"* — V2 tested a simplified entry-only harness,
+   not the frozen pipeline, under a training law now shown to be defective (see below).
+2. *"Every training size the backfill can produce was tested"* — the grid (243/404/650/890) omitted
+   the actual fold prefixes 526, 648 and 769 and the upper-corpus endpoints (539–913 at 1,037
+   sessions).
+3. *"The failure mode is one-sided"* and *"a positive result would have been meaningful"* — null
+   "cleanliness" was an entry-rate threshold in a world where abstention is trivially correct by
+   construction, not a full-gate false-pass rate; 40 trials cannot certify a ≤5% rate even at zero
+   observed failures (one-sided 95% Wilson upper bound ≈ 6.3%).
+4. The extrapolation that 80% recovery requires more sessions than exist.
+5. *"The 20-observations-per-parameter rule is falsified"* — the campaign showed the ratio
+   insufficient to authorize this particular training law, not false in general.
+6. V2's declaration claim of running V1's *identical seeds* — the seed derivation used Python's
+   process-salted `hash()`, so V1 and V2 in fact ran different, unreproducible seed banks. Verified
+   empirically: the same expression yields different values across processes.
 
-## The measurement (V2, convergence training)
+## Defects found in the V1/V2 harness itself (second-round review, verified here)
 
-| Training sessions | Null: entries taken | Small edge: recovery (Wilson lower) | Medium edge: recovery (Wilson lower) | Small: policy vs oracle $/min | Medium: policy vs oracle $/min |
-|---:|---:|---:|---:|---:|---:|
-| 243 | none, 40/40 clean | 23% (14%) | 35% (24%) | 2.89 / 16.28 | 23.62 / 78.15 |
-| 404 | none, 40/40 clean | 23% (14%) | 42% (31%) | 3.05 / 16.57 | 28.66 / 78.08 |
-| 650 | none, 40/40 clean | 28% (18%) | 70% (57%) | 3.79 / 16.58 | 47.03 / 78.08 |
-| 890 | none, 40/40 clean | 40% (28%) | 45% (33%) | 5.31 / 16.35 | 30.78 / 78.29 |
+- **Conditioning:** raw-dollar MSE through unscaled features (asks $100–900, moneyness −2..−32) into
+  a 3-unit tanh state, single Adam setting — while the production trainer
+  (`v5/ops/train_causal_day_action_value.py`) standardises and clips features, scales targets by
+  $1,000, uses Smooth-L1, AdamW with weight decay and gradient clipping. Poor recovery can be an
+  optimization artifact, and V1→V2 already demonstrated the result's sensitivity to the training law.
+- **Checkpointing:** the V2 early stop returned the *terminal* model after 20 stale epochs rather
+  than restoring the best-loss checkpoint, biasing recovery down.
+- **Reproducibility:** `hash()`-derived seeds; no per-trial records; the runner never verified the
+  declaration it claimed to run under.
+- **Objective mismatch:** WAIT trained toward a constant zero rather than the protocol's derived
+  value of preserving the slot; evaluation was stateless per-minute scoring with no occupancy,
+  serial account, controls or session-level inference — so "recovery" was a representation-learning
+  diagnostic, not power for the real gate, and the planted "small/medium" effects were never tied to
+  the smallest effect the real gate must accept.
+- **Calibration:** the $100 value-noise was taken from the print-artifact residual ($102.60) — the
+  very contamination the quote purchase exists to remove — and applied as independent noise, unlike
+  real option outcomes' strong cross-contract and within-session covariance.
+- **Evidence publication:** the binding receipts landed in a git-ignored audit directory and were
+  absent from the pushed commit that cited them. Fixed: the receipt directory now carries an explicit
+  `.gitignore` exception and the receipts are tracked.
 
-Required by the declared rule: **80% recovery** of the small edge with clean nulls.
-**Measured: no tested size qualifies — the best small-edge cell reaches 40%.**
+## What the V2 data still says (as a development diagnostic)
 
-Three facts inside the table:
+Under the defective-but-declared V2 law, with a planted edge hand-verified to be representable by
+the exact architecture (reference weights reach 81–87% of oracle):
 
-1. **Null discipline is perfect.** In all 160 null trials the trained policy never enters once. The
-   machinery does not hallucinate edges; when it fails, it fails silent.
-2. **Recovery of a modest edge is far below requirement everywhere**, including at 890 sessions — the
-   largest training prefix the proposed backfill could ever produce. The medium edge (3x larger) is
-   recovered more often but still never reliably (best cell 70%, Wilson lower 57%).
-3. **More data helps and does not save it.** Small-edge recovery climbs 23% → 40% across a 3.7x data
-   increase. Extrapolating that trend to 80% requires a corpus far beyond the ~1,037 sessions that
-   exist for daily SPXW 0DTE, which began trading in mid-2022.
+| Training sessions | Null: entries taken | Small edge recovered | Medium edge recovered |
+|---:|---|---:|---:|
+| 243 | none in 40 trials | 23% | 35% |
+| 404 | none in 40 trials | 23% | 42% |
+| 650 | none in 40 trials | 28% | 70% |
+| 890 | none in 40 trials | 40% | 45% |
 
-## What this settles
+These numbers bind only that training law on that synthetic task. The 650→890 medium-edge drop
+(28/40 → 18/40, two-sided Fisher p ≈ 0.04 uncorrected) is itself evidence of training instability
+rather than a clean sample-size curve.
 
-- **The referee's direction is confirmed by measurement, and the measured reality is stricter than its
-  arithmetic.** The linear-scaling argument said the 96-parameter entry phase exceeds its budget at the
-  first three of five outer folds. The measurement says the design misses the recovery bar at *all*
-  fold sizes, including the two the arithmetic would have allowed.
-- **The row-43 full-corpus budget convention is falsified for this pipeline.** A budget that admits 120
-  parameters at ~1,011 sessions predicts a fit that works; the fit demonstrably does not recover a
-  small planted edge at any constituent training size. Capacity claims for this pipeline must come from
-  measured recovery at the actual per-fit training size, not from any observations-per-parameter ratio
-  — the 20:1 rule produced an answer wrong in the optimistic direction.
-- **The pending $75-capped backfill loses its stated purpose.** It was requested to enable exactly this
-  fit. Under the project's own precedent (the G1 known-answer campaign closed `UNDERPOWERED` when
-  recovery failed at 8% against 80%, without reading economics), an experiment whose rehearsal fails
-  recovery is not run. Buying the data would fund an experiment already known to be underpowered for
-  modest edges. A future request must first present a design whose known-answer rehearsal passes.
-- **A silver lining that is genuinely usable:** the failure mode is one-sided. Because nulls are
-  perfectly clean, a *positive* result from this pipeline would have been meaningful — the danger was
-  never a fake pass but a hollow "no edge" that closed the branch wrongly. That is the referee's
-  false-negative mechanism 1, now measured rather than hypothesized.
+## What remains true and decision-relevant
 
-## Limits of the measurement
+- The original per-fit evidence-budget mismatch stands: the frozen chronology trains its first fit
+  on a ~404-session prefix while the 122-parameter budget was projected from the full corpus, and
+  the entry phase alone is 96 parameters. That mismatch — plus the exposure-contaminated score
+  blocks, the unresolved serial-risk conflict, the unmeasured exit-phase evidence and the other
+  protocol defects — is what blocks the experiment.
+- No valid end-to-end known-answer preflight of the frozen pipeline exists. Until one passes, the
+  backfill purchase buys an experiment with no demonstrated ability to answer its question, so the
+  Tier-1 request stays refused on preflight grounds, not on a claimed impossibility.
+- V1 and V2 are both classified **development campaigns**: their worlds and results have now
+  influenced the harness design, so no future confirmation campaign may reuse their seed banks.
 
-- Worlds are synthetic. Dependence, noise scale and drag are calibrated to measured values, but the
-  planted edge is a single clean linear signal read through one feature; a real edge spread across
-  correlated features could be easier to find, and a weaker or nonstationary one harder. This
-  calibrates the pipeline's learning power; it says nothing about whether a market edge exists.
-- The evaluation is stateless (per-minute action scoring, no position dynamics, entry phase only). The
-  24-parameter exit head and trajectory-level effective sample size remain unmeasured — the referee's
-  §4.2 stands open.
-- One optimizer at one learning rate, frozen by declaration. A better training law could shift the
-  curves; if a future design claims so, the claim is testable in this same harness for free.
-- The medium-edge non-monotonicity (70% at 650, 45% at 890) is within what 40-trial noise and
-  optimization variance produce; the Wilson bounds overlap. The decision rule never depended on it.
+## V3 (in flight at time of writing)
+
+A corrected development diagnostic mirrors the production training law (standardised clipped
+features, targets scaled by $1,000, Smooth-L1, AdamW, gradient clipping, best-checkpoint
+restoration, SHA-256 process-stable seeds, per-trial records, declaration verified by the runner)
+on the actual fold-prefix grid 243/404/526/648/769/890. Its question is deliberately narrow: **was
+the V2 learning failure a conditioning artifact of my training law, or does it persist under the
+production law?** Either answer is developmental; neither can authorize a fit or purchase.
 
 ## Evidence
 
-- V2 receipt (binding): `v4/audit/autoresearch/capacity_known_answer_2026_08_15/receipt_v2.json`
-- V1 receipt (voided as a capacity measurement, preserved):
-  `v4/audit/autoresearch/capacity_known_answer_2026_08_15/receipt.json`
-- Declarations: `v5/work/entry-exit-attribution/KNOWN_ANSWER_CAPACITY_DECLARATION_V1.json` (`d8cd12f1…`),
-  `…_V2.json` (`2cf5c2a1…`), both hashed before outcomes.
-- Implementation and tests: `v5/research/capacity_campaign.py`,
-  `v5/ops/run_capacity_campaign.py`, `v5/tests/test_capacity_campaign.py` (847 tests green).
-- External review that prompted this:
-  `v5/work/entry-exit-attribution/external-review/chatgpt-research/8-15-26/`.
+- V2 receipt (development): `v4/audit/autoresearch/capacity_known_answer_2026_08_15/receipt_v2.json`
+- V1 receipt (development, voided training law): `…/receipt.json`
+- V3 receipt (development, production-mirrored law): `…/receipt_v3.json` when complete
+- Declarations: `v5/work/entry-exit-attribution/KNOWN_ANSWER_CAPACITY_DECLARATION_V{1,2,3}.json`
+- Harness: `v5/research/capacity_campaign.py`, runner `v5/ops/run_capacity_campaign.py`, tests
+  `v5/tests/test_capacity_campaign.py`
+- Reviews: `v5/work/entry-exit-attribution/external-review/chatgpt-research/8-15-26/`

@@ -131,6 +131,25 @@ def test_otm_contract_crosses_and_reaches_declared_itm_depth() -> None:
     assert got["maximum_itm_depth_90m"] >= 30.0
 
 
+def test_first_touch_labels_gain_before_loss_and_preserves_unknown_paths() -> None:
+    quotes, candidate = _quote_path()
+    entry = quotes.index[quotes["minute"].eq("09:35")][0]
+    quotes.loc[entry + 1, ["bid", "ask", "mid"]] = [1.4, 1.6, 1.5]
+    gain = day.attach_candidate_outcomes(candidate, quotes).iloc[0]
+    assert gain["first_touch_50pct_before_loss_30pct_60m"] == 1.0
+    assert gain["first_touch_50pct_minute_60m"] == 1.0
+
+    quotes.loc[entry + 1, ["bid", "ask", "mid"]] = [0.6, 0.8, 0.7]
+    loss = day.attach_candidate_outcomes(candidate, quotes).iloc[0]
+    assert loss["first_touch_50pct_before_loss_30pct_60m"] == 0.0
+    assert loss["first_touch_loss_30pct_minute_50pct_60m"] == 1.0
+
+    quotes.loc[entry + 1 :, ["bid", "ask", "mid"]] = np.nan
+    quotes.loc[entry + 1 :, "bid_size"] = 0.0
+    unknown = day.attach_candidate_outcomes(candidate, quotes).iloc[0]
+    assert np.isnan(unknown["first_touch_50pct_before_loss_30pct_60m"])
+
+
 def test_future_quote_mutation_cannot_change_earlier_ladder_or_candidates() -> None:
     quotes, _ = _quote_path()
     quotes["raw_symbol"] = quotes["contract_id"]

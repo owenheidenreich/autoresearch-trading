@@ -1,0 +1,82 @@
+{
+  "created_on": "2026-08-15",
+  "decision_rule": {
+    "fee_only_only": "cells clear fee-only but none at touch => the mechanism survives only at execution retail may not obtain; next question is a sub-second fill-quality measurement, a Tier-1 pricing decision",
+    "stop": "no cell clears fee-only (mean > 0 AND corrected LCB > 0 AND >= 4/5 folds) => STOP_CONDITION_MET_NO_CELL_CLEARS_FEE_ONLY; per the owner's instruction this closes options-strategy development",
+    "touch": "cells clear at touch => strongest outcome; confirmation design plus signed charter amendment required before any trading-side work; these 243 sessions are development-exposed and this census cannot ground a tradable claim by itself"
+  },
+  "declaration_sha256": "45f78cae4a8942cb71459ded19027052b23d10cf04a37f27620158376738ab5f",
+  "family": [
+    "call_credit_w5_d0_1300",
+    "call_credit_w5_d0_1400",
+    "call_credit_w5_d0_1500",
+    "call_credit_w5_d10_1300",
+    "call_credit_w5_d10_1400",
+    "call_credit_w5_d10_1500",
+    "call_credit_w5_d20_1300",
+    "call_credit_w5_d20_1400",
+    "call_credit_w5_d20_1500",
+    "call_credit_w10_d0_1300",
+    "call_credit_w10_d0_1400",
+    "call_credit_w10_d0_1500",
+    "call_credit_w10_d10_1300",
+    "call_credit_w10_d10_1400",
+    "call_credit_w10_d10_1500",
+    "call_credit_w10_d20_1300",
+    "call_credit_w10_d20_1400",
+    "call_credit_w10_d20_1500",
+    "put_credit_w5_d0_1300",
+    "put_credit_w5_d0_1400",
+    "put_credit_w5_d0_1500",
+    "put_credit_w5_d10_1300",
+    "put_credit_w5_d10_1400",
+    "put_credit_w5_d10_1500",
+    "put_credit_w5_d20_1300",
+    "put_credit_w5_d20_1400",
+    "put_credit_w5_d20_1500",
+    "put_credit_w10_d0_1300",
+    "put_credit_w10_d0_1400",
+    "put_credit_w10_d0_1500",
+    "put_credit_w10_d10_1300",
+    "put_credit_w10_d10_1400",
+    "put_credit_w10_d10_1500",
+    "put_credit_w10_d20_1300",
+    "put_credit_w10_d20_1400",
+    "put_credit_w10_d20_1500"
+  ],
+  "family_size": 36,
+  "implementation_hashes": {
+    "v5/ops/run_short_vertical_census.py": "099bfa8c8cbae62e95f5b56a1c4c6f32d94200642e41ceda6ff9aa5e20e99e30",
+    "v5/research/short_vertical_census.py": "54984572c9dd4d302fee5cf33c5a6980a1bd497d5565989492c54a39fa4bcbb5"
+  },
+  "inputs": {
+    "coverage_path": "v4/audit/autoresearch/causal_day_trader_coverage_2026_08_14_attempt002/session_coverage.csv",
+    "coverage_sha256": "0bee147c05f3aa86b63361b5d3654516a27f76dceec525ad0f33e6cf890a8fd9",
+    "settlement_receipt_path": "v4/audit/autoresearch/causal_day_terminal_settlement_2026_08_14/receipt.json",
+    "settlement_receipt_sha256": "49245deb755daed4d7c5d9fb54fe5758c6232501ae1c329d357a332d5acd0cfe"
+  },
+  "integrity": {
+    "model_fit": false,
+    "money_spent": false,
+    "orders_submitted": false,
+    "reserved_sessions_used": false,
+    "vendor_contacted": false
+  },
+  "laws": {
+    "abstention": "every abstention scores $0 for its session",
+    "fee_only": "both legs at mid; fees 2 x $3.08",
+    "hold": "entry to validated cash settlement; no exit crossing exists",
+    "inference": "per-cell session bootstrap, 20,000 draws, one-sided quantile at 0.05/36, five chronological folds",
+    "passive_diagnostic": "fee_only minus one $86 combo adverse-selection charge (job 30 bound); reported, never decisive",
+    "risk": "declared max loss = (width - touch credit) x 100 + fees <= $500 (5% of the $10,000 account) else abstain",
+    "seeds": "stable_seed('vertical-census', cell, law) - SHA-256, process-stable",
+    "touch": "short leg at bid, long leg at ask; fees 2 x $3.08"
+  },
+  "owner_authorization": "Owner instruction 2026-08-15: 'Proceed only with the preregistered $0 defined-risk short-vertical census on owned data - no purchase, broker contact, or trading - and STOP the options program if nothing clears even fee-only execution.'",
+  "question": "Does any defined-risk short-vertical cell clear a family-corrected one-sided bound on the owned 243-session quote corpus at touch or fee-only execution?",
+  "schema_version": "v5.short-vertical-census-declaration.v1",
+  "supersedes": {
+    "declaration_sha256": "5d37a8f5f87fc0a55a6d60ee3fd47f36e799e01285ae08731b8ef4a1b0075c2b",
+    "reason": "The first run evaluated all 243 sessions and wrote the row table, then crashed in aggregation: np.array_split was applied to a DataFrame instead of session indices, an IndexError before any economic aggregate was computed or read. The runner is repaired with the aggregation extracted and unit-tested; the census law, family, inputs, seeds and decision rule are byte-identical. No outcome was read from the voided run and its partial output directory was deleted."
+  }
+}
