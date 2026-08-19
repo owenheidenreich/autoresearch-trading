@@ -39,7 +39,7 @@ def _rows(minute: str, strikes: list[float], *, paired: bool, spot: float = SPOT
     return out
 
 
-def _session(minutes_paired: dict[str, bool]) -> pd.DataFrame:
+def _session(minutes_paired: "dict[str, bool]") -> pd.DataFrame:
     rows: list[dict] = []
     for minute, paired in minutes_paired.items():
         rows += _rows(minute, [4080.0, 4090.0, 4100.0, 4110.0], paired=paired)
@@ -122,3 +122,48 @@ def test_existing_outputs_are_skipped_so_the_pass_resumes(tmp_path) -> None:
         source_root=source, output_root=out, receipt_path=tmp_path / "receipt.json"
     )
     assert payload["sessions"][0]["classification"] == "ALREADY_PRESENT"
+
+
+def test_an_unsolvable_terminal_minute_is_carried_and_labelled() -> None:
+    """Owner-ruled 2026-08-18: accept the session, label the carry."""
+
+    from v5.ops.audit_causal_day_coverage import QUOTE_MINUTES
+    from v5.ops.repair_parity_spot import SOURCE_CARRIED
+
+    minutes = {m: True for m in QUOTE_MINUTES}
+    minutes["16:00"] = False  # live quotes exist but no strike is paired
+    out, report = repair_session(_session(minutes))
+
+    assert report["carried_minutes"] == 1
+    assert report["carried_detail"] == {"16:00": 1}
+    assert report["max_carry_minutes"] == 1
+    assert report["unrepaired_minutes"] == []
+    assert report["clock_complete"] is True
+
+    stamped = pd.to_datetime(out["event_time"], utc=True).dt.tz_convert("America/New_York")
+    terminal = out[stamped.dt.strftime("%H:%M").eq("16:00")]
+    assert (terminal["underlying_price_source"] == SOURCE_CARRIED).all()
+    assert (terminal["underlying_carry_minutes"] == 1).all()
+    assert terminal["underlying_price"].iloc[0] == pytest.approx(SPOT, abs=1e-6)
+
+
+def test_an_interior_gap_is_never_carried() -> None:
+    """A hole mid-session is a data problem, not a thinning chain."""
+
+    from v5.ops.audit_causal_day_coverage import QUOTE_MINUTES
+
+    minutes = {m: True for m in QUOTE_MINUTES}
+    minutes["12:00"] = False
+    out, report = repair_session(_session(minutes))
+
+    assert report["carried_minutes"] == 0
+    assert report["unrepaired_minutes"] == ["12:00"]
+    assert report["clock_complete"] is False
+
+
+def test_a_solvable_session_records_no_carry() -> None:
+    from v5.ops.audit_causal_day_coverage import QUOTE_MINUTES
+
+    _, report = repair_session(_session({m: True for m in QUOTE_MINUTES}))
+    assert report["carried_minutes"] == 0
+    assert report["max_carry_minutes"] == 0

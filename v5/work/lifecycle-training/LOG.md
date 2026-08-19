@@ -964,3 +964,294 @@ surfaced hours into a full build.
     **31.8%**, so a pooled figure would average over a genuine era difference.
   - Resumable per session across all five tables, staged-write-then-rename throughout.
 - **1,003 v5 tests pass** (+9), `check_project.py` green. No fit, no spend, no vendor contact.
+
+### Owner accepts the carried close; the corpus builds at 1,014 sessions, 2026-08-18.
+
+- **The question.** After the relaxed solve, 216 of 794 backfill sessions were still unsolvable at
+  exactly one minute — **16:00**. Measured cause, not inferred: at the close those sessions carry
+  plenty of live quotes (86 calls / 115 puts on one inspected) but **zero strikes with both a live
+  call and a live put**, because deep OTM options go bidless into the close and the two sides survive
+  at *disjoint* strikes. No window width solves that.
+- **Owner ruling, 2026-08-18:** *"accept all 1,033, label the carried close, and have Phase 5 report
+  what fraction of trades actually settle at 16:00 on those days. Not to gate anything — just so that
+  when a result lands, nobody has to wonder whether a few carried index points were doing the work."*
+  Owner also noted the trading context that bounds the risk: **the last ten minutes are not traded
+  anyway**, and **SPX is cash settled, so holding through the close carries no assignment risk**.
+- **Implemented as a deliberately narrow carry.** `repair_parity_spot` (v2) carries the last solved
+  **underlying index level** into a *contiguous terminal run* only, labelling
+  `underlying_price_source = carried_parity` and recording `underlying_carry_minutes`. Two limits are
+  structural rather than conventional: it never carries a **contract quote** — doing so would
+  fabricate a tradeable price, which is precisely the stale-book defect this pipeline exists to catch
+  — and an **interior gap is never carried**, because a hole mid-session is a data problem rather
+  than a thinning chain. Three tests pin exactly that.
+- **The measured exposure is as small as the owner expected, and the guards compose.** Of the carried
+  sessions, **214 lie inside the eligible set and every one carries exactly 1 minute.** The only
+  large carry — **181 minutes, 2022-11-25** — is the stale-padded session, and it is *already*
+  excluded by the independent clock-liveness gate, so it never reaches the corpus. Two guards written
+  for different defects caught the pathological case between them.
+- **The exposure is also bounded by construction and now measured per session.** Entries stop at
+  **15:00**, and only a **cash-settled** exit reads the terminal underlying at all — a trade closed on
+  an executable bid never touches it. The build receipt therefore records
+  `settlement_close_carried`, `settlement_carry_minutes` and `cash_settled_share` per session, plus a
+  corpus-level `carried_close` summary, so Phase 5 can state the fraction as a footnote rather than
+  anyone having to wonder.
+- **Underlying clocks after the carry: 785 of 794 complete.** The 9 remaining are the early closes
+  and interior-gap sessions the clock gate already excludes. **Buildable: 771 backfill + 243 owned =
+  1,014 sessions**, against 243 before this job began.
+- The corpus build is running to `lifecycle_corpus_2022-06-01_2026-07-31`, resumable per session
+  across all five tables, with era and settlement source stamped on every emitted row.
+
+### Work-allocation memo SIGNED; this session now terminates at the build, 2026-08-18.
+
+- [`WORK_ALLOCATION_MEMO_2026_08_18.md`](../../governance/WORK_ALLOCATION_MEMO_2026_08_18.md) is
+  signed and binding on every session executing job 46. Verified on disk and read in full before
+  acknowledging — a signed protocol a later session cannot read cannot bind it.
+- **Governing split:** Fable decides what is true or what should be built; Opus builds it and proves
+  it works. Where a task is mostly mechanical but contains one buried judgement, it goes to Opus with
+  the judgement **named and escalated** rather than absorbed.
+- **§5 is a hard stop at eight boundaries.** A session may not cross one by continuing to work, even
+  when the next task looks small. The stated rationale matches this job's own history: the expensive
+  errors here were not wrong answers but **decisions made by whoever happened to be holding the
+  keyboard** — a design question settled silently inside an implementation, a marginal result read
+  favourably by the session that produced it.
+- **Two provisions do the real work.** The **ambiguity rule**: if a session cannot tell whether the
+  next task is execution or judgement, that uncertainty *is* the answer — stop and ask. And the
+  ambiguous-4a row **forbids the producing session from interpreting its own borderline result**,
+  which is precisely the failure mode rows 41/341 record.
+- **Immediate effect on this session.** The running build is §2 item 1 (Opus, execution). On its
+  completion this session **reports and stops**: receipt, per-era base rates, and the carried-close
+  footnote (`settlement_close_carried`, `settlement_carry_minutes`, `cash_settled_share`). It does
+  **not** continue into the parameter budget, the `SessionEpisode` adapter, or the architecture
+  member, all of which sit past the boundary. The next task is **Fable's** pre-fit adversarial review,
+  carrying the design question nobody has yet decided: whether the two eras are **one population or
+  two**, given the measured 36.3% backfill against 31.8% owned base rates.
+- **§7 records a fourth reporting-layer defect** beyond the three already logged (`| tail` masking a
+  crashed process, `status=$?` killing a retry wrapper, a preflight losing an hour to one timeout): a
+  `Write` that replaced a live file as silently as it would have created one. Standing instruction
+  adopted: **before trusting any wrapper, monitor or guard, state what it does on the failure path.**
+- Build progress at the time of writing: 382 of 1,014 sessions, running.
+
+### BOUNDARY 1 REACHED — corpus built at 1,014 sessions; handing to Fable, 2026-08-18.
+
+- **The corpus exists: 1,014 sessions, 12,177,808 rows across five tables, 1.4 GB.** 3,226,673
+  candidates and 7,833,707 ladder rows. Settlement sources **771 `parity_close` / 243
+  `official_1600`**. Two sessions failed and both are known interior-gap cases the clock gate had
+  already flagged (2023-09-21 missing 09:34, 2023-10-02 missing 10:41 and 16:00); no other session
+  failed. Receipt `corpus_build_receipt_attempt1.json`. Against 243 sessions when this job began.
+- **A correction to a claim this log made yesterday.** The per-era base rates measured on the whole
+  corpus are **owned 31.80% (n=243, sd 6.10) against backfill 30.59% (n=769, sd 6.66)** — a gap of
+  **1.2 points**, not the 4.5 implied by the single session (36.3%) measured on 2022-06-01. **That
+  earlier figure was one session and it was session-level noise**, well inside a 6.6-point
+  cross-session standard deviation. The per-era reporting requirement stands, but the evidence for
+  "the eras differ measurably" is much weaker than stated, and the incoming review should read the
+  measured distributions rather than the earlier sentence. Label coverage is **99.97% / 99.88%**.
+- **A fifth reporting-layer defect, found and fixed before the handoff.** The carried-close footnote
+  the owner explicitly requested reported **zero carried sessions against 214 real ones.** Cause:
+  `pd.read_parquet(path, columns=[])` returns a frame with **zero columns rather than the schema**,
+  so the optional-column check reported every provenance column absent and silently disabled the
+  detection. The same line exists in `audit_causal_day_coverage` with a pyarrow fallback, which is
+  why it worked there and masked the error here. **The corpus data is unaffected** — the settlement
+  *values* were read correctly from `underlying_price`; only the labelling of which sessions were
+  carried was lost. Fixed to read the parquet schema directly, verified on real sessions, and pinned
+  by a regression test that asserts the trap. This is exactly §7's pattern: the tool reported clean
+  because it could not see the thing it was built to look at.
+- **The carried-close footnote, now measured** (joined from the repair and build receipts, no rebuild
+  needed since the corpus is correct):
+  - **214 of 1,014 sessions (21.1%) rest on a carried close, every one carried exactly 1 minute.**
+  - Cash-settled share on those days: **3.30% at 60m**, 11.32% at 90m, 18.97% at 120m (max 9.24% /
+    18.52% / 26.70%).
+  - So the candidates that could depend on a carried index point at all are **22,880 of 3,226,673 —
+    0.709% of the corpus at 60m**, and 4.079% at 120m. Entries stop at 15:00 and only a cash-settled
+    exit reads the terminal underlying, which is what bounds it. As the owner anticipated, this is a
+    footnote rather than a factor.
+- **1,007 v5 tests pass**, `check_project.py` green. No fit, no spend, no vendor contact.
+- **STOP under §5 of the signed work-allocation memo.** This session does not continue into the
+  parameter budget, the `SessionEpisode` adapter, or the architecture member. Next task is **Fable's**
+  pre-fit adversarial review, including the one-population-or-two question — which the corrected base
+  rates materially reframe.
+
+### BOUNDARY 2 REACHED — pre-fit review returns ONE POPULATION; handing to Opus, 2026-08-18.
+
+- **Verdict received and spot-checked rather than relayed on trust.** Finding
+  [`PREFIT_CORPUS_REVIEW_2026_08_18.md`](../../research/findings/PREFIT_CORPUS_REVIEW_2026_08_18.md)
+  exists, both receipt scripts are archived beside the job's other receipts, and STATUS, this log and
+  the evidence index all carry it. **The two eras are one population**: train one model across both,
+  era is not an input, the backfill is not down-weighted — conditional on fixing one feature.
+- **The reasoning that carries it is the fold-seam measurement, and it stands independent of who read
+  it.** The era gap is +1.21pp while the 2022-vs-2023 gap *inside* the backfill era is larger at
+  +1.47pp; yearly rates 31.71 / 30.24 / 30.16 / 30.99 / 32.18 show no trend or step, with the two
+  highest values at the two chronological extremes; and under the frozen chronology the fit will
+  actually use, **the era boundary is the quietest seam in the data — +0.63pp against ±1.80pp
+  transitions interior to the backfill era**. Base rate tracks realised volatility (ρ=+0.355), i.e. a
+  regime variable rather than a calendar one.
+- **Defect 2 verified as described in mechanism:** `implied_spot_dispersion_bps` is the *only* era
+  detector — probe AUC **0.760** with all 11 state fields, **0.430** without it, **0.837** from it
+  alone, and the design's actual hypothesis (the other six chain-internal fields) sits at **0.481**,
+  chance. The cause is a level effect, predicted 0.392 against measured 0.396: dollars of dispersion
+  divided by an index that rose 3,960 → 6,845. Dispersion ÷ quoted spread is flat across all five
+  buckets, so the fix preserves the channel and the 118-parameter contract is unchanged.
+- **Defect 1 independently reproduced by this session before handing it on**, because it is the one
+  that blocks the next task: `2025-04-09` and `2025-04-10` carry **0 rows and 40 columns** against 139
+  elsewhere; a per-session read of the label column raises `ArrowInvalid`; a directory-level read
+  succeeds on all 3,226,673 rows. That asymmetry is why every check to date passed — and the adapter
+  reads per session. It is also a genuine economic fact rather than a bug: on those tariff-spike days
+  the cheapest near-money contract cost $2,000–$2,050 and the signed ticket cap correctly admitted
+  nothing. It further explains the n=769-vs-771 puzzle this log flagged at Boundary 1.
+- **Four checks no existing gate performs came back clean:** an independently re-implemented label law
+  agrees on **32,377 candidates across both eras with zero mismatches**; the frozen-book scan finds a
+  maximum repeat run of **1 minute**; the design's §4.3 per-era exit-resolution gate is reported for
+  the first time and the eras differ by at most **0.55pp with 0% blocked**; and chain-feature coverage
+  is identical to three significant figures in every bucket, so the 2022 narrow-ladder degradation the
+  design feared **does not occur**.
+- **The review corrects the design on its own terms.** §3.1's bar targets fields monotone in ladder
+  size, but the corpus ladder table is the ±25-point band — 20 contracts wide in 2022 and 2026 alike
+  — so that hazard does not exist here while an index-level proxy walked straight past the bar. Two
+  related mismatches recorded: the chain features are **band-local, not chain-wide**, and the corpus
+  candles are **ES, not the SPX parity spot the design specifies**.
+- **Two items this session does not decide.** (1) The **ES-versus-SPX tape source** is an owner
+  boundary ruling the review deliberately refused to take, with the measurement supplied (basis +20 to
+  +30 points, near-constant within a session, cancelling in the four difference-based tape channels).
+  (2) The review session's **model switched from Fable to Opus partway through**, which §3 assigns to
+  Fable — disclosed by the owner rather than discovered later. Whether the verdict stands under the
+  memo is a governance question, so it is surfaced rather than waved through.
+- **STOP under §5.** Next task is **Opus** — parameter budget, `SessionEpisode` adapter, architecture
+  member — carrying the six directed changes in §6.3. 1,007 tests pass, checker green.
+
+### Pre-fit adversarial review: ONE POPULATION, conditional on removing one feature, 2026-08-18.
+
+Boundary-1 review under §3.1 of the signed work-allocation memo. Full result:
+[finding](../../research/findings/PREFIT_CORPUS_REVIEW_2026_08_18.md), receipts
+`prefit_review_receipt.json` (`287e59bd…`), `prefit_review_followups.json`,
+`prefit_review_session_metrics.parquet`, and the two scripts archived beside them. **No trade
+economics were read and no feature-to-label statistic was computed** — that is Phase 4a's charged
+job, and measuring it here would have been an uncharged experiment that let the shrink ladder be
+tuned by peeking. The one fitted object was the owner-authorized throwaway era probe.
+
+- **The corpus is sound, and four of the six checks had never been run.** Headline counts, per-era
+  base rates and the carried-close footnote all reproduce **exactly** by independent re-derivation.
+  New: an **independently re-implemented label law agrees on 32,377 candidates across both eras with
+  0 mismatches**; the frozen-book scan finds a **maximum repeat run of 1 minute** in both eras, so no
+  stale session reached the corpus; the design's §4.3 per-era exit-resolution gate is **reported for
+  the first time** and the eras differ by at most **0.55pp** at any horizon with **0.00% blocked**;
+  and there are **zero same-minute double-touch NaNs** and no infinities in any chain field.
+- **Defect 1, blocking for the adapter. 2025-04-09 and 2025-04-10 hold zero candidates** and are
+  written as degenerate 40-column files with no label columns. The cause is not a bug but the signed
+  risk law working: on those tariff-spike days the cheapest OTM contract within 25 points cost
+  **$2,000–$2,050** against a $2,000 ticket cap, so nothing was affordable. This is the **n=769 vs
+  771** discrepancy. **A per-session read of the label column raises `ArrowInvalid` on those two
+  files**, and the adapter is specified to read per session — directory reads unify the schema and
+  survive, which is exactly why nothing had noticed. Same family as §7's standing note.
+- **Defect 2, blocking for the feature contract. `implied_spot_dispersion_bps` is a calendar
+  detector and it is the only one.** Held-out era probe: **all 11 state fields AUC 0.760; without
+  that one field 0.430; that field alone 0.837**; the other six chain fields 0.481 and the tape
+  0.413. Mechanism measured rather than guessed — the field is dollars of dispersion over the index
+  level, and **SPX rose 3,960 → 6,845**, so the predicted level-effect ratio **0.392** against a
+  measured **0.396**. The era-free form is already in the data: **dispersion ÷ quoted spread is flat
+  across all five buckets** (0.177/0.187/0.187/0.159/0.177).
+- **The design's §3.1 bar was aimed at the wrong hazard.** It bars fields monotone in *ladder size* —
+  but the corpus ladder table is the ±25-point band, **20 contracts and 45 points wide in 2022 and
+  2026 alike**, so that hazard does not exist here, while a field monotone in the *index level* walked
+  straight past it. Recommended generalisation: monotone in **any** slowly-varying calendar quantity,
+  verified by measurement.
+- **Three design/corpus mismatches recorded.** The corpus candles are **ES, not the SPX parity spot**
+  the design specifies (signed basis +20.3 / +29.8 points, within-session sd 0.65–1.55 — a futures
+  basis); the four tape channels are differences so it cancels to statistical invisibility (tape-only
+  probe 0.413), but the provenance question is an **owner boundary ruling**, deliberately not taken
+  here. The chain-internal features are **band-local, not chain-wide** (full chain is 252–280
+  contracts). And `smile_curvature` pools the two sides where the design says per-side — **suspected
+  skew contamination, measured, and it is not there** (r=0.80 with the per-side average, −0.03 with
+  skew); reported as wording to reconcile, not a directed change.
+- **THE RULING — one population, single model, era not an input, no down-weighting.** The era gap is
+  **+1.21pp (p=0.0088)** while the **within-backfill 2022-vs-2023 gap is larger at +1.47pp
+  (p=0.0365)**. Yearly rates 31.71/30.24/30.16/30.99/32.18 show no trend and no step — a shallow U
+  whose highest values are the two chronological extremes. **Under the frozen chronology the era
+  boundary is the quietest seam in the data: +0.63pp at block3→block4, the smallest transition in the
+  sequence**, against −1.80 and +1.80 interior to the backfill era. Base rate tracks realised
+  volatility (ρ = +0.355), a regime variable. Action space identical across eras. **The ruling is
+  conditional on Defect 2** — as it stands, "one population" is false because of a normalisation we
+  introduced rather than because of the market.
+- **Six directed changes before the fit**, in the finding's §6.3: renormalise or drop the dispersion
+  field; generalise the §3.1 bar; **set D7's pass bar at ≈0.55 from the measured 0.430–0.481 baseline**
+  and have it report the per-field ablation rather than one number; the adapter must handle the two
+  zero-candidate sessions without crashing and without silently dropping them; report executable
+  economics **per block** since the spread runs **3.03/3.64/3.03/2.25/1.84% of premium** across
+  2022→2026, so the model trains at a ~3% toll and is scored at ~1.9%; and state in the declaration
+  that the chain features are band-local so attribution does not credit information the model never
+  saw.
+- **The feature contract otherwise passes unchanged.** Coverage is identical to three significant
+  figures across all five buckets for six of the seven chain fields (worst 94.9%), and the 2022
+  narrow-ladder degradation the design feared **does not occur**, because the band is the same width
+  every year. The training prefix is not a feature-starved era.
+- **STOP under §5.** Next boundary hands to **Opus**: parameter budget, `SessionEpisode` adapter,
+  architecture member. No fit, no spend, no vendor contact, no pipeline code changed by this review.
+
+### BOUNDARY 3 REACHED — budget, member and adapter built; the era defect is measured out, 2026-08-19.
+
+- **The parameter budget is measured on the real chronology, not projected.** 327,557 candidate
+  states over 1,011 sessions (324/session) via [`measure_effective_sample_size.py`](../../ops/measure_effective_sample_size.py),
+  receipt `effective_sample_size_2026_08_18.json`. The autocorrelation route gives an effective *n*
+  of 12,687–33,790 across the four labels and a budget of **634 parameters at the binding label**
+  (`reached_10_itm_60m`, τ=25.8); the conservative design-effect route gives 2,028–3,727 and **≈101**.
+  The 08-14 convention applies unchanged: proceed on the generous route, report the conservative
+  figure beside it. This is corpus-wide; per-fit prefix budgets are tighter and are not yet computed.
+- **The declared member is built and counted from the built module: 118 parameters, 94 entry and 24
+  exit**, against the frozen baseline's 120 — [`causal_day_chain_state_lifecycle.py`](../../research/causal_day_chain_state_lifecycle.py).
+  Tests pin the capacity claim from both modules, refuse a batch whose chain state is absent or
+  non-finite rather than zero-filling it, and assert that **changing chain state reorders the
+  ladder**, which is the exact property V5 lacked.
+- **A reseal guard caught an edit mid-flight and it was right to.** Widening `CausalPolicyBatch` to
+  carry chain state broke the sealed V3 action-value declarations, which pin
+  `causal_day_architectures.py` by digest. The file was reverted and the field now travels on a
+  `ChainPolicyBatch` subclass, leaving the seal byte-intact. Second pinned file this work has had to
+  route around rather than through.
+- **Directed change 1 is applied AND re-measured, which is the part that matters.** The field is now
+  `implied_spot_dispersion_ratio`, normalised by the contemporaneous quoted spread. Re-probed on the
+  same 150 sessions, same seed, same group split as the review
+  (`era_probe_reprobe.py` / `era_probe_reprobe.json`): **the field alone falls from AUC 0.837 to
+  0.4548**, the full 11-field state vector from **0.760 to 0.4314**, and the six other chain fields
+  are unmoved at **0.4813** — confirming nothing else changed. On the member's own state channels the
+  field is worth **+0.0014 AUC** (0.4319 with, 0.4305 without): era-blind. The median ratio across
+  the five buckets is **0.177 / 0.187 / 0.187 / 0.159 / 0.176** while SPX runs 3,960 → 6,845, against
+  the bps form's measured 0.396 decline. The mechanism is now explicit: the median quoted spread is
+  tick-quantised at **$20.00 per contract in every bucket**, so it is a scale-free normaliser where
+  the index level is a calendar clock. The review's condition on the one-population ruling is
+  discharged by measurement.
+- **The `SessionEpisode` adapter exists** — [`lifecycle_episode_adapter.py`](../../research/lifecycle_episode_adapter.py),
+  19 tests, of which 11 run against the real corpus. Three things in it are load-bearing and each
+  came from a measurement rather than a preference.
+- **Sell paths are read from the raw quote file, never from the corpus `ladder` table — and the cost
+  of the obvious shortcut was measured before the choice was made.** `build_session` stores
+  `ladder_state(whole_live_chain=False)`, the ±25-point band; its own docstring says the simulator
+  must use the full chain instead. A bought contract leaves that band exactly when the trade is
+  working. Measured across four sessions spanning both eras: **29.1% of candidate exits, and 18.3%
+  of the exits belonging to winning trades, fall on a minute where the bought contract is absent
+  from the corpus ladder table.** Building paths from it would have truncated the winners and read
+  out as "the exit adds nothing" for a reason unrelated to the market.
+- **The exit law is not re-derived on trust: it is checked against the frozen column it must
+  reproduce.** This module computes the first-later-bid / validated-settlement value independently of
+  `attach_candidate_outcomes`, and a test asserts the terminal element of every 60-minute sell path
+  equals the pinned `net_bid_60m_usd` — **9,758 candidates across both eras, maximum absolute
+  difference 0.000000000, zero mismatches**.
+- **The two zero-candidate sessions are full episodes, not empty ones.** 2025-04-09 and 2025-04-10
+  now build as **326 decision minutes with zero feasible actions**: every minute the policy had to
+  answer WAIT, no entry action, no target. They are legitimate no-trade days under the signed risk
+  law, so the WAIT head still trains on them and a serial simulator still learns the account sat
+  flat. Neither dropped nor crashed on, as §6.3 required.
+- **Two silent-NaN failure modes in the trainer were closed while the adapter was being wired, and
+  both were live.** `smooth_l1_loss` over an empty selection returns NaN, so a no-trade session would
+  have turned every epoch's loss into NaN; and ~0.05% of the corpus's labels are unknown, so a single
+  masked-in NaN target did the same. Unknown-label actions now stay feasible and stay unsupervised —
+  masked out of the loss, never removed from the action set — which is what the design specified.
+  `lifecycle_trainer.py` is not a pinned file; the change is three lines and carries two tests.
+- **Also proved, because slicing a whole-session feature frame is only valid if it is:** the
+  per-minute rebuild and the compute-once-and-slice path agree to **atol 0.0** on a real session, and
+  a mutate-future control on a copied corpus — candles and ladder both perturbed after 11:00 —
+  leaves every decision minute at or before 11:00 **bitwise identical**.
+- **1,037 tests green, `check_project.py` green.** No fit, no spend, no vendor contact, no unattended
+  job, and no pinned file edited.
+- **STOP under §5.** Boundary 3 is "adapter + member built, before Phase 4a runs": report the built
+  parameter count and the measured budget, then wait for the owner to confirm before **Opus** runs
+  the calibrated probe. Two owner decisions remain open and neither blocks 4a: the **ES-vs-SPX tape
+  source**, and the **event calendar** (§4). Remaining §6.3 items are declaration content for 4a
+  itself — D7's ≈0.55 bar with per-field ablation, per-block executable economics, and stating that
+  the chain features are band-local.

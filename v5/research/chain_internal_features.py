@@ -37,7 +37,7 @@ CHAIN_STATE_FEATURES = (
     "chain_depth_imbalance",
     "put_call_depth_ratio",
     "smile_curvature",
-    "implied_spot_dispersion_bps",
+    "implied_spot_dispersion_ratio",
 )
 
 # Per-contract informational terms; these reorder directly.
@@ -119,11 +119,26 @@ def contract_chain_features(ladder: pd.DataFrame) -> pd.DataFrame:
 
 
 def _parity_dispersion(group: pd.DataFrame) -> float:
-    """Cross-strike dispersion of the parity spot, in bps of its median.
+    """Cross-strike parity disagreement, measured **in quoted spreads**.
 
-    Microstructure stress, and the quality channel for the parity underlying the
-    backfill era depends on: when strikes disagree about spot, the chain is being
-    repriced.
+    Microstructure stress: when strikes disagree about spot, the chain is being
+    repriced. The question this asks is "how large is that disagreement compared
+    with the width of the market quoting it" — which is scale-free.
+
+    **Why not basis points of the index (the original form, and a measured
+    defect).** Dividing dollars of dispersion by the index level makes the field
+    a calendar detector, because the index level is a slowly-varying calendar
+    quantity: SPX rose 3,960 -> 6,845 across this corpus, so an identical dollar
+    disagreement reads as steadily fewer basis points each year. The pre-fit
+    review measured the damage — an era probe scored **0.837 AUC from this field
+    alone**, against 0.430 for the whole state vector without it and 0.481 for
+    the six other chain-internal fields together, i.e. chance. The mechanism was
+    confirmed rather than inferred: the level effect predicts a 2022-to-owned
+    ratio of 0.392 and the measured ratio is 0.396.
+
+    Dividing by the contemporaneous quoted spread instead keeps the channel the
+    design wanted and is measured flat across all five year buckets. The field
+    count is unchanged, so the parameter contract is unaffected.
     """
 
     priced = group[np.isfinite(pd.to_numeric(group["mid"], errors="coerce"))]
@@ -144,7 +159,12 @@ def _parity_dispersion(group: pd.DataFrame) -> float:
     near = implied[np.abs(paired.index.to_numpy(float) - centre) <= PARITY_WINDOW_POINTS]
     if near.size < MIN_PAIRED_STRIKES or centre <= 0.0:
         return float("nan")
-    return float(np.std(near, ddof=0) / centre * 10_000.0)
+
+    spread = pd.to_numeric(group.get("spread"), errors="coerce")
+    scale = float(spread.median()) if spread is not None else float("nan")
+    if not np.isfinite(scale) or scale <= 0.0:
+        return float("nan")
+    return float(np.std(near, ddof=0) / scale)
 
 
 def chain_state(ladder: pd.DataFrame) -> pd.DataFrame:
@@ -157,7 +177,7 @@ def chain_state(ladder: pd.DataFrame) -> pd.DataFrame:
     _require(
         ladder,
         ("session", "minute", "is_call", "strike", "mid", "self_iv",
-         "moneyness_itm_points", "bid_size", "ask_size"),
+         "moneyness_itm_points", "bid_size", "ask_size", "spread"),
     )
     frame = ladder.copy()
     frame["is_call"] = frame["is_call"].astype(bool)
@@ -197,7 +217,7 @@ def chain_state(ladder: pd.DataFrame) -> pd.DataFrame:
                 else 0.0,
                 "put_call_depth_ratio": put_depth / depth if depth > 0.0 else 0.5,
                 "smile_curvature": curvature,
-                "implied_spot_dispersion_bps": _parity_dispersion(group),
+                "implied_spot_dispersion_ratio": _parity_dispersion(group),
             }
         )
 

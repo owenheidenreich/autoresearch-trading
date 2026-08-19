@@ -137,3 +137,27 @@ def test_the_receipt_reports_base_rate_per_era_rather_than_pooled(
     written = json.loads((tmp_path / "receipt.json").read_text())
     assert set(written["summary"]["label_base_rate_by_era"]) == {"owned", "backfill"}
     assert written["receipt_sha256"] == payload["receipt_sha256"]
+
+
+def test_optional_provenance_columns_are_detected_from_the_schema(tmp_path: Path) -> None:
+    """Regression: read_parquet(columns=[]) reports every column as absent.
+
+    That mistake shipped once and produced a carried-close footnote of zero
+    against 214 genuinely carried sessions -- the diagnostic reported clean
+    because it could not see the column it was built to read.
+    """
+
+    import pyarrow.parquet as pq
+
+    path = tmp_path / "databento_spxw_0dte_2022-06-22.parquet"
+    pd.DataFrame(
+        {
+            "event_time": [pd.Timestamp("2022-06-22 16:00", tz="America/New_York")],
+            "underlying_price_source": ["carried_parity"],
+            "underlying_carry_minutes": [1],
+        }
+    ).to_parquet(path, index=False)
+
+    assert set(pd.read_parquet(path, columns=[]).columns) == set()  # the trap
+    schema = set(pq.ParquetFile(path).schema_arrow.names)
+    assert {"underlying_price_source", "underlying_carry_minutes"} <= schema

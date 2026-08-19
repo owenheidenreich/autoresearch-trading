@@ -36,8 +36,9 @@ from typing import Any, Sequence
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 
-from v5.ops.audit_causal_day_coverage import LAST_QUOTE_MINUTE
+from v5.ops.audit_causal_day_coverage import ET, LAST_QUOTE_MINUTE
 from v5.ops.build_causal_day_dataset import (
     QUOTE_COLUMNS,
     build_session,
@@ -66,25 +67,51 @@ class EraSource:
     settlement_source: str
 
 
-def parity_close(quote_path: Path) -> float:
+def parity_close(quote_path: Path) -> tuple[float, bool, int]:
     """The session's own parity spot at the terminal minute.
 
     Read through `prepare_quotes` so the value is the one the builder will see,
-    not a separately-derived number that could drift from it.
+    not a separately-derived number that could drift from it. Returns
+    ``(spot, carried, carry_minutes)`` so a carried close travels into the
+    receipt rather than being invisible once the corpus is built.
     """
 
-    quotes = prepare_quotes(
-        pd.read_parquet(quote_path, columns=list(QUOTE_COLUMNS)),
-        quote_path.stem.split("_")[-1],
+    session = quote_path.stem.split("_")[-1]
+    columns = list(QUOTE_COLUMNS)
+    # Read the schema from parquet metadata, never via `read_parquet(columns=[])`:
+    # that returns a frame with zero columns rather than the schema, so it reports
+    # every optional column as absent and silently disables the provenance it is
+    # meant to detect. That defect shipped once here and produced a carried-close
+    # footnote of zero against 214 genuinely carried sessions.
+    available = set(pq.ParquetFile(quote_path).schema_arrow.names)
+    provenance = [
+        name
+        for name in ("underlying_price_source", "underlying_carry_minutes")
+        if name in available
+    ]
+    raw = pd.read_parquet(quote_path, columns=columns + provenance)
+    quotes = prepare_quotes(raw[columns], session)
+    terminal_mask = quotes["minute"].eq(LAST_QUOTE_MINUTE)
+    value = float(
+        pd.to_numeric(quotes.loc[terminal_mask, "underlying_price"], errors="coerce").median()
     )
-    terminal = quotes.loc[quotes["minute"].eq(LAST_QUOTE_MINUTE), "underlying_price"]
-    value = float(pd.to_numeric(terminal, errors="coerce").median())
     if not np.isfinite(value) or value <= 0.0:
         raise CorpusBuildError(
             f"{quote_path.name}: no finite parity spot at {LAST_QUOTE_MINUTE}; "
             "run repair_parity_spot before building"
         )
-    return value
+
+    carried, carry_minutes = False, 0
+    if "underlying_price_source" in provenance:
+        stamped = pd.to_datetime(raw["event_time"], utc=True).dt.tz_convert(ET)
+        at_close = raw[stamped.dt.strftime("%H:%M").eq(LAST_QUOTE_MINUTE)]
+        if len(at_close):
+            carried = bool((at_close["underlying_price_source"] == "carried_parity").any())
+            if carried and "underlying_carry_minutes" in provenance:
+                carry_minutes = int(
+                    pd.to_numeric(at_close["underlying_carry_minutes"], errors="coerce").max()
+                )
+    return value, carried, carry_minutes
 
 
 def locate(sources: Sequence[EraSource], session: str) -> tuple[EraSource, Path]:
@@ -115,8 +142,9 @@ def build_one(
                 "receipt does not carry one"
             )
         settlement = official_settlements[session]
+        carried, carry_minutes = False, 0
     else:
-        settlement = parity_close(quote_path)
+        settlement, carried, carry_minutes = parity_close(quote_path)
 
     tables = build_session(quote_path, es_path, settlement_spx=settlement)
     for name in TABLES:
@@ -131,12 +159,25 @@ def build_one(
 
     candidates = tables["candidates"]
     label = candidates.get(PRIMARY_LABEL)
+    # Only a cash-settled exit can read the terminal underlying at all; a trade
+    # closed on an executable bid never touches it. On a carried close that share
+    # *is* the exposure, so it is measured per session rather than assumed small.
+    cash_settled = {
+        f"{horizon}m": float(
+            candidates[f"clock_exit_type_{horizon}m"].eq("validated_cash_settlement").mean()
+        )
+        for horizon in (60, 90, 120)
+        if f"clock_exit_type_{horizon}m" in candidates.columns
+    }
     return {
         "session": session,
         "classification": "BUILT",
         "era": source.era,
         "settlement_source": source.settlement_source,
         "settlement_spx": settlement,
+        "settlement_close_carried": carried,
+        "settlement_carry_minutes": carry_minutes,
+        "cash_settled_share": cash_settled,
         "rows": {name: int(len(tables[name])) for name in TABLES},
         "label_coverage": float(label.notna().mean()) if label is not None else None,
         "label_base_rate": float(label.mean()) if label is not None else None,
@@ -228,6 +269,29 @@ def run(
                 source.era: _era_rate(source.era) for source in sources
             },
         },
+    }
+    # Phase-5 footnote, owner-requested 2026-08-18: report how much of the
+    # corpus rests on a carried close, and what share of trades there could
+    # possibly depend on it. Reported, never gated.
+    carried_rows = [r for r in built if r.get("settlement_close_carried")]
+    carried_cash = [
+        share
+        for row in carried_rows
+        for key, share in (row.get("cash_settled_share") or {}).items()
+        if key == "60m"
+    ]
+    payload["summary"]["carried_close"] = {
+        "sessions": len(carried_rows),
+        "max_carry_minutes": max(
+            (r.get("settlement_carry_minutes", 0) for r in built), default=0
+        ),
+        "mean_cash_settled_share_60m": float(np.mean(carried_cash)) if carried_cash else None,
+        "note": (
+            "entries stop at 15:00 by construction, and only a cash-settled exit "
+            "reads the terminal underlying; this bounds what a carried close can "
+            "affect. SPX is cash settled, so a position held through the close "
+            "carries no assignment risk."
+        ),
     }
     payload["gate"] = "PASS" if payload["summary"]["failed"] == 0 else "SESSIONS_FAILED"
     payload["receipt_sha256"] = hashlib.sha256(canonical_json(payload)).hexdigest()

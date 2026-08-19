@@ -190,6 +190,67 @@ def test_out_of_fold_assertion_catches_a_leaked_trajectory() -> None:
 # ------------------------------------------------------------- phase freezing
 
 
+def test_an_unknown_target_is_masked_out_of_the_loss_rather_than_poisoning_it() -> None:
+    """A NaN target inside the action mask must not reach the loss.
+
+    Roughly 0.05% of the corpus's labels are unknown -- the quote path became
+    unobservable before either bracket event. The design's rule is that those
+    actions stay feasible and stay unsupervised. Before this guard a single one
+    of them turned the whole epoch's loss into NaN.
+    """
+
+    episode = make_episode("2024-01-01")
+    values = episode.entry_value_usd.clone()
+    first = torch.nonzero(episode.entry_batch.entry_action_mask, as_tuple=False)[0]
+    values[first[0], first[1]] = float("nan")
+    poisoned = SessionEpisode(
+        session=episode.session,
+        entry_batch=episode.entry_batch,
+        entry_value_usd=values,
+        sell_paths=episode.sell_paths,
+    )
+    model = train_entry_phase([poisoned], seed=1, law=FAST)
+    for parameter in model.parameters():
+        assert torch.isfinite(parameter).all()
+
+
+def test_a_session_with_no_affordable_contract_still_trains_the_wait_head() -> None:
+    """2025-04-09 and 2025-04-10 are real no-trade days, not missing sessions.
+
+    Every entry action is masked off, so the supervised term selects nothing --
+    and `smooth_l1_loss` over an empty selection returns NaN. The session must
+    still contribute its WAIT rows rather than silently destroy the fit.
+    """
+
+    episode = make_episode("2024-01-01")
+    flat = SessionEpisode(
+        session=episode.session,
+        entry_batch=CausalPolicyBatch(
+            **{
+                **episode.entry_batch.__dict__,
+                "entry_action_mask": torch.zeros_like(
+                    episode.entry_batch.entry_action_mask
+                ),
+            }
+        ),
+        entry_value_usd=torch.full_like(episode.entry_value_usd, float("nan")),
+    )
+    model = train_entry_phase([flat, make_episode("2024-01-02", seed=3)], seed=1, law=FAST)
+    for parameter in model.parameters():
+        assert torch.isfinite(parameter).all()
+    assert select_entries(model, flat) == []
+
+
+def test_the_entry_phase_refuses_a_corpus_of_only_empty_batches() -> None:
+    empty = SessionEpisode(
+        session="2024-01-01",
+        entry_batch=make_batch(rows=0),
+        entry_value_usd=torch.zeros((0, 3)),
+    )
+    with pytest.raises(LifecycleTrainingError, match="no episode with a decision minute"):
+        train_entry_phase([empty], seed=1, law=FAST)
+
+
 def test_entry_phase_leaves_the_exit_head_untouched() -> None:
     model = CompactSharedLifecyclePolicy()
     before = {k: v.clone() for k, v in model.exit.state_dict().items()}

@@ -44,6 +44,7 @@ def _ladder(
                         "moneyness_itm_points": (spot - strike) if is_call else (strike - spot),
                         "bid_size": call_bid_size if is_call else 10.0,
                         "ask_size": 10.0,
+                        "spread": 2.0,
                     }
                 )
     return pd.DataFrame(rows)
@@ -136,4 +137,4 @@ def test_dispersion_is_nan_rather_than_invented_when_strikes_are_unpaired() -> N
     ladder = _ladder(["09:31"])
     calls_only = ladder[ladder["is_call"]].copy()
     state = chain_state(calls_only)
-    assert np.isnan(state["implied_spot_dispersion_bps"].iloc[0])
+    assert np.isnan(state["implied_spot_dispersion_ratio"].iloc[0])

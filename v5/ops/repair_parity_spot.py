@@ -19,13 +19,29 @@ This pass therefore recomputes only the minutes left NaN, using the paired
 strikes nearest the money, and **records how many strikes backed each value**, so
 a thin estimate is visible rather than indistinguishable from a strong one:
 
-* `underlying_price_source` — `strict_parity` (untouched), `relaxed_parity`, or
-  `unavailable`;
-* `underlying_parity_strikes` — the count actually used.
+* `underlying_price_source` — `strict_parity` (untouched), `relaxed_parity`,
+  `carried_parity`, or `unavailable`;
+* `underlying_parity_strikes` — the count actually used;
+* `underlying_carry_minutes` — how far a carried value was carried, else 0.
 
-Nothing is forward-filled and nothing is carried across minutes: a minute with no
-paired strike stays NaN and its session is reported rather than silently patched.
-The frozen normalizer is not modified; this writes an enriched copy.
+**The terminal carry, owner-ruled 2026-08-18.** Even a relaxed solve fails on 216
+of 794 backfill sessions, at exactly one minute — 16:00 — because deep OTM options
+go bidless into the close, so calls and puts survive at *disjoint* strikes and no
+strike is paired at any window width. Those sessions are accepted rather than
+dropped: the last solved index level is carried into the terminal run and
+labelled.
+
+The carry is deliberately narrower than a forward fill, in two ways that matter.
+It carries the **underlying index level**, never a contract's quote — carrying a
+bid or ask would fabricate a tradeable price, which is the stale-book defect this
+pipeline exists to catch. And it applies only to a **contiguous terminal run**: an
+interior gap stays NaN and its session is reported, because a hole in the middle
+of a session is a data problem rather than a thinning chain.
+
+Only a trade that *cash-settles* can depend on a carried value at all — anything
+exiting on an executable bid never reads it — so the exposure is bounded and
+measurable per session rather than assumed small. The frozen normalizer is not
+modified; this writes an enriched copy.
 """
 from __future__ import annotations
 
@@ -41,9 +57,10 @@ import pandas as pd
 from v5.ops.audit_causal_day_coverage import QUOTE_MINUTES
 from v5.ops.build_causal_day_dataset import ET, canonical_json, file_sha256
 
-SCHEMA_VERSION = "v5.parity-spot-repair.v1"
+SCHEMA_VERSION = "v5.parity-spot-repair.v2"
 SOURCE_STRICT = "strict_parity"
 SOURCE_RELAXED = "relaxed_parity"
+SOURCE_CARRIED = "carried_parity"
 SOURCE_UNAVAILABLE = "unavailable"
 # Parity is exact per strike; this bounds how far from the money we will look
 # before treating an estimate as unrepresentative of the index.
@@ -117,7 +134,45 @@ def repair_session(frame: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
         out.loc[rows, "underlying_parity_strikes"] = used
         repaired[minute] = used
 
-    still_missing = sorted(set(empty_minutes) - set(repaired))
+    # Terminal carry, owner-ruled 2026-08-18. Measured, 216 of 794 backfill
+    # sessions are unsolvable at exactly one minute -- 16:00 -- because deep OTM
+    # options go bidless into the close and calls and puts survive at *disjoint*
+    # strikes, so no strike is paired at any window width. Rather than lose those
+    # sessions, the last solved index level is carried into the terminal run and
+    # labelled, with the carry distance recorded.
+    #
+    # This is deliberately narrower than a forward fill. It carries the
+    # **underlying index level**, never a contract's quote -- carrying a bid or
+    # ask would fabricate a tradeable price, which is the stale-book defect this
+    # pipeline already refuses. It applies only to a *contiguous terminal* run:
+    # an interior gap stays NaN, because a hole in the middle of a session is a
+    # data problem, not a thinning chain.
+    carried: dict[str, int] = {}
+    unsolved = sorted(set(empty_minutes) - set(repaired))
+    solved_minutes = [m for m in QUOTE_MINUTES if m not in unsolved]
+    if solved_minutes and unsolved:
+        last_solved = solved_minutes[-1]
+        terminal_run = [m for m in QUOTE_MINUTES if m > last_solved]
+        if set(terminal_run) == set(unsolved):
+            rows = out["_minute"].eq(last_solved)
+            value = float(
+                pd.to_numeric(out.loc[rows, "underlying_price"], errors="coerce").median()
+            )
+            if np.isfinite(value) and value > 0.0:
+                for distance, minute in enumerate(terminal_run, start=1):
+                    target = out["_minute"].eq(minute)
+                    if not target.any():
+                        continue
+                    out.loc[target, "underlying_price"] = value
+                    out.loc[target, "underlying_price_source"] = SOURCE_CARRIED
+                    out.loc[target, "underlying_carry_minutes"] = distance
+                    carried[minute] = distance
+
+    if "underlying_carry_minutes" not in out.columns:
+        out["underlying_carry_minutes"] = 0
+    out["underlying_carry_minutes"] = out["underlying_carry_minutes"].fillna(0).astype(int)
+
+    still_missing = sorted(set(empty_minutes) - set(repaired) - set(carried))
     covered = (
         out.loc[out["_minute"].isin(QUOTE_MINUTES)]
         .groupby("_minute")["underlying_price"]
@@ -128,6 +183,9 @@ def repair_session(frame: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
         "strict_minutes": int(len(QUOTE_MINUTES) - len(empty_minutes)),
         "repaired_minutes": len(repaired),
         "repaired_detail": repaired,
+        "carried_minutes": len(carried),
+        "carried_detail": carried,
+        "max_carry_minutes": max(carried.values()) if carried else 0,
         "unrepaired_minutes": still_missing,
         "clock_complete": bool(np.isfinite(covered.to_numpy(float)).all()),
     }
@@ -178,6 +236,7 @@ def run(
             )
 
     complete = [r for r in results if r.get("clock_complete")]
+    carried_sessions = [r for r in results if r.get("carried_minutes")]
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "purpose": (
@@ -192,6 +251,10 @@ def run(
         "summary": {
             "sessions": len(results),
             "clock_complete": len(complete),
+            "sessions_with_carried_close": len(carried_sessions),
+            "max_carry_minutes": max(
+                (r.get("max_carry_minutes", 0) for r in results), default=0
+            ),
             "failed": int(sum(r["classification"] == "FAILED" for r in results)),
             "repaired": int(sum(r["classification"] == "REPAIRED" for r in results)),
         },

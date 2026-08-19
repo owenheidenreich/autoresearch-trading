@@ -72,7 +72,11 @@ class SessionEpisode:
 
     `entry_batch` holds every causal decision minute of the session.
     `entry_value_usd` is the executable ENTER-versus-WAIT dollar value per
-    contract action (NaN off the entry mask); WAIT's structural floor is $0.
+    contract action; WAIT's structural floor is $0. It is NaN off the entry
+    mask, and also NaN *on* it wherever the label is unknown -- the path became
+    unobservable before either bracket event. Those actions stay feasible and
+    stay unsupervised: `train_entry_phase` masks them out of the loss rather
+    than removing them from the action set.
     `sell_paths` maps **(decision-minute index, ladder column)** to the
     executable sale value at each minute the position would be held, under the
     simulator's first-later-bid / validated-settlement law.
@@ -231,22 +235,37 @@ def train_entry_phase(
         total = torch.zeros((), dtype=torch.float32)
         count = 0
         for episode in episodes:
+            if episode.entry_batch.batch_size == 0:
+                continue
             scores = model(episode.entry_batch)
-            mask = episode.entry_batch.entry_action_mask
             target = episode.entry_value_usd / TARGET_SCALE_USD
+            # Supervised only where a target exists. An action whose label is
+            # unknown -- the path became unobservable before either bracket
+            # event -- is masked out of the loss and never dropped from the
+            # action set, so the policy may still choose it at inference while
+            # nothing pretends to know what it was worth. Two real sessions
+            # (2025-04-09/10) have no affordable contract at all: on those the
+            # supervised term is empty, and `smooth_l1_loss` over an empty
+            # selection returns NaN, which would silently poison every epoch.
+            mask = episode.entry_batch.entry_action_mask & torch.isfinite(target)
             predicted = scores.contract_logits
-            total = total + torch.nn.functional.smooth_l1_loss(
-                predicted[mask], target[mask], beta=law.smooth_l1_beta
-            )
+            if mask.any():
+                total = total + torch.nn.functional.smooth_l1_loss(
+                    predicted[mask], target[mask], beta=law.smooth_l1_beta
+                )
             # WAIT is trained toward its structural floor of $0, not left
-            # gradient-free as the first capacity harness left it.
+            # gradient-free as the first capacity harness left it. It is trained
+            # on the no-trade sessions too: standing down all day is a decision
+            # the policy has to make, not a session to be skipped.
             total = total + torch.nn.functional.smooth_l1_loss(
                 scores.abstain_logits,
                 torch.zeros_like(scores.abstain_logits),
                 beta=law.smooth_l1_beta,
             )
             count += 1
-        return total / max(count, 1)
+        if count == 0:
+            raise LifecycleTrainingError("entry phase received no episode with a decision minute")
+        return total / count
 
     _plateau_fit(model, trainable, step, law)
     after_exit = model.exit.state_dict()
