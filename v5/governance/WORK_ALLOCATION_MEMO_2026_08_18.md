@@ -109,10 +109,29 @@ Send these cold, with repository access, and only these.
 
   **Phase 5 must therefore report by day type**, diagnostic only and gating nothing: event day,
   FOMC-excluded, OPEX/MOPEX, end of month, and month of year, alongside the all-sessions figures.
-  **One prerequisite is flagged rather than assumed:** the FOMC-excluded cut needs a list of FOMC
-  announcement dates covering 2022-06 to 2026-07 — roughly 33 dates typed once from the published
-  schedule. That is a transcription, not a data acquisition, and it must be **owner-verified before
-  any number rests on it**.
+  **The FOMC prerequisite is RESOLVED, 2026-08-19.** The owner supplied and verified **34**
+  announcement dates (statement days, not minutes-release days) from the Federal Reserve's published
+  calendars, covering 2022-06 to 2026-07. They are recorded in
+  [`research/session_calendar.py`](../research/session_calendar.py) with their source.
+
+  **The list was verified rather than trusted, three ways.** Its shape is right — 8 meetings a year,
+  with 5 in 2022 from June and 5 in 2026 through July. Every date is a weekday and exactly one is not
+  a Wednesday: **2024-11-07**, which is correct rather than a slip, because the November 2024 meeting
+  moved to the 6th–7th around the US general election on the 5th. And the dates carry a measurable
+  signature in this project's own tape, independent of the source they came from: the 33 present in
+  the corpus show **1.91x** the median one-minute maximum step (13.74 against 7.18 index points) and a
+  median session range of 65.62 against 47.23. The owner's stated reason for sitting out FOMC days is
+  therefore confirmed with a number behind it.
+
+  **One FOMC day is missing from the corpus and it is not missing on purpose: 2025-07-30**, which the
+  clock gate excluded for three absent interior minutes (11:20–11:22). So the all-sessions figures are
+  already short one FOMC day before anything is excluded deliberately, and Phase 5 must say so rather
+  than describe its excluded cut as complete.
+
+  **Measured day-type signatures on the 1,014-session corpus**, for the record: FOMC 33 sessions
+  (1.91x step, range 65.6); quarterly OPEX 17 sessions (1.07x step, **range 66.1** — the largest range
+  effect after FOMC); month end 50 (1.14x, 56.3); last Friday 50 (1.06x, 53.7); monthly OPEX 50
+  (**0.95x** step, range 52.1 — no step elevation at all).
 - **Tape source — RESOLVED, OWNER RULING 2026-08-19: SPX-derived (parity spot), not ES.** The active
   policy is SPXW/SPX-only with no futures input. The basis genuinely cancels in the difference-based
   tape channels today, but **provenance is what a future session inherits**, and "the candles are ES"

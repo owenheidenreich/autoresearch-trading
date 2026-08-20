@@ -1375,3 +1375,35 @@ tuned by peeking. The one fitted object was the owner-authorized throwaway era p
 - **STOP under §5.** Finding:
   [`PHASE_4A_FEATURE_INFORMATION_2026_08_19.md`](../../research/findings/PHASE_4A_FEATURE_INFORMATION_2026_08_19.md).
   No fit, no spend, no vendor contact, no promotion, no pinned file edited.
+
+### The FOMC list arrives, is verified three ways, and the day-type classifier lands, 2026-08-19.
+
+- **Owner supplied 34 FOMC announcement dates** (statement days, not minutes-release days) from the
+  Federal Reserve's published calendars, closing the one Phase-5 prerequisite this job had flagged.
+  Recorded with their source in [`session_calendar.py`](../../research/session_calendar.py).
+- **Verified rather than transcribed on trust, three independent ways.** (1) **Shape**: eight
+  meetings a year, 5 in 2022 from June and 5 in 2026 through July — a dropped date would break the
+  count. (2) **Weekday**: every date is a weekday and exactly one is not a Wednesday, **2024-11-07**,
+  which is *correct* — the November 2024 meeting moved to the 6th–7th around the US general election
+  on the 5th. That exception is pinned by a test so a later tidy-up cannot "fix" it. (3) **The
+  corpus's own tape agrees with the list**: the 33 dates present show **1.91x** the median one-minute
+  maximum step (13.74 against 7.18 index points) and a median session range of **65.62 against
+  47.23**. The owner's reason for sitting out FOMC days is now confirmed with a number, from data that
+  knows nothing about the Fed's calendar.
+- **One FOMC day is missing from the corpus, and not on purpose: 2025-07-30**, excluded by the clock
+  gate for three absent interior minutes (11:20–11:22). The all-sessions figures are therefore
+  already short one FOMC day before anything is excluded deliberately. `coverage()` reports absences
+  rather than returning a quiet zero, and a test pins that.
+- **The rest of the day types need no data at all, which is the distinction that matters.** OPEX,
+  quarterly OPEX, month end, last Friday, month and weekday are arithmetic on the session date — no
+  vendor, no purchase, no admission. Only the *economic release* calendar was ever the blocked thing.
+  If these were wanted as features the blocker would be the parameter contract, not availability, and
+  the module says so in its own docstring while forbidding itself as a feature source.
+- **Measured signatures across the 1,014-session corpus**, reported because they are cheap and they
+  bear on what Phase 5 will find: FOMC 33 sessions (1.91x step, range 65.6); **quarterly OPEX 17
+  sessions (1.07x step, range 66.1 — the largest range effect after FOMC)**; month end 50 (1.14x,
+  56.3); last Friday 50 (1.06x, 53.7); and **monthly OPEX 50 sessions at 0.95x — no step elevation at
+  all**, which is worth knowing before anyone assumes MOPEX is a volatility day in this corpus.
+- **Diagnostic only, and structurally so.** The module is barred from the tensorizer, the adapter,
+  the probe and the architecture; the event-calendar ruling is unchanged. Receipt
+  `session_calendar_coverage.json`. 1,080 tests green, `check_project.py` green.
