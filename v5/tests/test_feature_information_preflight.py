@@ -249,20 +249,64 @@ def test_the_bar_is_exactly_the_declared_one() -> None:
     assert declaration["probe"]["parameters"] == PROBE_PARAMETERS
 
 
-def test_the_declaration_refuses_code_that_has_moved(tmp_path: Path) -> None:
-    from v5.ops.run_feature_information_preflight import verify_declaration
-
-    source = Path("v5/work/lifecycle-training/PHASE_4A_DECLARATION_V1.json")
-    verify_declaration(source)  # the real one must verify
+def test_the_declaration_is_internally_intact() -> None:
+    """Nobody edited the declaration's content after it was published."""
 
     import hashlib
     from v5.ops.build_causal_day_dataset import canonical_json
 
+    source = Path("v5/work/lifecycle-training/PHASE_4A_DECLARATION_V1.json")
+    declaration = json.loads(source.read_text())
+    semantic = {k: v for k, v in declaration.items() if k != "declaration_sha256"}
+    assert declaration["declaration_sha256"] == hashlib.sha256(canonical_json(semantic)).hexdigest()
+
+
+def test_the_closed_phase_can_no_longer_be_re_run_as_the_same_experiment() -> None:
+    """Phase 4a is historically sealed, and this is the mechanism that seals it.
+
+    `implementation_hashes` records the code that produced the published result.
+    It is a historical record and must never be edited to match later code. Since
+    the phase closed, `lifecycle_episode_adapter.py` has legitimately moved -- a
+    stale-candle defect in held batches was fixed and a prefix mode added on
+    2026-08-20 -- so the declaration now refuses. That refusal is correct: it
+    means nobody can re-run 4a against changed code and call it the same
+    experiment. Phase 4a's own numbers are unaffected, and Phase 4b reproduced
+    its headline bit-for-bit before the adapter changed.
+    """
+
+    from v5.ops.run_feature_information_preflight import verify_declaration
+
+    source = Path("v5/work/lifecycle-training/PHASE_4A_DECLARATION_V1.json")
+    with pytest.raises(PreflightError, match="has changed since the declaration"):
+        verify_declaration(source)
+
+
+def test_a_tampered_implementation_hash_is_refused(tmp_path: Path) -> None:
+    import hashlib
+
+    from v5.ops.build_causal_day_dataset import canonical_json
+    from v5.ops.run_feature_information_preflight import verify_declaration
+
+    source = Path("v5/work/lifecycle-training/PHASE_4A_DECLARATION_V1.json")
     tampered = json.loads(source.read_text())
-    tampered["implementation_hashes"]["v5/research/feature_information_preflight.py"] = "0" * 64
+    tampered["implementation_hashes"] = {
+        "v5/research/feature_information_preflight.py": "0" * 64
+    }
     semantic = {k: v for k, v in tampered.items() if k != "declaration_sha256"}
     tampered["declaration_sha256"] = hashlib.sha256(canonical_json(semantic)).hexdigest()
     path = tmp_path / "declaration.json"
     path.write_text(json.dumps(tampered))
     with pytest.raises(PreflightError, match="has changed since the declaration"):
+        verify_declaration(path)
+
+
+def test_a_declaration_whose_own_hash_is_wrong_is_refused(tmp_path: Path) -> None:
+    from v5.ops.run_feature_information_preflight import verify_declaration
+
+    source = Path("v5/work/lifecycle-training/PHASE_4A_DECLARATION_V1.json")
+    edited = json.loads(source.read_text())
+    edited["verdict_rule"]["bar_pp"] = 0.1
+    path = tmp_path / "declaration.json"
+    path.write_text(json.dumps(edited))
+    with pytest.raises(PreflightError, match="does not match its own content"):
         verify_declaration(path)
