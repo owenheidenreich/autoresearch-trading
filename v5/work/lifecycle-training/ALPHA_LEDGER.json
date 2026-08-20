@@ -13,13 +13,25 @@
       "observed_accuracy": null,
       "outcome": "PASS",
       "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "accuracy_lower_bound": null,
+      "bar_at_time_of_run": 0.64857595,
+      "declaration_sha256": "6f404d28b6bda9a6faa3e3e4f9c4e850b36fc5f93a0ac5054ae7807be560481f",
+      "declared_on": "2026-08-19",
+      "entry_hash": "91fdc23f60d7f6935c64658c6e36cb81003d5dbe03bfffcfe30b23b5feba34aa",
+      "experiment_id": "job46.phase4b.feature_information_decomposition.v1",
+      "index": 1,
+      "observed_accuracy": null,
+      "outcome": "PASS",
+      "previous_hash": "9c0e95a8416eca3ec86f526dc9736f9bd5b600a3eb87d03be35274b436bf2c75"
     }
   ],
   "exhausted": false,
-  "experiments_run": 1,
-  "head": "9c0e95a8416eca3ec86f526dc9736f9bd5b600a3eb87d03be35274b436bf2c75",
-  "next_bar": 0.64857595,
-  "next_true_accuracy_needed": 0.67457595,
+  "experiments_run": 2,
+  "head": "91fdc23f60d7f6935c64658c6e36cb81003d5dbe03bfffcfe30b23b5feba34aa",
+  "next_bar": 0.65269835,
+  "next_true_accuracy_needed": 0.67869835,
   "option_sessions": 405,
   "plausible_accuracy_ceiling": 0.75,
   "schema_version": "v5.autoresearch-alpha-ledger.v1"

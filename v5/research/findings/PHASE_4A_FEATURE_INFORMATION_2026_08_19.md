@@ -1,5 +1,10 @@
 # Phase 4a — the feature-information preflight: raw result, referred for adjudication
 
+> **ADJUDICATED 2026-08-19 — outcome D, and §8.7 resolved as option 1.** The cold ruling, its
+> reasoning, and the pre-declared Phase 4b discriminant are in
+> [`PHASE_4A_ADJUDICATION_2026_08_19.md`](PHASE_4A_ADJUDICATION_2026_08_19.md). This document
+> remains the raw referral and is unedited below this line.
+
 **Date:** 2026-08-19 · **Job:** 46 lifecycle-training · **Declaration:**
 [`PHASE_4A_DECLARATION_V1.json`](../../work/lifecycle-training/PHASE_4A_DECLARATION_V1.json)
 (`f6894fb8…`) · **Receipts:** `phase_4a_receipt.json`, `phase_4a_ablation.json`,
@@ -84,6 +89,17 @@ changing the verdict.
 | **Chain internals — the hypothesis** | 7 | **+1.86pp** | +6.03pp | +2.62pp |
 | **Per-contract chain (`smile_residual`, depth)** | 2 | **+0.16pp** | +6.18pp | +2.47pp |
 | Ordering (`is_call`, moneyness) | 2 | +1.86pp | **+10.04pp** | **−1.39pp** |
+
+> **CORRECTION, 2026-08-19, after adjudication.** The "Alone" column below is **not a measurement of
+> these families' contract-ranking information**, and should not be read as one. Tape, clock and
+> chain-state are **minute-common**: all 16 of their features take a single value across every
+> contract in a minute, so a probe restricted to them scores every contract in a minute identically
+> and cannot rank contracts at all. Selection then falls to a stable-sort tie-break on stored row
+> order, which is ascending `contract_id` — the deepest-OTM puts. Their "Alone" figures measure
+> minute selection plus that tie-break. The "without" and "cost of removing" columns are unaffected.
+> Phase 4b D3 replaces these numbers with randomized-tie-break versions. Left visible rather than
+> deleted: the referral was built on these rows, and the adjudicator's correction of them is part of
+> the record. See `PHASE_4A_ADJUDICATION_2026_08_19.md` §6 and §7.
 
 Three observations, stated without characterisation:
 

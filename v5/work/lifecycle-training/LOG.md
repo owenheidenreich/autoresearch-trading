@@ -1451,3 +1451,98 @@ tuned by peeking. The one fitted object was the owner-authorized throwaway era p
   a known-false prerequisite into a governance brief would have misinformed the adjudicator.
 - **1,080 tests green, `check_project.py` green.** No fit, no spend, no vendor contact, and no pinned
   or signed file edited.
+
+### ADJUDICATION DELIVERED — outcome D; the discriminating test is specified as Phase 4b, 2026-08-19.
+
+Fable read the referral cold under memo §3.2. Ruling:
+[`PHASE_4A_ADJUDICATION_2026_08_19.md`](../../research/findings/PHASE_4A_ADJUDICATION_2026_08_19.md).
+No new measurement was run; everything rests on the receipts, the pinned code, and arithmetic.
+
+- **§8.1 answer: outcome D.** The +8.65pp is a real measurement of *something* — the plant recovered,
+  0/20 nulls, +5.6σ, hashes verified, and the data path structurally cannot see dollars — but the run
+  cannot distinguish the design's **ordering** hypothesis from the label's own **mechanical**
+  sensitivity to volatility and leverage. The label factors as P(win) = P(path resolves) ×
+  P(gain-first | resolved), and its zero pools loss-first with never-resolved, so selecting toward
+  high vol and high leverage raises the hit rate with no ordering skill at all — toward the no-skill
+  barrier ratio 30/80 = **37.5%**. The observed selected precision is **39.35%**. The decisive
+  quantity, P(gain-first | resolved) for the selected set, was never computed and is one label-side
+  pass away. Declaring A on a bar 7/20 nulls clear, or B on a pattern-match to row 332 without that
+  pass, would each be the memo's named failure mode.
+- **§8.7 answer: option 1.** The mechanical PROCEED stands as published under the bar as declared —
+  nothing rewritten — and **does not by itself authorize the fit**; the memo routed the action
+  decision here, and the action is D. Option 2 (re-run under a recalibrated bar, result spent) is
+  rejected as motion-not-measurement: the existing null already shows any sane recalibrated bar
+  passes, while the actual open question is mechanism. Prospective directive: every future verdict
+  statistic is null-calibrated (≥100 draws) **before** running, and one-sided constructions state
+  which error they protect. Both design defects corrected here — the upper-bound bar (§5.2) and the
+  "path order, not magnitude" overclaim (§5.3) — originate in the learning-content design, which is
+  Fable-lineage work, and the adjudication says so.
+- **Two structural facts found cold, both binding downstream.** (1) The "alone" ablation rows for
+  the three wholly minute-common groups — tape, clock, chain internals — are **tie-break
+  composites**. The stable lexsort resolves equal within-minute scores by frame order, and the
+  candidates table sorts `(entry_minute, contract_id)` where `contract_id` embeds the strike, so the
+  pick is **the two deepest-OTM puts, the cheapest and most leveraged contracts in the band**
+  (verified: 2022-06-01 10:00 takes −22.2 and −17.2 points at $880/$1,030 where the nearest-ATM
+  contract is −2.2 at $1,640). That pick's own hit rate is poor — the tape-alone row implies
+  **21.30% precision** against a 30.70% base — so those rows are **depressed by a contract choice
+  the fields did not make**. Consequence, and it cuts against B: the hypothesis families' standalone
+  value is **unknown, not small**, and the **shrink-ladder order may not be derived from these
+  numbers**. The marginal column and the three per-contract groups are clean. (2) The three
+  diagnostic receipts have no archived producer script; Phase 4b must archive its wrappers. Also
+  verified benign: repeated null values are 1/648 grid quantisation.
+- **A correction inside the adjudication is recorded rather than silently edited.** The tie-break
+  finding was first written as "the two nearest-ATM eligible calls, the most expensive and
+  least-leveraged" — reasoned, not measured, and wrong by exactly a reversal. Checking it against
+  the corpus flipped the direction of the bias and therefore its consequence. The ruling did not
+  change; a supporting fact did, and §6 of the adjudication shows the correction.
+- **Phase 4b is specified for Opus, pending owner confirmation** — training prefix only, label-side
+  only, self-hashed, alpha-charged, headline reproduction at +8.649074789891253pp as a precondition.
+  D1 (verdict-bearing): decompose the selected set's precision into resolution × ordering; the
+  ordering component's null from ≥100 within-session permutations. Pre-declared rule: ≤ null 97.5th
+  ⇒ **B**, publish the negative with the mechanism named; > 97.5th and ≥ +2.5pp ⇒ **A**, the fit
+  proceeds; between ⇒ **owner decision**. D2: vol/premium-stratified matched control, direction must
+  agree with D1 or the phase stops and returns to Fable. D3 (diagnostic only): randomized-tie-break
+  ablations, which replace the contaminated "alone" numbers for the shrink order.
+- No fit, no spend, no vendor contact, no pinned or signed file edited; the referral finding gained
+  only a pointer header. STOP under memo §5.
+
+### PHASE 4B — the lift is ordering, not resolution. Outcome A, 2026-08-19.
+
+- **Owner confirmed; Fable's §5 spec executed as written.** Declaration
+  [`PHASE_4B_DECLARATION_V1.json`](PHASE_4B_DECLARATION_V1.json) (`6f404d28…`) hashed first. Both
+  preconditions passed: implementation hashes matched, and the Phase-4a headline reproduced
+  **bit-for-bit at +8.649074789891253pp**.
+- **Verdict A. The lift is 97% ordering: +8.65pp = resolution +0.28pp + ordering +8.37pp.** Selection
+  moves P(gain first | resolved) from **0.3259 to 0.4140** while barely touching resolution. The
+  ordering null over **120** draws has a 97.5th percentile of +3.79pp and **0 of 120 draws reach the
+  observed value**. D2's matched control — within session, entry-ask decile × `realised_vol_15m`
+  quintile, 585 strata — leaves **+7.67pp** standing in the same direction.
+- **The result refutes the adjudication's quantitative account, and by a hard ceiling rather than a
+  statistical margin.** Fable proposed the lift was resolution mechanics, with a no-skill gain-first
+  share tending toward 30/80 = 37.5%. Measured: **94.2% of paths already resolve** — 0DTE options
+  almost always touch +50% or −30% inside an hour — so even a selector choosing *only* resolving
+  paths could add at most **+1.71pp**, against an observed +8.65pp. Verified independently on a
+  separate 102-session sample (330,021 actions): P(resolved) 0.9476, P(gain-first | resolved) 0.3258.
+  The magnitude channel is saturated and cannot be the lever.
+- **This session's own prior was wrong too, and by a second independent measurement.** The referral
+  leaned toward magnitude rediscovery because `realised_vol_15m` was the one sign-stable coefficient.
+  D3 measures it: **that channel alone is worth −1.07pp**, and the full set with it removed still
+  delivers **+6.80pp**. It is conditioning, not the source.
+- **The tie-break correction is confirmed quantitatively.** With randomized tie-breaking, the two
+  minute-common groups collapse to nothing — **tape −9.41pp → −0.16pp, clock +3.40pp → −0.28pp** —
+  exactly as a group that cannot rank contracts should score. Chain internals (+1.97pp) and the
+  contract-varying groups are unchanged. Fable's correction was right and its consequence is now
+  measured rather than argued.
+- **A new open question, and it is the important one.** The ordering component has a **strong
+  chronological gradient**: +0.74pp in fold 0, then +9.60, +9.40, **+13.71pp**; by year +2.44 (2022),
+  +9.10 (2023), **+18.74 (2024)**. The population gain-first share is flat across folds (0.314–0.338),
+  so this is not the label changing — it is the features ranking better in later windows. Regime,
+  expanding-window fold size, or something else: **this run does not separate them**, and the fit's
+  training prefix ends 2024-01-29.
+- **Cost of the next step, measured rather than assumed.** One real episode builds in 0.80s and
+  carries 8.4 MB of tensors; one forward+backward is 0.04s. The entry phase as the trainer is written
+  today holds **all 405 prefix episodes at once — 3.4 GB of inputs — and runs ~18s per epoch, about
+  an hour for the declared 200**, with the autograd graph for all 405 alive before a single backward.
+  Feasible, but the nested out-of-fold trajectory generation runs that fit once per inner fold.
+- **1,098 tests green, `check_project.py` green.** No economics read, no score block touched, no
+  pinned file edited, no spend, no vendor contact.

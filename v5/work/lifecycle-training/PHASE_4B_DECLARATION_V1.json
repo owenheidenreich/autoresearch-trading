@@ -1,0 +1,81 @@
+{
+  "alpha_ledger": {
+    "charged_for": "the hash-chained count",
+    "universe": "phase1_otm"
+  },
+  "authorization": "owner confirmation 2026-08-19, on Fable's adjudication PHASE_4A_ADJUDICATION_2026_08_19.md outcome D",
+  "d1_decomposition": {
+    "expected_without_ordering": "P(resolved | selected) x P(gain-first | resolved, population)",
+    "identity": "resolution + ordering == lift, asserted by test",
+    "null_draws": 120,
+    "null_permutation": "the label-side record (label, gain minute, loss minute) permuted as one block within session, pushed through the identical fit-and-select path",
+    "null_quantile": 0.975,
+    "ordering_component": "precision(selected) - expected_without_ordering",
+    "resolution_component": "expected_without_ordering - base_rate",
+    "resolved": "gain-minute finite OR loss-minute finite"
+  },
+  "d2_consistency_control": {
+    "matching": "within session: entry-ask decile x realised_vol_15m quintile",
+    "rule": "must agree in direction with D1; a contradiction stops the phase and returns to Fable \u2014 the producing session does not interpret it",
+    "statistic": "selected minus matched precision"
+  },
+  "d3_diagnostics_only": {
+    "also": "realised_vol_15m alone, and the full set minus it",
+    "randomised_tie_break_draws": 20,
+    "verdict_weight": "none",
+    "why": "tape, clock and chain-state are minute-common: 16 of the 24 features take one value across every contract in a minute, so a probe restricted to them cannot rank contracts and selection fell to a stored-order tie-break on ascending contract_id, the deepest-OTM puts. This replaces Phase 4a's contaminated 'alone' numbers wherever the shrink order is set."
+  },
+  "declaration_sha256": "6f404d28b6bda9a6faa3e3e4f9c4e850b36fc5f93a0ac5054ae7807be560481f",
+  "declared_on": "2026-08-19",
+  "forbidden": [
+    "reading any economic or dollar column",
+    "reading any of the five score blocks",
+    "changing any threshold in this declaration after a number has been produced",
+    "editing v5/research/feature_information_preflight.py, which the published Phase 4a declaration pins",
+    "any purchase, vendor contact, broker contact, order, or unattended job"
+  ],
+  "implementation_hashes": {
+    "v5/ops/run_feature_information_decomposition.py": "9086ba58324ff978b92510b01f739bf230df7715dd36349189b129c6ea1b823d",
+    "v5/ops/run_feature_information_preflight.py": "783b58f2f1e69afccb073408008511a3156e11dc0610f4f1b898bda1b3043026",
+    "v5/research/feature_information_decomposition.py": "126a905de94f8739ac6906fd4e309656c3248a5b79beae388763b5231005fc60",
+    "v5/research/feature_information_preflight.py": "49099d498250508d987658958daa57417f383a5c4950becf1ce61b00cded0d8c"
+  },
+  "job": "46 lifecycle-training",
+  "phase": "4b feature-information decomposition",
+  "population": {
+    "columns_read": [
+      "first_touch_50pct_before_loss_30pct_60m",
+      "first_touch_50pct_minute_60m",
+      "first_touch_loss_30pct_minute_50pct_60m"
+    ],
+    "economics": "NONE. No dollar column is read at this phase.",
+    "score_blocks": "none may be read",
+    "sessions": "training prefix only, the first 40% of the 1,014 built sessions"
+  },
+  "preconditions": {
+    "declaration_hashes_match": "implementation_hashes must equal the files on disk",
+    "phase_4a_headline_reproduces": 8.649074789891253,
+    "reproduction_rule": "exact equality; the run is deterministic, so any difference stops the phase"
+  },
+  "purpose": "Member P's hit rate factors into P(path resolves) x P(gain barrier first | resolved). Only the second factor is the design's cross-sectional ordering hypothesis; the first is magnitude, already priced by ledger row 332. Phase 4a could not separate them. This does.",
+  "schema_version": "v5.phase-4b-decomposition-declaration.v1",
+  "specified_by": "Fable, PHASE_4A_ADJUDICATION_2026_08_19.md section 5. Design judgement is settled; this is execution.",
+  "verdict_rule": {
+    "closed_to_reinterpretation": true,
+    "no_other_statistic_may_move_the_verdict": true,
+    "table": [
+      {
+        "ordering_component": "<= null p97.5",
+        "outcome": "B_RESOLUTION_MECHANICS \u2014 publish the negative under the design's STOP language; the fit does not run on this feature set and label as designed"
+      },
+      {
+        "ordering_component": "> null p97.5 AND >= 2.5pp",
+        "outcome": "A_ORDERING_INFORMATION \u2014 the fit proceeds as designed, vol channel documented as conditioning"
+      },
+      {
+        "ordering_component": "> null p97.5 AND < 2.5pp",
+        "outcome": "OWNER_DECISION_REAL_BUT_SMALL \u2014 both components and their nulls go to the owner"
+      }
+    ]
+  }
+}
