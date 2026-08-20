@@ -213,15 +213,30 @@ def train_entry_phase(
     episodes: Sequence[SessionEpisode],
     *,
     seed: int,
+    model: CompactSharedLifecyclePolicy,
     law: TrainingLaw = LAW,
-    model: CompactSharedLifecyclePolicy | None = None,
 ) -> CompactSharedLifecyclePolicy:
-    """Fit the shared representation and entry heads. Exit head frozen."""
+    """Fit the shared representation and entry heads. Exit head frozen.
+
+    **`model` is required, and deliberately has no default.** It used to default
+    to `CompactSharedLifecyclePolicy()`, which is a live trap rather than a
+    convenience: a caller that forgets the argument silently trains the frozen
+    baseline instead of the declared member, and reports a perfectly plausible
+    number for it. That fired on 2026-08-20 and was caught only because the two
+    architectures happen to differ in ladder width -- an accident of this corpus,
+    not a guard. Every caller must now say which architecture it is fitting.
+
+    **One consequence, stated because it is easy to miss.** Construction moved
+    out of this function, and the random initialisation went with it. `seed`
+    still governs the fit; it no longer governs the starting weights. A caller
+    that needs end-to-end reproduction must seed *before* constructing the model,
+    and a runner that records only `seed` has not recorded enough to reproduce
+    its own result.
+    """
 
     if not episodes:
         raise LifecycleTrainingError("entry phase requires at least one episode")
     torch.manual_seed(seed)
-    model = model or CompactSharedLifecyclePolicy()
     for parameter in model.exit.parameters():
         parameter.requires_grad_(False)
     trainable = [
@@ -320,6 +335,7 @@ def generate_oof_trajectories(
     *,
     folds: int,
     seed: int,
+    model_factory: Callable[[], CompactSharedLifecyclePolicy],
     law: TrainingLaw = LAW,
 ) -> list[Trajectory]:
     """Nested out-of-fold entry trajectories for exit training.
@@ -338,8 +354,17 @@ def generate_oof_trajectories(
         train_episodes = [by_session[s] for s in train_sessions if s in by_session]
         if not train_episodes:
             continue
+        # A factory, not an instance: each fold trains a fresh model, and reusing
+        # one would carry the previous fold's fit into the next. Required for the
+        # same reason `train_entry_phase` now requires its model -- this path
+        # feeds the exit head, so silently generating trajectories from the
+        # frozen baseline would mis-train the head and read as "the exit adds
+        # nothing" for a reason unrelated to the market.
         model = train_entry_phase(
-            train_episodes, seed=stable_seed(seed, "inner-entry", fold_index), law=law
+            train_episodes,
+            seed=stable_seed(seed, "inner-entry", fold_index),
+            model=model_factory(),
+            law=law,
         )
         for session in holdout_sessions:
             episode = by_session.get(session)

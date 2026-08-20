@@ -112,7 +112,10 @@ def test_generated_trajectories_are_all_out_of_fold() -> None:
     all_sessions = sessions(24)
     episodes = [make_episode(s, seed=i) for i, s in enumerate(all_sessions)]
     split = ChronologySplit.build(all_sessions)
-    trajectories = generate_oof_trajectories(episodes, split, folds=3, seed=7, law=FAST)
+    trajectories = generate_oof_trajectories(
+        episodes, split, folds=3, seed=7, law=FAST,
+        model_factory=CompactSharedLifecyclePolicy,
+    )
 
     assert trajectories, "the fixture should produce at least one trajectory"
     for trajectory in trajectories:
@@ -124,7 +127,10 @@ def test_trajectories_never_come_from_score_blocks() -> None:
     all_sessions = sessions(24)
     episodes = [make_episode(s, seed=i) for i, s in enumerate(all_sessions)]
     split = ChronologySplit.build(all_sessions)
-    trajectories = generate_oof_trajectories(episodes, split, folds=3, seed=7, law=FAST)
+    trajectories = generate_oof_trajectories(
+        episodes, split, folds=3, seed=7, law=FAST,
+        model_factory=CompactSharedLifecyclePolicy,
+    )
 
     scored = {s for block in split.score_blocks for s in block}
     assert {t.session for t in trajectories}.isdisjoint(scored)
@@ -163,7 +169,10 @@ def test_generated_trajectories_use_the_selected_contracts_path() -> None:
     all_sessions = sessions(24)
     episodes = [make_episode(s, seed=i) for i, s in enumerate(all_sessions)]
     split = ChronologySplit.build(all_sessions)
-    trajectories = generate_oof_trajectories(episodes, split, folds=3, seed=7, law=FAST)
+    trajectories = generate_oof_trajectories(
+        episodes, split, folds=3, seed=7, law=FAST,
+        model_factory=CompactSharedLifecyclePolicy,
+    )
 
     assert trajectories
     by_session = {e.session: e for e in episodes}
@@ -209,7 +218,7 @@ def test_an_unknown_target_is_masked_out_of_the_loss_rather_than_poisoning_it() 
         entry_value_usd=values,
         sell_paths=episode.sell_paths,
     )
-    model = train_entry_phase([poisoned], seed=1, law=FAST)
+    model = train_entry_phase([poisoned], seed=1, law=FAST, model=CompactSharedLifecyclePolicy())
     for parameter in model.parameters():
         assert torch.isfinite(parameter).all()
 
@@ -235,7 +244,12 @@ def test_a_session_with_no_affordable_contract_still_trains_the_wait_head() -> N
         ),
         entry_value_usd=torch.full_like(episode.entry_value_usd, float("nan")),
     )
-    model = train_entry_phase([flat, make_episode("2024-01-02", seed=3)], seed=1, law=FAST)
+    model = train_entry_phase(
+        [flat, make_episode("2024-01-02", seed=3)],
+        seed=1,
+        law=FAST,
+        model=CompactSharedLifecyclePolicy(),
+    )
     for parameter in model.parameters():
         assert torch.isfinite(parameter).all()
     assert select_entries(model, flat) == []
@@ -248,7 +262,7 @@ def test_the_entry_phase_refuses_a_corpus_of_only_empty_batches() -> None:
         entry_value_usd=torch.zeros((0, 3)),
     )
     with pytest.raises(LifecycleTrainingError, match="no episode with a decision minute"):
-        train_entry_phase([empty], seed=1, law=FAST)
+        train_entry_phase([empty], seed=1, law=FAST, model=CompactSharedLifecyclePolicy())
 
 
 def test_entry_phase_leaves_the_exit_head_untouched() -> None:
@@ -355,9 +369,85 @@ def test_stable_seed_is_process_independent() -> None:
     assert stable_seed("drawdown", 0) == stable_seed("drawdown", 0)
 
 
-def test_training_is_reproducible_from_its_seed() -> None:
+def test_training_is_reproducible_from_its_seed_and_its_initialisation() -> None:
+    """Reproducibility now needs the caller to seed *before* constructing.
+
+    Making `model` required moved construction out of the function, and with it
+    the random initialisation. `seed` still governs the fit; it no longer governs
+    the starting weights. Callers that need end-to-end reproduction must seed
+    first, and this is what that looks like.
+    """
+
     episodes = [make_episode("2024-01-01", seed=1)]
-    first = train_entry_phase(episodes, seed=11, law=FAST)
-    second = train_entry_phase(episodes, seed=11, law=FAST)
+    torch.manual_seed(11)
+    first = train_entry_phase(episodes, seed=11, law=FAST, model=CompactSharedLifecyclePolicy())
+    torch.manual_seed(11)
+    second = train_entry_phase(episodes, seed=11, law=FAST, model=CompactSharedLifecyclePolicy())
     for name, parameter in first.named_parameters():
         assert torch.equal(parameter, dict(second.named_parameters())[name]), name
+
+
+def test_the_same_seed_alone_no_longer_reproduces_a_fit() -> None:
+    """The cost of removing the default, pinned so nobody rediscovers it late.
+
+    Two fits at the same `seed` from two independently constructed models differ,
+    because the initialisation is now the caller's. A runner that records only
+    the seed has not recorded enough to reproduce its own result.
+    """
+
+    episodes = [make_episode("2024-01-01", seed=1)]
+    torch.manual_seed(101)
+    first = train_entry_phase(episodes, seed=11, law=FAST, model=CompactSharedLifecyclePolicy())
+    torch.manual_seed(202)
+    second = train_entry_phase(episodes, seed=11, law=FAST, model=CompactSharedLifecyclePolicy())
+    named = dict(second.named_parameters())
+    assert any(
+        not torch.equal(parameter, named[name]) for name, parameter in first.named_parameters()
+    )
+
+
+def test_the_entry_phase_will_not_pick_an_architecture_for_you() -> None:
+    """`model` has no default, and that is the point.
+
+    It used to default to the frozen baseline, so a caller that forgot the
+    argument trained the wrong architecture and reported a plausible number for
+    it. That fired for real on 2026-08-20 and was caught only because the two
+    architectures happen to differ in ladder width -- an accident of this corpus,
+    not a guard.
+    """
+
+    with pytest.raises(TypeError, match="model"):
+        train_entry_phase([make_episode("2024-01-01")], seed=1, law=FAST)
+
+
+def test_out_of_fold_generation_will_not_pick_an_architecture_either() -> None:
+    """The same trap on the path that feeds the exit head.
+
+    `generate_oof_trajectories` fits an entry model per fold. Defaulting it would
+    have generated trajectories from the frozen baseline and mis-trained the exit
+    head, which reads out as "the exit adds nothing" for a reason unrelated to
+    the market -- ledger row 341's failure mode, reintroduced by a keyword.
+    """
+
+    episodes = [make_episode(s, seed=i) for i, s in enumerate(sessions(12))]
+    split = ChronologySplit.build(sessions(12))
+    with pytest.raises(TypeError, match="model_factory"):
+        generate_oof_trajectories(episodes, split, folds=2, seed=1, law=FAST)
+
+
+def test_each_inner_fold_gets_a_fresh_model_not_a_shared_one() -> None:
+    """A factory, not an instance: reusing one carries fold N into fold N+1."""
+
+    built: list[int] = []
+
+    def factory() -> CompactSharedLifecyclePolicy:
+        model = CompactSharedLifecyclePolicy()
+        built.append(id(model))
+        return model
+
+    episodes = [make_episode(s, seed=i) for i, s in enumerate(sessions(12))]
+    split = ChronologySplit.build(sessions(12))
+    generate_oof_trajectories(
+        episodes, split, folds=3, seed=1, law=FAST, model_factory=factory
+    )
+    assert len(built) == len(set(built)) >= 2
