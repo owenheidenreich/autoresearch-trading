@@ -117,6 +117,21 @@ CORPUS_TABLES = ("candles", "ladder", "candidates")
 #: kind of thing that gets typed wrong once and noticed mid-fit.
 REQUIRED_TAPE_SOURCE = "spx_parity_spot"
 DEFAULT_HORIZON_MINUTES = 60
+
+#: How much of the candle prefix an episode carries.
+#:
+#: Both declared members read **only the last completed candle** --
+#: `last = candle_mask.sum(dim=1) - 1`, then `candles[arange, last]` -- in the
+#: frozen baseline and in the chain-state member alike. Carrying the full 330-row
+#: prefix therefore costs 7.7 MB per episode for rows the architecture provably
+#: ignores, and 405 prefix episodes will not sit in memory at once because of it.
+#:
+#: `"last"` stores the one candle the model reads. It is **not** an approximation
+#: for this architecture family: `test_a_last_candle_episode_scores_identically`
+#: asserts the member's output is bitwise identical either way. It would be an
+#: approximation for a future architecture that reads the sequence, so `"full"`
+#: stays the default and the fit declaration records which was used.
+CANDLE_PREFIX_MODES = ("full", "last")
 DEFAULT_TRADE_CAP = 2
 
 #: Member P of the semantic freeze, mapped to executable dollars: sell at the
@@ -614,6 +629,7 @@ def build_episode(
     horizon: int = DEFAULT_HORIZON_MINUTES,
     trade_cap: int = DEFAULT_TRADE_CAP,
     with_paths: bool = True,
+    candle_prefix: str = "full",
 ) -> tuple[SessionEpisode, EpisodeArtifacts]:
     """One session as a trainer-ready episode plus its audit artifacts.
 
@@ -623,6 +639,10 @@ def build_episode(
     already paid for once.
     """
 
+    if candle_prefix not in CANDLE_PREFIX_MODES:
+        raise EpisodeAdapterError(
+            f"candle_prefix must be one of {CANDLE_PREFIX_MODES}, got {candle_prefix!r}"
+        )
     features = _session_features(row)
     candidates = pd.read_parquet(row.table("candidates"))
     minutes = _decision_minutes(features)
@@ -638,7 +658,11 @@ def build_episode(
 
     width = max(len(ladder_positions[minute]) for minute in minutes)
     n_decisions = len(minutes)
-    max_prefix = max(candle_row[minute] for minute in minutes) + 1
+    full_prefix = candle_prefix == "full"
+    max_prefix = (max(candle_row[minute] for minute in minutes) + 1) if full_prefix else 1
+    # Held minutes run past the last decision minute, so a held batch needs room
+    # for the whole session's candles rather than the entry window's.
+    held_prefix = len(features.candle_values) if full_prefix else 1
 
     candles = np.zeros((n_decisions, max_prefix, len(CANDLE_FEATURES)), dtype=np.float32)
     candle_mask = np.zeros((n_decisions, max_prefix), dtype=bool)
@@ -678,9 +702,13 @@ def build_episode(
     candidate_index = _candidate_index(candidates)
     unknown = 0
     for i, minute in enumerate(minutes):
-        prefix = candle_row[minute] + 1
-        candles[i, :prefix] = scaled_candles[:prefix]
-        candle_mask[i, :prefix] = True
+        if full_prefix:
+            prefix = candle_row[minute] + 1
+            candles[i, :prefix] = scaled_candles[:prefix]
+            candle_mask[i, :prefix] = True
+        else:
+            candles[i, 0] = scaled_candles[candle_row[minute]]
+            candle_mask[i, 0] = True
 
         positions = ladder_positions[minute]
         count = len(positions)
@@ -763,7 +791,8 @@ def build_episode(
             scaled_contracts=scaled_contracts,
             scaled_chain=scaled_chain,
             width=width,
-            max_prefix=max_prefix,
+            max_prefix=held_prefix,
+            full_prefix=full_prefix,
             horizon=horizon,
             trade_cap=trade_cap,
         )
@@ -894,6 +923,7 @@ class _HeldBatchBuilder:
     scaled_chain: np.ndarray
     width: int
     max_prefix: int
+    full_prefix: bool
     horizon: int
     trade_cap: int
 
@@ -953,9 +983,18 @@ class _HeldBatchBuilder:
             )
         )
         for i, minute in enumerate(held_minutes):
-            prefix = min(self.candle_row[minute] + 1, self.max_prefix)
-            candles[i, :prefix] = self.scaled_candles[:prefix]
-            candle_mask[i, :prefix] = True
+            # Defect fixed 2026-08-20: this previously clamped the prefix to the
+            # entry window's width and then stored `scaled_candles[:prefix]`, so a
+            # held minute after 15:00 silently received the 15:00 candle as its
+            # "latest completed" bar. The model reads the last unmasked row, so it
+            # was marking a held position against a stale tape with no error.
+            if self.full_prefix:
+                prefix = self.candle_row[minute] + 1
+                candles[i, :prefix] = self.scaled_candles[:prefix]
+                candle_mask[i, :prefix] = True
+            else:
+                candles[i, 0] = self.scaled_candles[self.candle_row[minute]]
+                candle_mask[i, 0] = True
             positions = self.ladder_positions[minute][: self.width]
             count = len(positions)
             ladder[i, :count] = self.scaled_contracts[positions]

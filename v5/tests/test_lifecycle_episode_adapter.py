@@ -526,3 +526,64 @@ def test_an_untagged_or_es_tape_corpus_is_refused_by_name(tmp_path: Path) -> Non
 
     frame.assign(tape_source="spx_parity_spot").to_parquet(row.table("candles"), index=False)
     assert_declared_tape(row)
+
+
+@needs_corpus
+def test_a_last_candle_episode_scores_identically(statistics: FeatureStatistics) -> None:
+    """`candle_prefix="last"` must be an equivalence, not an approximation.
+
+    Both declared members read only `candles[arange, candle_mask.sum(1) - 1]`, so
+    a one-row prefix carrying that same candle must produce bitwise identical
+    scores. This is what licenses dropping 7.7 MB per episode of rows the
+    architecture ignores; if a future member reads the sequence, this test fails
+    and the mode must not be used for it.
+    """
+
+    row = _index()[BACKFILL_SESSION]
+    full, _ = build_episode(row, statistics, with_paths=False)
+    last, _ = build_episode(row, statistics, with_paths=False, candle_prefix="last")
+    assert full.entry_batch.candles.shape[1] > 300
+    assert last.entry_batch.candles.shape[1] == 1
+
+    model = ChainStateLifecyclePolicy()
+    with torch.no_grad():
+        a = model(full.entry_batch)
+        b = model(last.entry_batch)
+    assert torch.equal(a.contract_logits, b.contract_logits)
+    assert torch.equal(a.abstain_logits, b.abstain_logits)
+    assert torch.equal(a.exit_logits, b.exit_logits)
+
+
+@needs_corpus
+def test_a_held_minute_after_the_entry_window_gets_its_own_candle(
+    statistics: FeatureStatistics,
+) -> None:
+    """Regression: held minutes past 15:00 used to receive the 15:00 candle.
+
+    The clamp took `scaled_candles[:prefix]` after capping `prefix` at the entry
+    window's width, so the model's "latest completed candle" for a late held
+    minute was stale by up to an hour, silently and without error.
+    """
+
+    row = _index()[BACKFILL_SESSION]
+    features = _session_features(row)
+    episode, artifacts = build_episode(row, statistics)
+    late = max(
+        index
+        for index, minute in enumerate(artifacts.decision_minutes)
+        if minute <= "15:00"
+    )
+    key = next(k for k in episode.sell_paths if k[0] == late)
+    batch = episode.held_batch_builder(*key)
+
+    last_row = batch.candle_mask.sum(dim=1) - 1
+    seen = batch.candles[torch.arange(batch.batch_size), last_row]
+    minute_of = {m: i for i, m in enumerate(features.candle_minutes)}
+    entry_row = QUOTE_MINUTES.index(artifacts.decision_minutes[late])
+    for offset, minute in enumerate(QUOTE_MINUTES[entry_row + 1 : entry_row + 1 + batch.batch_size]):
+        # The tensor holds the float32 cast of this row, so compare against the
+        # cast rather than the float64 original.
+        expected = statistics.apply_candles(features.candle_values)[minute_of[minute]]
+        np.testing.assert_allclose(
+            seen[offset].numpy(), expected.astype(np.float32), rtol=0.0, atol=0.0
+        )
