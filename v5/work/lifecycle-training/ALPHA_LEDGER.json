@@ -1,0 +1,26 @@
+{
+  "breakeven_accuracy": 0.57986367,
+  "contract_universe": "phase1_otm",
+  "entries": [
+    {
+      "accuracy_lower_bound": null,
+      "bar_at_time_of_run": 0.64084749,
+      "declaration_sha256": "f6894fb8beb6232f7905c042534b9f2021f00962ec4048a5b429ec4b79b9691c",
+      "declared_on": "2026-08-19",
+      "entry_hash": "9c0e95a8416eca3ec86f526dc9736f9bd5b600a3eb87d03be35274b436bf2c75",
+      "experiment_id": "job46.phase4a.feature_information_preflight.v1",
+      "index": 0,
+      "observed_accuracy": null,
+      "outcome": "PASS",
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "exhausted": false,
+  "experiments_run": 1,
+  "head": "9c0e95a8416eca3ec86f526dc9736f9bd5b600a3eb87d03be35274b436bf2c75",
+  "next_bar": 0.64857595,
+  "next_true_accuracy_needed": 0.67457595,
+  "option_sessions": 405,
+  "plausible_accuracy_ceiling": 0.75,
+  "schema_version": "v5.autoresearch-alpha-ledger.v1"
+}

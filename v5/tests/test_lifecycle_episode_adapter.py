@@ -33,6 +33,7 @@ from v5.research.lifecycle_episode_adapter import (
     EpisodeAdapterError,
     FeatureStatistics,
     SellPathMatrix,
+    assert_declared_tape,
     _forward_fill,
     _session_features,
     build_episode,
@@ -493,26 +494,35 @@ def test_a_one_minute_snapshot_reports_no_intra_minute_range(
         assert frame[barred].nunique() == 1
 
 
-@needs_corpus
-def test_the_superseded_es_tape_corpus_is_refused_by_the_adapter() -> None:
-    """The ES-tape corpus is still on disk and builds perfectly normal episodes.
+def test_an_untagged_or_es_tape_corpus_is_refused_by_name(tmp_path: Path) -> None:
+    """Owner ruling 2026-08-19: no futures input reaches the policy.
 
-    That is exactly why this refusal is mechanical rather than a naming
-    convention: an untagged corpus is refused by name, because "no stamp" is the
-    state that means ES.
+    Synthetic rather than pointed at the retired corpus, so the guard keeps
+    running after that corpus is gone. The untagged case is the one that matters:
+    the ES-tape build carries no `tape_source` column at all, and an absent stamp
+    is exactly the state that means ES -- so it is refused by name rather than
+    given the benefit of the doubt.
     """
 
-    superseded = Path("/Volumes/AR_TRADING_DATA/lifecycle_corpus_2022-06-01_2026-07-31")
-    if not superseded.is_dir():  # pragma: no cover - only present on the build machine
-        pytest.skip("superseded corpus already removed")
-    row = _index()[BACKFILL_SESSION]
-    stale = CorpusSession(
-        session=row.session,
-        era=row.era,
-        settlement_source=row.settlement_source,
-        settlement_spx=row.settlement_spx,
-        quote_path=row.quote_path,
-        corpus_root=superseded,
+    row = CorpusSession(
+        session="2024-03-15",
+        era="backfill",
+        settlement_source="parity_close",
+        settlement_spx=5100.0,
+        quote_path=tmp_path / "quotes.parquet",
+        corpus_root=tmp_path,
     )
+    frame = pd.DataFrame({"open": [1.0], "high": [1.0], "low": [1.0], "close": [1.0],
+                          "volume": [0.0], "knowable_at": ["09:31"]})
+    row.table("candles").parent.mkdir(parents=True, exist_ok=True)
+
+    frame.to_parquet(row.table("candles"), index=False)
     with pytest.raises(EpisodeAdapterError, match="predates the 2026-08-19 SPX-tape ruling"):
-        build_episode(stale, FeatureStatistics.identity(), with_paths=False)
+        assert_declared_tape(row)
+
+    frame.assign(tape_source="es_futures").to_parquet(row.table("candles"), index=False)
+    with pytest.raises(EpisodeAdapterError, match="no futures input"):
+        assert_declared_tape(row)
+
+    frame.assign(tape_source="spx_parity_spot").to_parquet(row.table("candles"), index=False)
+    assert_declared_tape(row)

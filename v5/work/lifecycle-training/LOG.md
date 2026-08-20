@@ -1334,3 +1334,44 @@ tuned by peeking. The one fitted object was the owner-authorized throwaway era p
   `lifecycle_corpus_2022-06-01_2026-07-31` once satisfied.**
 - **1,049 tests green, `check_project.py` green.** No fit, no spend, no vendor contact, no pinned file
   edited. Boundary 3 still stands: Phase 4a awaits owner confirmation.
+
+### PHASE 4A RUN — PROCEED by the rule, referred to Fable as ambiguous, 2026-08-19.
+
+- **Owner authorized the run; the declaration was written, hashed and verified first.**
+  [`PHASE_4A_DECLARATION_V1.json`](PHASE_4A_DECLARATION_V1.json) (`f6894fb8…`) pins six sources and
+  every threshold. It **refused to run once** — the reseal guard caught a docstring change mid-build
+  — and was regenerated **before any real-feature number existed**, with no threshold moved. That
+  sequence is the point of the guard.
+- **The declared result: lift +8.65pp on a 30.70% base, at 2 selections/session over 324 scored
+  sessions.** Verdict statistic +13.33pp against a +4.0pp bar; plant recovered at **+19.98pp of
+  +20.0pp planted**. The mechanical verdict is **PROCEED** and is published as the rule requires.
+- **It is not being acted on.** Memo §5 routes "plant recovered while real features behave oddly"
+  to Fable and bars the producing session from interpreting it. Three oddities, all measured:
+- **The null clears the declared bar 35% of the time.** Twenty within-session label permutations:
+  null lift mean −0.24pp, sd 1.60pp, max +2.17pp; **0 of 20 reach the observed +8.65pp** (the point
+  estimate is +5.6 null SDs out, so the effect is not a harness artefact) — but **7 of 20 nulls clear
+  the +4.0pp bar on the upper bound**, largest +5.96pp. At 648 selections the standard error on
+  precision is ~1.8pp, so the upper bound sits ~3.5pp above the point estimate before any signal
+  exists. The bar was declared exactly as the design specified; applying an effect-size bar to an
+  upper bound is what makes it weak, and that was not visible until it was measured.
+- **The lift does not come from the declared hypothesis.** Per-group ablation: chain internals
+  **+1.86pp alone**, per-contract chain **+0.16pp alone** (+2.62 and +2.47pp marginal) — the entire
+  reason this design exists contributes least. The tape group carries it, and does so **anti-
+  predictively alone (−9.41pp) while contributing +9.41pp in combination**, a sign reversal that is
+  not the signature of a stable linear signal. Removing the two ordering fields **improves** the
+  result, +8.65 → +10.04pp.
+- **The one stable coefficient is `realised_vol_15m`** — same sign, same magnitude, an order above
+  its neighbours in all four folds (+0.115 to +0.164) while the other three tape channels sit near
+  zero and wander in sign. Whether a stable positive loading on realised volatility, scored against
+  a **percentage-move** bracket label, is the magnitude rediscovery row 332 priced at thirty cents
+  and §5.3 names as the losing failure mode — **that is the judgement §5 reserves, and this session
+  does not make it.**
+- **Fold lifts increase monotonically in chronology: +1.70, +9.82, +9.84, +13.22pp.** Recorded, not
+  explained.
+- **1,068 tests green, `check_project.py` green.** Alpha ledger charged for the count, with its
+  accuracy columns null by declaration: 4a measures a precision lift at a fixed operating rate, not
+  the directional accuracy the ledger's bar is denominated in, and writing one under the other's
+  heading is the reporting-layer defect §7 warns about.
+- **STOP under §5.** Finding:
+  [`PHASE_4A_FEATURE_INFORMATION_2026_08_19.md`](../../research/findings/PHASE_4A_FEATURE_INFORMATION_2026_08_19.md).
+  No fit, no spend, no vendor contact, no promotion, no pinned file edited.

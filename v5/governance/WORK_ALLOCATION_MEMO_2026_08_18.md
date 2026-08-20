@@ -91,6 +91,28 @@ Send these cold, with repository access, and only these.
   Recorded here so a future session does not rediscover "the model cannot see the calendar" and
   propose solving it again. Nothing in this ruling authorizes a purchase, a vendor contact, or a new
   feature admission.
+
+  **Owner amplification, 2026-08-19 — the day-type factors that matter for 0DTE**, recorded because
+  they are what Phase 5 must be able to slice by: FOMC days carry **elevated IV**; CPI days carry
+  **large price swings**; **OPEX** and especially monthly OPEX (**MOPEX**, the third Friday) is its
+  own regime; **end of month** matters and a last Friday sometimes coincides with MOPEX; and beyond
+  any release, **time of year** and **time of day** are themselves factors.
+
+  **A distinction worth keeping straight, because it changes what is and is not closed.** Only the
+  *economic release* calendar — which days are CPI or FOMC — needs a source this project does not
+  have. **OPEX, MOPEX, end of month, last-Friday, month of year and day of week are arithmetic on
+  the session date**: zero acquisition, zero cost, no vendor, no G3 admission. Time of day is
+  already carried by the five clock channels the member reads. So if any of these are ever wanted as
+  *features* rather than report slices, the blocker is a design decision about the parameter
+  contract, **not** data availability — and that should not be confused with the closed event-calendar
+  question.
+
+  **Phase 5 must therefore report by day type**, diagnostic only and gating nothing: event day,
+  FOMC-excluded, OPEX/MOPEX, end of month, and month of year, alongside the all-sessions figures.
+  **One prerequisite is flagged rather than assumed:** the FOMC-excluded cut needs a list of FOMC
+  announcement dates covering 2022-06 to 2026-07 — roughly 33 dates typed once from the published
+  schedule. That is a transcription, not a data acquisition, and it must be **owner-verified before
+  any number rests on it**.
 - **Tape source — RESOLVED, OWNER RULING 2026-08-19: SPX-derived (parity spot), not ES.** The active
   policy is SPXW/SPX-only with no futures input. The basis genuinely cancels in the difference-based
   tape channels today, but **provenance is what a future session inherits**, and "the candles are ES"
