@@ -1407,3 +1407,47 @@ tuned by peeking. The one fitted object was the owner-authorized throwaway era p
 - **Diagnostic only, and structurally so.** The module is barred from the tensorizer, the adapter,
   the probe and the architecture; the event-calendar ruling is unchanged. Receipt
   `session_calendar_coverage.json`. 1,080 tests green, `check_project.py` green.
+
+### The Phase 4a adjudication brief is written for a cold read, 2026-08-19.
+
+- **The brief is §8 of the Phase 4a finding**, not a second document — the evidence and the brief
+  travel together and there is no new source of truth.
+- **The decision is stated as four mutually exclusive outcomes**, not an open question: (A) tradeable
+  signal, fit warranted; (B) rediscovery of already-priced magnitude; (C) artifact of the bar, the
+  feature instability or the probe's construction; (D) inconclusive, a different test required. Fable
+  selects one or says none fits and names what does.
+- **Both readings are argued at equal weight and equal quality (§8.5).** The case for real signal
+  rests on near-exact plant recovery, an effect 5.6 null SDs outside its own permutation null, a
+  25-parameter probe against 1.04M out-of-fold actions with no threshold search, sign-stable folds,
+  and the point that a conditionally-informative family can contribute more at the margin than alone —
+  which is what the design claims chain state does. The case for artifact or rediscovery rests on a
+  bar 7 of 20 nulls clear, the designed families contributing least, the tape's solo-versus-marginal
+  sign reversal with V5's autopsy as local precedent, and a volatility-loaded coefficient scored
+  against a percentage-move label that is mechanically easier to reach on cheaper contracts.
+- **The evidence sections were neutralised to match.** §§1–7 predated the anti-bias requirement and
+  carried characterisations the brief forbids — headings reading "Oddity one/two/three", "not what a
+  clean result looks like", "not the signature of a stable linear signal". Every number is unchanged;
+  the framing is now flat. Leaving that language above a brief written for a cold read would have
+  defeated the brief.
+- **Discriminating evidence is listed as questions, not a plan (§8.6)** — within-premium-bucket
+  ranking, removing `realised_vol_15m` specifically, a dollar-denominated target, other operating
+  rates, reproducibility of the sign reversal under different folds/seeds, whether the chronological
+  gradient tracks the already-measured ρ=+0.355 base-rate/volatility relationship, and a matched
+  control inside volatility strata. Fable may want different ones and the brief says so.
+- **The governance question is put explicitly (§8.7).** The +4.0pp bar was applied to an upper bound
+  and the measured null clears it 7 of 20 times. The brief states the only two honest options —
+  accept the result under the bar as declared, or declare the test inconclusive and re-run under a
+  properly constructed bar with this result treated as spent — and states plainly that retroactively
+  re-setting the bar so this result passes *or* fails is not available, **because the producing
+  session can see which way it would go**.
+- **The producing session's prior is disclosed and quarantined in §8.10, placed last.** It leaned
+  toward B/C; the brief records that the lean rests on an association this run did not measure, that
+  the +8.65pp point estimate has no explanation under B that this session can offer, and that this
+  session chose which three diagnostics to run — which shapes what the evidence section contains.
+- **One instruction was not followed, because it had gone stale.** The brief was asked to record the
+  ~33 FOMC dates as still owed. They are not: the owner supplied and verified **34** dates earlier the
+  same day. §8.9 records the true state — every Phase 5 day-type slice is computable now — plus the
+  caveat that **2025-07-30 is an FOMC day the clock gate already excluded** from the corpus. Writing
+  a known-false prerequisite into a governance brief would have misinformed the adjudicator.
+- **1,080 tests green, `check_project.py` green.** No fit, no spend, no vendor contact, and no pinned
+  or signed file edited.
