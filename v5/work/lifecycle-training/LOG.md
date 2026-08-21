@@ -1546,3 +1546,60 @@ No new measurement was run; everything rests on the receipts, the pinned code, a
   Feasible, but the nested out-of-fold trajectory generation runs that fit once per inner fold.
 - **1,098 tests green, `check_project.py` green.** No economics read, no score block touched, no
   pinned file edited, no spend, no vendor contact.
+
+### ENTRY FIT — the chain reorders the ladder but does not pay for the trade. 2026-08-21.
+
+- **The 2026-08-20 entry fit was void and its numbers are withdrawn.** Its runner passed
+  `with_paths=False`, so `_bracket_value` could not price the bracket, every `entry_value_usd` was
+  NaN, and `train_entry_phase`'s `entry_action_mask & isfinite` mask dropped **all 3,260 masked
+  actions per session** from the loss. Only the WAIT head was fitted. The run "converged" in 0.48
+  minutes and reported an in-sample 0.3084 hit rate for a model that had never seen an entry signal.
+  The entry-stream table, per-block hit rates and top-2 numbers from that run must not be cited.
+- **Two guards, one at each end, and a test apiece.** `build_episode` now raises
+  `EpisodeAdapterError` when a **priced** build holds labelled entry actions and can price none of
+  them; `train_entry_phase` raises `LifecycleTrainingError` when the episodes handed to it carry no
+  finite target at all. The split is deliberate: `with_paths=False` is target-free by construction
+  and stays legal for the causality control and the shape contracts, so the adapter cannot tell a
+  feature-only caller from a fit — the trainer can, and that is where the intent-aware guard belongs.
+- **Cost of the priced path, measured: 1.24 s per episode against 0.80 s unpriced** — 1.6x, not the
+  8x a first probe reported. That probe wrapped each `build_episode` in `tracemalloc`, which inflated
+  its own measurement; the number above comes from the real 1,014-session run. Recorded because the
+  8x figure would have argued against doing this correctly. Sell paths and the held-batch builder are
+  dropped after pricing — the exit head is frozen in this phase — which releases ~439 MB.
+- **The fit is sound and the ordering claim passes.** 405-session prefix, 118 parameters, seed
+  20260821, exit head bitwise frozen, full **200/200 epochs** (the 0.57-minute wall time is
+  `candle_prefix="last"`, which the equivalence test licenses). Target coverage **asserted before the
+  fit**: 99.83% of feasible actions priced, valued equal to labelled. Against a **minute-matched**
+  control — same minute, random contract — the model gains **+$8.43 per held-out entry**, positive in
+  **five score blocks of five** and **growing chronologically, +$5.16 → +$14.81**, the same gradient
+  Phase 4b found and could not explain. The member is structurally capable of reordering: its scores
+  leave a **41% residual** against an additive minute+slot decomposition, where V5's dead architecture
+  scored **2.4e-7**.
+- **The entry does not survive, and not for want of position sizing.** −$15.66 per entry over
+  126,900 held-out entries, **−$1,987,457**, 31.1% profitable. Survival **30.07%** against the
+  pre-committed 45–50% target, below its own minute-matched control (30.25%) and below the held-out
+  population (30.87%). Honouring the two-tickets-a-day risk law by taking the first two entries each
+  session gives **−$18.65**, worse; the oracle's best two are worth **+$536.25**.
+- **Mechanism.** The model is a weak within-minute ranker (Spearman **+0.102**, positive in 58.3% of
+  minutes) being used as an absolute value estimator. Its level carries nothing: sorted by predicted
+  value, the **top decile predicts +$185 and realises −$25.92** while the **bottom predicts −$684 and
+  realises −$15.20**. `select_entries` fires on the level against WAIT's $0 floor, 22.0% of actions
+  clear it, so the policy fires 209 times a session.
+- **STOP under memo §5, and it is the ambiguity rule that applies, not the "entry survives" row.**
+  The ordering question this job existed to answer is answered **yes**; the survival bar fails
+  outright. Naming the judgement rather than resolving it: the model is fitted to **unconditional**
+  dollar value while the entry decision compares against a **$0 WAIT floor**, so a perfectly
+  calibrated model on this corpus would never fire — the population mean is −$28. Whether "never
+  fire" is the finding, or the objective should be conditional ordering with a separate gating law,
+  is a design judgement. No DO_NOT_RETEST row written: the job is stopped for adjudication, not closed.
+- Finding: [`ENTRY_FIT_ORDERING_WITHOUT_SURVIVAL_2026_08_21.md`](../../research/findings/ENTRY_FIT_ORDERING_WITHOUT_SURVIVAL_2026_08_21.md).
+  Producer, diagnostic, receipt, log, model and the 191,259-row entry stream archived to
+  `v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/*_2026_08_21.*` — every wrapper archived,
+  per Phase 4b's open item 4.
+- **1,108 of 1,109 tests green — the two new guards included. `check_project.py` reports one
+  problem, which is also the one test failure, and it is not mine to clear:**
+  `HANDOFF_ENTRY_FIT_2026_08_21.md` trips the `BANNED_NAME` rule (`HANDOFF`) that AGENTS.md §4 and
+  `check_project.py:49` enforce. The file is untracked, is this session's instruction source, and its
+  durable content is now in this entry — reported rather than deleted, per §5's "report conflicts, do
+  not silently resolve them". No fit-forbidden block was fitted, no spend, no vendor contact, no
+  pinned or signed file edited.

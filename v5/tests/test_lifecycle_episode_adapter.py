@@ -408,6 +408,55 @@ def test_a_held_batch_has_exactly_one_row_per_sell_path_minute(
 
 
 @needs_corpus
+def test_a_priced_build_refuses_a_session_it_could_not_price(
+    tmp_path: Path, statistics: FeatureStatistics
+) -> None:
+    """An episode with labelled candidates and no priced target must not exist.
+
+    This is the 2026-08-20 defect reproduced at its structural root. When the
+    bracket cannot be priced, every `entry_value_usd` is NaN, `train_entry_phase`
+    masks the whole supervised term away with its own `isfinite` guard, and the
+    fit converges on the WAIT head alone while reporting a plausible number. The
+    failure has to be loud here, not survivable.
+
+    The trigger is a corpus whose contract identifiers no longer match the quote
+    file's -- renamed consistently across `ladder` and `candidates`, so the labels
+    stay finite and only the exit-matrix lookup fails. That is exactly the shape
+    of a corpus/quote-file disagreement.
+    """
+
+    row = _index()[BACKFILL_SESSION]
+    root = tmp_path / "corpus"
+    for table in ("candles", "ladder", "candidates"):
+        destination = root / table
+        destination.mkdir(parents=True, exist_ok=True)
+        shutil.copy(row.table(table), destination / f"{row.session}.parquet")
+
+    renamed = CorpusSession(
+        session=row.session,
+        era=row.era,
+        settlement_source=row.settlement_source,
+        settlement_spx=row.settlement_spx,
+        quote_path=row.quote_path,
+        corpus_root=root,
+    )
+    for table in ("ladder", "candidates"):
+        frame = pd.read_parquet(renamed.table(table))
+        frame["contract_id"] = "NOTINTHEQUOTEFILE." + frame["contract_id"].astype(str)
+        frame.to_parquet(renamed.table(table), index=False)
+
+    with pytest.raises(EpisodeAdapterError, match="not one of them could be priced"):
+        build_episode(renamed, statistics)
+
+    # ...and the feature-only mode stays legal, because it is target-free by
+    # construction rather than by failure. The guard against *that* being fed to
+    # a fit lives in `train_entry_phase`, where the caller's intent is known.
+    episode, artifacts = build_episode(renamed, statistics, with_paths=False)
+    assert artifacts.feasible_actions > 0
+    assert not torch.isfinite(episode.entry_value_usd).any()
+
+
+@needs_corpus
 def test_a_target_exists_exactly_where_the_pinned_label_is_known(
     statistics: FeatureStatistics,
 ) -> None:

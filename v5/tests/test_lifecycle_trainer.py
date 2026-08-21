@@ -255,6 +255,38 @@ def test_a_session_with_no_affordable_contract_still_trains_the_wait_head() -> N
     assert select_entries(model, flat) == []
 
 
+def test_the_entry_phase_refuses_an_entirely_unsupervised_corpus() -> None:
+    """The 2026-08-20 void fit, caught before it spends an hour.
+
+    Every target NaN while the action mask is full is not a hard case -- it is an
+    empty objective. `step()` masks the entry term away per action, correctly, and
+    the run then fits the WAIT head alone and returns a plausible-looking model
+    that never saw an entry signal. The bar is exactly zero finite targets: a
+    partially unsupervised set is legitimate and must still train.
+    """
+
+    blind = [
+        SessionEpisode(
+            session=session,
+            entry_batch=make_batch(seed=i),
+            entry_value_usd=torch.full((4, 3), float("nan")),
+        )
+        for i, session in enumerate(sessions(3))
+    ]
+    with pytest.raises(LifecycleTrainingError, match="not one finite entry_value_usd"):
+        train_entry_phase(blind, seed=1, law=FAST, model=CompactSharedLifecyclePolicy())
+
+    # One supervised episode among the blind ones is enough: the fit is allowed.
+    model = train_entry_phase(
+        [*blind, make_episode("2024-01-09", seed=9)],
+        seed=1,
+        law=FAST,
+        model=CompactSharedLifecyclePolicy(),
+    )
+    for parameter in model.parameters():
+        assert torch.isfinite(parameter).all()
+
+
 def test_the_entry_phase_refuses_a_corpus_of_only_empty_batches() -> None:
     empty = SessionEpisode(
         session="2024-01-01",

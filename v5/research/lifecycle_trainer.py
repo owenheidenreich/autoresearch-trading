@@ -236,6 +236,36 @@ def train_entry_phase(
 
     if not episodes:
         raise LifecycleTrainingError("entry phase requires at least one episode")
+
+    # Refuse an empty supervised objective before spending an hour on it.
+    #
+    # `step()` below masks the entry term with `entry_action_mask & isfinite`,
+    # which is correct per action -- an unknown label must not be invented -- but
+    # it is indistinguishable from a set where *nothing* is known. On 2026-08-20
+    # a runner built its episodes with `with_paths=False`, every `entry_value_usd`
+    # came back NaN, and this loop trained the WAIT head alone to convergence in
+    # 0.48 minutes and returned a model that had never seen an entry signal. The
+    # `isfinite` guard is what made that survivable rather than loud.
+    #
+    # This is the one place that knows the caller's intent is a fit, so the check
+    # belongs here. The bar is exactly zero: a partial set is legitimate, because
+    # two real sessions hold no affordable contract at all.
+    # Episodes with no decision minute at all are a different failure, and
+    # `step()` below already names it; leave that message alone.
+    with_rows = [episode for episode in episodes if episode.entry_batch.batch_size > 0]
+    supervised = sum(
+        int((episode.entry_batch.entry_action_mask & torch.isfinite(episode.entry_value_usd)).sum())
+        for episode in with_rows
+    )
+    if with_rows and supervised == 0:
+        feasible = sum(int(episode.entry_batch.entry_action_mask.sum()) for episode in with_rows)
+        raise LifecycleTrainingError(
+            f"entry phase received {len(with_rows)} episodes with {feasible} feasible "
+            "entry actions and not one finite entry_value_usd: the supervised term "
+            "would be empty and only the WAIT head would be fitted. Episodes built "
+            "with `with_paths=False` cannot price the bracket and must never reach a fit."
+        )
+
     torch.manual_seed(seed)
     for parameter in model.exit.parameters():
         parameter.requires_grad_(False)

@@ -752,6 +752,31 @@ def build_episode(
             "imputation is fitted, never invented"
         )
 
+    # A training episode with no learnable target is never a legitimate state.
+    # This is the defect that voided the 2026-08-20 entry fit: with `matrix`
+    # absent, `_bracket_value` cannot price the bracket, every `entry_value_usd`
+    # returns NaN, and `train_entry_phase` masks the supervised term away with
+    # its own `isfinite` guard -- so the fit converged on the WAIT head alone and
+    # reported a plausible hit rate for a model that never saw an entry signal.
+    # A silent empty objective is the most expensive failure available here: it
+    # answers nothing while looking like an answer.
+    #
+    # The guard is scoped to the priced build deliberately. `with_paths=False` is
+    # target-free *by construction* and remains a legitimate feature-only mode --
+    # the causality control, the architecture shape contract and the
+    # `candle_prefix` equivalence all use it and none of them wants a quote file.
+    # This function cannot tell a feature-only caller from a fit. The trainer can,
+    # and `train_entry_phase` now refuses an episode set carrying no supervised
+    # entry term at all. The two guards together close the hole from both ends.
+    learnable = entry_mask & np.isfinite(label)
+    if matrix is not None and learnable.any() and not np.isfinite(entry_value[learnable]).any():
+        raise EpisodeAdapterError(
+            f"{row.session}: {int(learnable.sum())} entry actions carry the pinned "
+            "label and not one of them could be priced. The exit matrix and the "
+            "candidates table disagree about this session's contracts, so the "
+            "episode would train on an empty objective."
+        )
+
     batch = ChainPolicyBatch(
         candles=torch.from_numpy(candles),
         candle_mask=torch.from_numpy(candle_mask),
