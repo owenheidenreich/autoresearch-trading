@@ -1840,3 +1840,63 @@ Ruling: [`PROTOCOL_V2_ADOPTION_NOTE_2026_08_22.md`](../../governance/PROTOCOL_V2
 
 - 1,123 tests green, checker green. No fit run, no spend, no vendor contact, no signed file's substance
   altered.
+
+### THE SIGNED TWO-SKILL EXIT LAW CANNOT BE BUILT AS WRITTEN. 2026-08-22.
+
+Cold review returned (Codex/Sol, substituted for Fable). Finding:
+[`EXIT_TWO_SKILL_REQUIREMENT_COLD_REVIEW_2026_08_22.md`](../../research/findings/EXIT_TWO_SKILL_REQUIREMENT_COLD_REVIEW_2026_08_22.md).
+**Verdict NO — not as signed. Verified independently here; every checkable number reproduced exactly
+and nothing in the review required correction.**
+
+- **The contradiction, and it is a proof rather than an argument.** PLAN phase 5 requires each
+  statistic measured **against a duration-matched control** *and* requires **always-cut to post high
+  loss-averted, always-hold the reverse**. Always-cut exits at minute 1 on every path, so a
+  duration-matched control must also exit at minute 1 and is **identical** — control-relative loss
+  averted is **exactly zero**, not high. Always-hold gives the same result at minute 60. Permuting a
+  constant changes nothing. Comparing cut against hold *would* give the intended profile but abandons
+  duration matching and restores the "credit for holding time rather than deciding" the law forbids
+  by name (row 341). **No sample size repairs this.** The coherent reading is that both boundary rules
+  report exactly zero incremental timing skill with their raw profiles shown separately — a different
+  requirement from the one signed.
+- **Nothing reopens.** Both configurations stay closed; the learned exit still loses to always-hold by
+  $16.41 on the trajectories that trained it.
+- **The archive could not have built the statistics anyway.** Verified: `exit_stream` carries no path,
+  no entry midpoint and no ever-reached-+50% field; **only 50 of 644 exit keys join the entry stream**
+  (different scoring populations); the exit head has no holdout. And **the first-touch label is not
+  the "did develop" population** — it stops scanning at −30%, merging "lost first then recovered" with
+  "never developed": **250 of 644 paths ever reached +50% against 201 first-touch winners, so reusing
+  the label would misclassify 49 trades.**
+- **Two corrections to this project's own exit reporting, both verified.** "Mean hold 60.0 minutes"
+  was the *available path length*; **realised holding time is 54.44 minutes**, 498 of 644 running the
+  full path. And "sells before forced liquidation 23.4%" counted 151 rows including five that fired on
+  the final row, which is forced liquidation, not a decision — **strictly before is 146 of 644, 22.7%**.
+  The 79.5% always-hold identity is unchanged and the degeneracy conclusion is slightly strengthened.
+- **The baseline question was malformed and is now ruled.** Not one comparator but five, each with a
+  distinct role: **always-hold is the economic incumbent** (serial P&L must beat −$1.74/trade), the
+  **duration-matched randomized exit** is the attribution control, the **bracket is a
+  target-coherence diagnostic only** and may never be the economic comparator, always-cut is the
+  degeneracy control, and the oracle is the opportunity denominator and never tradable.
+- **Power, stated honestly: for the signed requirement `n` is undefined, and for the present run the
+  exit-evaluation sample is zero** because every trajectory trained the head. The geometry is **323
+  session clusters, not 644 trades** (effective ≈385). An outer holdout recovering $50 and 10 capture
+  points jointly needs ≈**640 sessions**; $25 and 5 points needs ≈**2,560** — **2.5 to 10.2 trading
+  years of outer holdout alone**, on top of separate entry-validation and exit-training samples. The
+  50,318 uncapped trajectories cannot inflate `n`: they violate the two-ticket policy and are
+  session-clustered.
+- **Two document conflicts verified and left visible.** (1) `AGENTS.md` §7 says "there is no
+  confirmation firewall left" while STATUS records a **signed forward reservation making every session
+  from 2026-08-06 confirmation-only**. STATUS wins; the two reconcile (historical holdout spent,
+  forward reservation live) but AGENTS' blanket sentence is wrong as written — **and this is
+  load-bearing, because that reservation is the only mechanism by which the outer-holdout sessions
+  above could ever exist.** (2) **A defect introduced here yesterday:**
+  `SETTLEMENT_SOURCE_LAW_2026_08_22.md` repeated design §4.3's example that backfill sessions end at
+  **15:58**, which was true of V4 and **superseded by V5** (terminal bar restored on 788 of 794).
+  Ratifying "verbatim" carried a stale factual example into a new ruling — the hazard of ratifying by
+  reference. Corrected in place; the law itself (*read the grid from the data*) is unchanged and was
+  always the operative part.
+- **OWNER DECISION REQUIRED, and it is not takeable by any session:** the signed two-skill requirement
+  needs a **governance amendment** changing the degeneracy expectation so both boundary rules read as
+  exactly zero incremental timing skill. The finding records that the change is necessary; it does not
+  make it. Until then there is no constructible exit-evaluation law, and no exit study should be
+  designed against the current wording.
+- 1,123 tests green, checker green. No fit, no spend, no vendor contact, no pinned file touched.

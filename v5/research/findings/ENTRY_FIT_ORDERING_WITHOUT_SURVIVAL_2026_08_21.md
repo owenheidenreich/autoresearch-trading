@@ -302,6 +302,15 @@ authorisation existed — the owner instructed this session, in conversation on 
 blocker and proceed through the next phase of the plan. Failing to record an in-conversation
 authorisation in the log is the defect, and this paragraph is the record.
 
+**12.9 — Two exit-reporting mislabels, found by the 2026-08-22 cold review of the exit law.**
+§8 reported **"mean hold 60.0 minutes"**; that field is the *available path length*, not the learned
+rule's realised holding time, which is **54.44 minutes** — 498 of 644 trades run the full path. §8
+also reported the rule selling before forced liquidation **23.4%** of the time; that counted 151 rows
+where a SELL fired *anywhere*, including five on the final row, which is forced liquidation rather
+than a decision. **Strictly before the final row is 146 of 644, 22.7%.** The 79.5% always-hold
+identity is unchanged, and the degeneracy conclusion is unchanged and slightly strengthened. Full
+treatment: [`EXIT_TWO_SKILL_REQUIREMENT_COLD_REVIEW_2026_08_22.md`](EXIT_TWO_SKILL_REQUIREMENT_COLD_REVIEW_2026_08_22.md).
+
 **12.8 — What the review did not change.** The entry and exit measurements themselves stand as
 computed; no number in §3 or §8 is withdrawn. What changes is their *status* and their *labels*: the
 exit figure is in-sample for the exit head, and the "+$8.43 ordering effect is real" language of §3

@@ -24,9 +24,17 @@ The signed design's answer, ratified unchanged:
 2. **Every terminal-dependent number carries a zero-recovery twin**: the same number recomputed with
    the terminal intrinsic forced to $0. **Any result whose sign differs between the twins is not
    bankable.**
-3. **The session grid is read from the data, never assumed.** Backfill sessions end at 15:58, not
-   16:00. The share of exits resolving as executable bid / delayed first-later bid / validated cash
-   settlement / blocked is a **per-era QC gate reported before any fit**.
+3. **The session grid is read from the data, never assumed.** The share of exits resolving as
+   executable bid / delayed first-later bid / validated cash settlement / blocked is a **per-era QC
+   gate reported before any fit**.
+
+   > **Correction, 2026-08-22 (same day, after a cold review).** As first written, this clause
+   > repeated design §4.3's example that *"backfill sessions end at 15:58, not 16:00"*. That was true
+   > of the **V4** acquisition and is **superseded by V5**, whose corrected 16:01 request window
+   > restored the terminal bar on **788 of 794** backfill sessions. Ratifying §4.3 "verbatim" carried
+   > a stale factual example into a new ruling — the hazard of ratifying by reference. **The law is
+   > unchanged and was always the operative part: read the grid from the data, never assume it.**
+   > The 15:58 figure must not be used as a constant anywhere.
 4. Base rates are re-measured per era; the target itself does not move, being account arithmetic.
 5. Era is confounded with chronology and the design says so; composition-matched controls are drawn
    **within era**.
