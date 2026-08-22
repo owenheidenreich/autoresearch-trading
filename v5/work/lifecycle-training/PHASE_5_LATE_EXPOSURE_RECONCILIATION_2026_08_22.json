@@ -1,0 +1,52 @@
+{
+  "accuracy_fields_null_because": "None of these exposures measured directional accuracy, which is the quantity the ledger's bar is expressed in. Phase 4a set the same fields null for the same reason. Entry survival of 0.3007 is a label statistic and is NOT comparable to the ledger bar.",
+  "authority": "Owner decision, 2026-08-22, taken on a cold adversarial review of the Phase 5 declaration dilemma. The review found four outcome exposures charged to nothing.",
+  "chain_integrity": "Phase 4a (index 0) and Phase 4b (index 1) were declared correctly by their dedicated v5/ops runners. They are NOT rewritten, reordered or backdated here. This reconciliation appends only, and asserts the two prior entries are byte-identical afterwards.",
+  "declaration_sha256": "26096fd5b49bc1cba9c5a0bb128ed2e922488b7f852780a1f7a979686617b18e",
+  "declaration_status": "NOT A PREREGISTRATION. These exposures had no declaration when they ran, and this record does not retroactively supply one. It is an honest debit note. The sha256 of this file is used as each appended entry's declaration_sha256 so the ledger points at the reconciliation that authorised the charge, never at a preregistration that did not exist.",
+  "excluded_and_why": [
+    {
+      "decision": "NOT CHARGED, owner decision 2026-08-22.",
+      "reason": "It reads no economics and produces no verdict. Whether the charter's 'each fit' wording reaches a diagnostic optimisation is UNKNOWN. Disclosed here so the choice is visible and reversible rather than silent.",
+      "what": "entry_fit_ordering_diagnostic_2026_08_21.py constructs a fresh model and runs _plateau_fit on 60 prefix sessions to recover the epoch count."
+    }
+  ],
+  "exposures": [
+    {
+      "dated": "2026-08-16",
+      "evidence": "LOG.md ~line 226",
+      "experiment_id": "job46.phase5.ticket_widening_amendment.v1",
+      "outcome": "REFUSED",
+      "what": "Entry ceiling moved from an equity-derived $1,300 to the signed fixed $2,000 premium-plus-fees, widening the tradeable band from 52.52% to 97.90%."
+    },
+    {
+      "dated": "2026-08-20",
+      "evidence": "finding \u00a72; numbers withdrawn",
+      "experiment_id": "job46.phase5.entry_fit_void.v1",
+      "outcome": "REFUSED",
+      "what": "Entry fit that trained on an all-NaN objective: every entry_value_usd was NaN, only the WAIT head received gradient. Score blocks WERE read."
+    },
+    {
+      "dated": "2026-08-21",
+      "evidence": "entry_fit_receipt_2026_08_21.json; survival 0.3007 vs signed 0.45-0.50; -$15.66/entry over 126,900 held-out entries",
+      "experiment_id": "job46.phase5.entry_fit_priced.v1",
+      "outcome": "FAIL",
+      "what": "Priced entry fit, 405-session prefix, 118-parameter member P, five score blocks read."
+    },
+    {
+      "dated": "2026-08-21",
+      "evidence": "exit_fit_receipt_2026_08_21.json; identical to always-hold on 79.5% of trades and loses to it by $16.41, failing the signed degeneracy rule",
+      "experiment_id": "job46.phase5.frozen_entry_exit_fit.v1",
+      "outcome": "FAIL",
+      "what": "Frozen-entry exit head on 644 risk-law-capped out-of-fold trajectories. Trained and scored on the same 644: no exit-head holdout."
+    }
+  ],
+  "job": "job46",
+  "outcome_semantics": {
+    "FAIL": "An attempt was spent and the result failed a precommitted bar. Used for both 2026-08-21 fits: PLAN phase 5 had already fixed the 45-50% survival target and the rule that always-cut/always-hold behaviour is not skill, and both fits fail those.",
+    "REFUSED": "An attempt was spent and no valid verdict was obtained. Used for the amendment, which widened the action space without producing a measured result, and for the void fit, which optimised an empty objective and whose numbers are withdrawn."
+  },
+  "reconciled_on": "2026-08-22",
+  "schema_version": "v5.job46.late-exposure-reconciliation.v1",
+  "why": "PLAN.md phase 5 requires a self-hashed declaration before outcomes are read, and LOG.md recorded on 2026-08-16 that the ticket-widening amendment 'counts as declared experiment #1 and must be charged when the ledger opens at Phase 5, before any fit'. No Phase 5 declaration was ever written and no fit was ever charged. The alpha ledger is an information budget: an exposure costs alpha because the decision to LOOK spends it, not because the answer was good. These four looks happened and must be paid for before any future outcome access."
+}

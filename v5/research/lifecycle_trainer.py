@@ -42,6 +42,11 @@ import torch
 from torch import Tensor
 
 from v5.research.causal_day_architectures import CausalPolicyBatch
+from v5.research.outcome_run_gate import (
+    SYNTHETIC_PROVENANCE,
+    DeclaredFitPermit,
+    require_permit,
+)
 from v5.research.causal_day_compact_lifecycle_targets import (
     build_exit_action_targets,
     exit_action_value_loss,
@@ -94,6 +99,12 @@ class SessionEpisode:
     entry_value_usd: Tensor
     sell_paths: dict[tuple[int, int], np.ndarray] = field(default_factory=dict)
     held_batch_builder: Callable[[int, int], CausalPolicyBatch] | None = None
+    #: Where this episode's outcomes came from. `build_episode` stamps
+    #: `"corpus"`; nothing else does, and the default is deliberately the
+    #: harmless value. The Outcome Run Gate keys on this rather than on a
+    #: caller-supplied flag, so a real episode cannot be talked out of needing a
+    #: declaration while a synthetic test fixture never needs one.
+    provenance: str = SYNTHETIC_PROVENANCE
 
 
 @dataclass(frozen=True)
@@ -215,6 +226,7 @@ def train_entry_phase(
     seed: int,
     model: CompactSharedLifecyclePolicy,
     law: TrainingLaw = LAW,
+    permit: DeclaredFitPermit | None = None,
 ) -> CompactSharedLifecyclePolicy:
     """Fit the shared representation and entry heads. Exit head frozen.
 
@@ -236,6 +248,14 @@ def train_entry_phase(
 
     if not episodes:
         raise LifecycleTrainingError("entry phase requires at least one episode")
+
+    # The Outcome Run Gate. Corpus-derived episodes carry real economics, and
+    # fitting them is an outcome exposure that must be declared and paid for
+    # before it happens. Synthetic episodes are unaffected. See
+    # `outcome_run_gate.py` for why this lives here rather than in a runner.
+    require_permit(
+        {episode.provenance for episode in episodes}, permit, what="train_entry_phase"
+    )
 
     # Refuse an empty supervised objective before spending an hour on it.
     #
@@ -329,6 +349,9 @@ class Trajectory:
     ladder_column: int
     sell_path_usd: np.ndarray
     generator_train_sessions: tuple[str, ...]
+    #: Inherited from the episode that produced it, so the exit phase is gated on
+    #: the same evidence the entry phase is.
+    provenance: str = SYNTHETIC_PROVENANCE
 
 
 @torch.no_grad()
@@ -367,6 +390,7 @@ def generate_oof_trajectories(
     seed: int,
     model_factory: Callable[[], CompactSharedLifecyclePolicy],
     law: TrainingLaw = LAW,
+    permit: DeclaredFitPermit | None = None,
 ) -> list[Trajectory]:
     """Nested out-of-fold entry trajectories for exit training.
 
@@ -390,11 +414,15 @@ def generate_oof_trajectories(
         # feeds the exit head, so silently generating trajectories from the
         # frozen baseline would mis-train the head and read as "the exit adds
         # nothing" for a reason unrelated to the market.
+        # One permit covers this whole experiment; each inner fold registers a
+        # fit against it rather than needing its own. Nesting is honest here and
+        # must not be priced out of existence by the gate.
         model = train_entry_phase(
             train_episodes,
             seed=stable_seed(seed, "inner-entry", fold_index),
             model=model_factory(),
             law=law,
+            permit=permit,
         )
         for session in holdout_sessions:
             episode = by_session.get(session)
@@ -415,6 +443,7 @@ def generate_oof_trajectories(
                         ladder_column=column,
                         sell_path_usd=np.asarray(path, dtype=np.float64),
                         generator_train_sessions=tuple(train_sessions),
+                        provenance=episode.provenance,
                     )
                 )
     return trajectories
@@ -437,6 +466,7 @@ def train_exit_head(
     *,
     seed: int,
     law: TrainingLaw = LAW,
+    permit: DeclaredFitPermit | None = None,
 ) -> CompactSharedLifecyclePolicy:
     """Fit only the exit head on out-of-fold trajectories.
 
@@ -447,6 +477,9 @@ def train_exit_head(
 
     if not trajectories:
         raise LifecycleTrainingError("exit phase requires at least one trajectory")
+    require_permit(
+        {t.provenance for t in trajectories}, permit, what="train_exit_head"
+    )
     if len(trajectories) != len(held_batches):
         raise LifecycleTrainingError("each trajectory needs exactly one held-state batch")
     assert_trajectories_are_out_of_fold(trajectories)

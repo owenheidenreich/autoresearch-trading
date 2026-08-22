@@ -1709,3 +1709,59 @@ No new measurement was run; everything rests on the receipts, the pinned code, a
   event and whose route section says no rung is startable; and the charter's adoption of a protocol
   file whose own header still reads "DRAFT. Nothing here is adopted."
 - No fit, no spend, no vendor contact, no pinned or sealed file edited. Checker green.
+
+### PHASE 5 CLOSED, LEDGER RECONCILED, OUTCOME RUN GATE BUILT. 2026-08-22.
+
+All three actions taken on owner decisions of 2026-08-22, following the cold ruling.
+
+- **Closure written.** Two rows added to [`DO_NOT_RETEST.md`](../../research/history/DO_NOT_RETEST.md)
+  §4, one for the entry configuration and one for the exit. Each closes **only the exact
+  configuration** — not Member Q, not the chain-information hypothesis, not every causal entry
+  objective. The entry row's reopening condition is a new causal information source or an
+  independently motivated target/gating mechanism addressing the level-versus-ranking failure, frozen
+  before outcomes and evaluated on outcome-unseen sessions. The exit row's is stricter and ordered:
+  **the entry must come first** — a declared entry stream that independently clears survival, and only
+  then predeclared loss-averted / capture-efficiency definitions with duration-matched controls and an
+  **outer exit holdout**.
+- **`STATUS.md` reconciled** and dated 2026-08-22 — it had stood at 08-15 and omitted every event
+  since. The job-46 row now carries the void fit, both 08-21 fits, the cold ruling, the ledger
+  reconciliation and the closure; its next-step column names the Outcome Run Gate. **A conflict the
+  review raised is recorded rather than rewritten away:** §2's "no rung is startable" governs the G1
+  rung chain, and §10's "this page authorizes no training" is a disclaimer that the status page grants
+  nothing — neither is a prohibition, and job 46's authority is the signed development charter. Both
+  statements stand; the ambiguity is now stated in §2 instead of being resolved by editing either.
+- **Alpha ledger reconciled append-only: 2 → 6 experiments.** Charged against a self-hashed
+  [`PHASE_5_LATE_EXPOSURE_RECONCILIATION_2026_08_22.json`](PHASE_5_LATE_EXPOSURE_RECONCILIATION_2026_08_22.json)
+  (`26096fd5…`) which states in its own text that it is **not a preregistration** — it is a debit note,
+  and the entries point at it so the ledger never implies a declaration that did not exist. Ticket
+  widening and the void fit are `REFUSED` (an attempt spent, no valid verdict); both 08-21 fits are
+  `FAIL` (an attempt spent, precommitted bar missed). **Phase 4a and 4b were verified byte-identical
+  after the append** and the chain re-verified on reload. The bar moves **0.6527 → 0.6606** true-needed
+  0.6787 → 0.6866, against a 0.75 ceiling — projected before writing, since the append is irreversible.
+  The ordering diagnostic's 60-session optimisation is **excluded by owner decision** and disclosed in
+  the record rather than charged: it reads no economics, and whether "each fit" reaches a diagnostic
+  optimisation is UNKNOWN.
+- **THE OUTCOME RUN GATE IS BUILT AND IT HOLDS.**
+  [`v5/research/outcome_run_gate.py`](../../research/outcome_run_gate.py) plus 14 tests. Three
+  properties carry the weight, each from a measured failure. (1) **The requirement follows the data,
+  not a flag.** `SessionEpisode` and `Trajectory` carry `provenance`; `build_episode` stamps `"corpus"`
+  and nothing else does. A boolean argument would have rebuilt the same opt-in hole. (2) **The exposure
+  is journalled before the fit, not after** — the decision to look is what spends alpha, so a crashed
+  run leaves a `STARTED` record that **blocks the next permit until a human classifies it** as
+  COMPLETED or ABANDONED. (3) **The permit verifies the declaration at open time**, re-hashing it under
+  the repository's own convention and re-hashing every file it pins; a stale pin is refused, because a
+  declaration that no longer describes the code is worse than none.
+- **One design correction made during the build, recorded because it matters.** The permit was first
+  written single-use *per call*. That is wrong: `generate_oof_trajectories` trains one entry model per
+  inner fold, and those are fits inside a **single declared experiment**. A per-call permit would have
+  priced honest nesting out of existence and taught callers to route around the gate — the exact
+  failure mode being closed. The permit is now scoped to the experiment, refuses use **after it is
+  resolved**, and journals the fit count, which was itself invisible before.
+- **Proved against the real bypass, not only in tests.** A real corpus episode was built
+  (2022-06-01, 3,260 feasible actions, targets finite) and the exact `train_entry_phase` call that ran
+  undeclared on 2026-08-21 was replayed. It now raises `OutcomeGateError` before any fitting.
+- **What the gate cannot do, said plainly in its own docstring:** it cannot make a declaration honest.
+  It enforces that one exists, matches the code, and is paid for. Whether its content was chosen before
+  the outcomes were known is a governance question no runtime check can answer.
+- **1,123 tests green, checker green.** No fit run, no spend, no vendor contact. Phase 4a/4b
+  declarations and the semantic freeze untouched.

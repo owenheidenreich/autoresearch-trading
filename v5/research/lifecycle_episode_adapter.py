@@ -105,6 +105,7 @@ from v5.research.chain_internal_features import (
     contract_chain_features,
 )
 from v5.research.lifecycle_trainer import SessionEpisode
+from v5.research.outcome_run_gate import CORPUS_PROVENANCE
 
 SCHEMA_VERSION = "v5.lifecycle-episode-adapter.v1"
 CORPUS_TABLES = ("candles", "ladder", "candidates")
@@ -828,6 +829,10 @@ def build_episode(
         entry_value_usd=torch.tensor(entry_value, dtype=torch.float32),
         sell_paths=sell_paths,
         held_batch_builder=builder,
+        # This is the only place the corpus stamp is applied. Everything built
+        # here carries real economics, so fitting it is an outcome exposure and
+        # the Outcome Run Gate will require a declaration for it.
+        provenance=CORPUS_PROVENANCE,
     )
     artifacts = EpisodeArtifacts(
         row=row,
