@@ -138,3 +138,99 @@ closed.
 - Terminal-dependent numbers inherit the **unmade settlement-source decision** for the parity-settled
   76% of the corpus. No zero-recovery twin was run; the sign here is not close, but the requirement
   stands.
+
+---
+
+# Addendum — the frozen-entry exit. Phase 5's second half, same day.
+
+## 7. The exit phase could not run as specified, and why
+
+`train_exit_head` visits every held batch on every epoch. The fitted entry policy fires **159 entries
+a session**, which across the four inner folds is **50,318 out-of-fold trajectories** — at the
+measured 0.04 s forward pass, about **115 hours** for the declared 200 epochs. The exit phase cannot
+run on the unconstrained entry stream.
+
+The cap is forced rather than chosen. The signed risk law is **two tickets a day**, and a bot walking
+the session serially cannot know which two of its entries will turn out best — it takes the **first
+two it fires**. That is the only causal reading, it is what the runtime would hold, and it brings the
+phase to 644 trajectories over 323 sessions and under a minute of fitting.
+
+This is the standing "inference law vs risk law" open question in concrete form. It is reconciled
+here **only far enough to have an exit head to fit**, and that reconciliation is not a ruling.
+
+## 8. The learned exit is a degenerate always-hold
+
+644 out-of-fold trajectories, entry parameters frozen and verified bitwise, mean hold 60.0 minutes.
+
+| Rule | Mean | Median | Total | Profitable |
+|---|---:|---:|---:|---:|
+| Oracle (per-path best) | **+$254.64** | +$86.92 | +$163,986 | 78.4% |
+| Always cut immediately | −$17.19 | −$13.08 | −$11,074 | 28.6% |
+| **Bracket** (+50% / −30% / 60m) | −$24.18 | −$73.08 | −$15,574 | 32.5% |
+| **Learned exit** | −$18.15 | −$88.08 | −$11,689 | 32.0% |
+| Always hold to the clock | **−$1.74** | −$93.08 | −$1,119 | 31.4% |
+
+**The learned exit beats the bracket by +$6.03 a trade and loses to always-hold by $16.41.** It is
+identical to always-hold on **79.5%** of trades and to always-cut on 0.8%: it sells before forced
+liquidation only 23.4% of the time, and the times it does sell make it worse than not having sold.
+
+The plan's own degeneracy guard settles how to read this: *"an always-cut rule should post high
+loss-averted with near-zero capture, an always-hold rule the reverse, and **neither pattern counts as
+skill**."* The learned exit is the always-hold pattern. **It is not an exit skill.**
+
+(The oracle share is not quoted as a capture ratio here. A negative total over a positive oracle
+total produces a number — −7.1% — that looks like a statistic and means nothing. The two-skill split
+that would measure this properly is Fable's to design.)
+
+## 9. The finding inside the exit result that bears on the entry
+
+**Holding to the clock beats the bracket by $22.44 a trade on this stream.** The entry model was
+fitted to `entry_value_usd`, which *is* the bracket outcome — so the entry was trained to rank
+contracts under an exit rule that is worse than doing nothing. The −30% stop is cutting positions
+that recover.
+
+This does not rescue the entry: always-hold is −$1.74, still a loss, still against a +$254.64 oracle.
+But it does mean the entry's target and the best available fixed exit disagree, and that is a
+plausible contributor to §4's central defect — a model whose within-minute ranking is weakly right
+while its level is uninformative.
+
+Stated as a caution, not a claim: these 644 trades are the risk-law-capped out-of-fold prefix stream,
+a different and much smaller population than §3's 126,900 held-out entries. The two tables must not
+be read against each other.
+
+## 10. The blocker this phase ends on, which is governance and not code
+
+**Phase 5 requires a declaration that does not exist.** `PLAN.md` phase 5: *"**Before reading
+outcomes**, self-hash and verify a declaration covering the ITM/action-value member and the
+first-touch member, their shared architecture, chronology, controls, exposure ledger, inference, and
+alpha-ledger budget."* No `PHASE_5_DECLARATION` is on disk. Phases 4a and 4b each had one, each
+self-hashed by a dedicated `v5/ops/run_*.py` runner that charged the alpha ledger; the ledger
+accordingly records exactly two experiments and neither is a fit.
+
+The work log anticipated this in writing on 2026-08-16: *"The amendment counts as declared experiment
+#1 and **must be charged when the ledger opens at Phase 5, before any fit**. Recorded here so it
+cannot be quietly skipped."* It was skipped — by the void 2026-08-20 fit and again by this session's
+entry and exit fits.
+
+**This blocker must not be cleared by writing the declaration now.** A declaration authored after its
+outcomes are known is not a preregistration, and producing one would be precisely the manoeuvre the
+rule exists to prevent. The honest consequence:
+
+- The entry fit and the exit fit are **development-grade diagnostics, not declared outcome-bearing
+  runs.** They cannot be charged PASS or FAIL against a pre-declared bar, because there was no bar.
+- **Had either result been positive it would have been unbankable.** Both are negative, so the gap
+  costs little this time — a session does not talk itself into a loss. That is luck, not process.
+- The declaration must be written and self-hashed **before any re-fit**, and the ticket-widening
+  amendment charged as declared experiment #1, as the log required.
+
+For scale: the ledger's next bar is **0.6527** accuracy (true accuracy needed 0.6787) against a
+break-even of 0.5799. The measured entry survival is **0.3007**. Nothing here is close to the bar the
+ledger would have applied.
+
+## 11. Provenance, addendum
+
+- Producer: `entry_exit_fit_producer_2026_08_21.py` · Receipt: `exit_fit_receipt_2026_08_21.json`
+- Log: `exit_fit_2026_08_21.log` · Stream, 644 rows: `exit_stream_2026_08_21.parquet`
+- Fitted entry+exit model: `lifecycle_model_2026_08_21.pt`
+- All under `v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/`.
+- Out-of-fold firewall enforced by `assert_trajectories_are_out_of_fold`, before and after the risk-law cap.

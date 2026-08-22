@@ -1603,3 +1603,50 @@ No new measurement was run; everything rests on the receipts, the pinned code, a
   durable content is now in this entry — reported rather than deleted, per §5's "report conflicts, do
   not silently resolve them". No fit-forbidden block was fitted, no spend, no vendor contact, no
   pinned or signed file edited.
+
+### PHASE 5, SECOND HALF — the frozen-entry exit is a degenerate always-hold. 2026-08-21.
+
+- **Blocker cleared first.** `HANDOFF_ENTRY_FIT_2026_08_21.md` tripped the `BANNED_NAME` rule; its
+  durable content was already in this log, so the file was moved out of `v5/` rather than deleted.
+  `check_project.py` green, **1,109 of 1,109 tests green**.
+- **The exit phase could not run as specified, and the arithmetic says so before any compute.**
+  `train_exit_head` visits every held batch every epoch; the entry policy fires 159/session, giving
+  **50,318 out-of-fold trajectories** and about **115 hours** for the declared 200 epochs. The cap
+  applied is forced rather than chosen: the signed risk law is **two tickets a day**, and a serial bot
+  cannot know which two will be best, so it takes the **first two it fires**. 644 trajectories over
+  323 sessions, fitted in 0.4 minutes. This reconciles the standing "inference law vs risk law" open
+  question **only far enough to have a head to fit** and is not a ruling on it.
+- **Result: the learned exit is a degenerate always-hold and does not count as skill.** Oracle
+  **+$254.64**; always-cut −$17.19; **bracket −$24.18**; **learned exit −$18.15**; **always-hold
+  −$1.74**. The learned rule beats the bracket by **+$6.03** and loses to always-hold by **$16.41**;
+  it is identical to always-hold on **79.5%** of trades, sells before forced liquidation only 23.4%
+  of the time, and the sales it does make leave it worse than not selling. PLAN phase 5's own guard
+  is explicit that the always-hold pattern **is not skill**. Entry parameters frozen and verified
+  bitwise; the out-of-fold firewall asserted before and after the cap.
+- **A finding inside the exit result that bears back on the entry: holding to the clock beats the
+  bracket by $22.44 a trade.** `entry_value_usd` *is* the bracket outcome, so the entry was fitted to
+  rank contracts under an exit rule worse than doing nothing — the −30% stop cuts positions that
+  recover. It does not rescue the entry (always-hold is still −$1.74 against a +$254.64 oracle), but
+  the entry's target and the best fixed exit disagree, which plausibly feeds the entry's central
+  defect. **The two tables must not be read against each other:** 644 risk-law-capped out-of-fold
+  prefix trades is a different population from the 126,900 held-out entries.
+- **NEXT BLOCKER, and it is governance, not code — Phase 5's declaration does not exist.** PLAN
+  phase 5 requires that **before reading outcomes** a self-hashed declaration cover the members,
+  architecture, chronology, controls, exposure ledger, inference and alpha budget. None is on disk;
+  the alpha ledger records exactly two experiments (4a, 4b) and neither is a fit. This log wrote on
+  2026-08-16 that the ticket-widening amendment *"counts as declared experiment #1 and must be charged
+  when the ledger opens at Phase 5, before any fit. Recorded here so it cannot be quietly skipped."*
+  It was skipped — by the void 08-20 fit and again by today's entry and exit fits.
+- **Deliberately not cleared by this session.** Writing the declaration now, with the outcomes in
+  hand, would not be a preregistration; it is the exact manoeuvre the rule exists to prevent.
+  Consequence stated plainly: today's entry and exit fits are **development-grade diagnostics, not
+  declared outcome-bearing runs**, and cannot be charged PASS/FAIL against a bar that never existed.
+  **Had either been positive it would have been unbankable** — both are negative, which is luck, not
+  process. For scale, the ledger's next bar is 0.6527 accuracy against a 0.5799 break-even; measured
+  entry survival is 0.3007.
+- **Also not done, and named rather than assumed:** the loss-averted / capture-efficiency split is
+  **Fable's design** under memo §3.3 and §5. The raw grid above is the input to that design, not a
+  substitute. No such statistic was constructed here.
+- Finding extended in place with sections 7–11. Producer, receipt, log, model and the 644-row exit
+  stream archived to `v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/*_2026_08_21.*`.
+  No score block fitted, no spend, no vendor contact, no pinned or signed file edited.
