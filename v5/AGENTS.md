@@ -81,7 +81,13 @@ and chart export from existing local artifacts. Inspect a test before running it
 - History: `v2/`, `v3/`, `v4/`, `archive/`, and `archive_quarantine/`, except for an explicitly reviewed v5
   migration or quarantine manifest.
 - Evidence: `v4/artifacts/`, `v4/audit/`, `v4/logs/`, and `v4/runtime/`. Never overwrite another run.
-- The historical protected holdout is spent. There is no confirmation firewall left.
+- The historical protected holdout is spent. **A forward confirmation reservation is in force:**
+  every ES and SPXW session from **2026-08-06 onward is confirmation-only**, signed 2026-08-05
+  ([reservation declaration](governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md)).
+  *Corrected 2026-08-22.* This line read "There is no confirmation firewall left", which is true of
+  the spent historical holdout and false of the forward reservation. The distinction is load-bearing:
+  those reserved sessions are the only source of outcome-unseen data any future confirmation can
+  draw on, and a session reading the old sentence would conclude that route was already closed.
 
 ## 8. Code quality and compatibility
 

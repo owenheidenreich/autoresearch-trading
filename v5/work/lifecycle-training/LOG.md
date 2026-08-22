@@ -1900,3 +1900,39 @@ and nothing in the review required correction.**
   make it. Until then there is no constructible exit-evaluation law, and no exit study should be
   designed against the current wording.
 - 1,123 tests green, checker green. No fit, no spend, no vendor contact, no pinned file touched.
+
+### AMENDMENT DRAFTED, AGENTS §7 CORRECTED. 2026-08-22.
+
+- **`AGENTS.md` §7 corrected.** It read *"There is no confirmation firewall left"* — true of the spent
+  historical holdout, **false of the forward reservation** STATUS records as signed 2026-08-05, which
+  reserves every ES and SPXW session from **2026-08-06 onward as confirmation-only**. The distinction
+  is load-bearing rather than cosmetic: those reserved sessions are the **only** source of
+  outcome-unseen data any future confirmation can draw on, and a session reading the old sentence
+  would conclude that route was already closed. `v5/CLAUDE.md` is a symlink, so byte-identity holds
+  automatically.
+- **Amendment drafted, unsigned:**
+  [`EXIT_EVALUATION_LAW_AMENDMENT_DRAFT_2026_08_22.md`](../../governance/EXIT_EVALUATION_LAW_AMENDMENT_DRAFT_2026_08_22.md).
+  It strikes exactly one clause — the degeneracy expectation — and replaces it with **both boundary
+  rules posting exactly zero duration-adjusted skill on both statistics, their raw profiles reported
+  separately**. Everything else in the signed law is preserved: two skills never averaged,
+  duration-matched controls, attribution-never-selection, serial P&L as the criterion, "beat holding"
+  barred. It then adds what the signed text was silent on: the three-state population definition
+  (**developed / did-not-develop / unknown**, where developed means *ever* reached +50% regardless of
+  a prior −30% — not the first-touch label, which would misclassify 49 of 644), the available-gain
+  denominator with an explicit zero rule, four numbers never averaged, the five baselines each with
+  one role, four chronological session roles with an outer exit holdout, and the settlement obligation
+  for any rule that can exit later than the bracket.
+- **The effect-size decision is left to the owner because it decides feasibility, and the
+  recommendation is the uncomfortable one.** Tier A (**+$25/trade, +5 capture points**) is the
+  economically derived floor and needs **~2,560 outer sessions — about 10.2 years**. Tier B (+$50,
+  +10 points) needs ~640, about 2.5 years, but is not a better answer to the same question: it is a
+  decision to detect only a very large effect, **chosen because it fits the sample**. Tier A is
+  recommended, and its honest output is a finding rather than a study: **on this program's data budget,
+  exit-timing skill is not measurable.**
+- **A structural tension is named rather than left to be rediscovered.** The binding constraint is our
+  own **signed two-tickets-a-day risk law** — it is what turned 50,318 raw trajectories into 644. More
+  tickets would make the exit question answerable and would breach the risk law. **The risk law should
+  win**, but the trade is real and the owner should know it now rather than mid-study.
+- Signing makes the law constructible. It does **not** reopen either closed configuration, authorize
+  any fit, create a holdout, or imply an exit study is feasible.
+- 1,123 tests green, checker green. No fit, no spend, no vendor contact, no pinned file touched.
