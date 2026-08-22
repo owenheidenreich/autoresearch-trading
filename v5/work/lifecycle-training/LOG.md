@@ -1765,3 +1765,78 @@ All three actions taken on owner decisions of 2026-08-22, following the cold rul
   the outcomes were known is a governance question no runtime check can answer.
 - **1,123 tests green, checker green.** No fit run, no spend, no vendor contact. Phase 4a/4b
   declarations and the semantic freeze untouched.
+
+### THREE OPEN DECISIONS CLOSED. 2026-08-22, on owner delegation.
+
+**1 — Settlement-source law: RATIFIED, and its one binding requirement measured and part-discharged.**
+Ruling and evidence: [`SETTLEMENT_SOURCE_LAW_2026_08_22.md`](../../governance/SETTLEMENT_SOURCE_LAW_2026_08_22.md).
+
+- **The decision was not actually unmade.** The learning-content design **§4.3 already states the
+  law** — parity spot plus validated cash settlement, settlement source as a first-class per-session
+  column, a cash settlement never called a fill, a zero-recovery twin on every terminal-dependent
+  number with *any sign difference between twins not bankable*, per-era exit-resolution QC, per-era
+  base rates, within-era matched controls. It was written, never ratified, and **its one binding
+  requirement — the twin — was never computed**. Ratified verbatim rather than reinvented.
+- **The twin is now computed** over 24 sessions spanning both eras (receipt
+  `zero_recovery_twin_2026_08_22.json`). **39.67% of exit-matrix cells resolve by the settlement
+  branch — and 0.00% of the model's bracket exits do (0 of 4,856).** Settled versus zero-recovery:
+  model-fired −$17.33 vs −$17.33; all 77,966 priced actions −$27.18 vs −$27.18; ordering edge +$9.86
+  vs +$9.86. **Delta exactly $0.00 on every stream.** The reason is structural, not luck: Member P
+  exits at the touch minute or the 60-minute horizon, which sit inside the session where executable
+  bids exist; the settlement branch serves late minutes and contracts that stopped quoting.
+- **A logical bound that made half the question moot in advance, and should have been noticed
+  earlier:** zero recovery replaces a never-negative intrinsic with $0, so it can only move a value
+  *down*. **A negative headline cannot flip sign under it** — the −$15.66 entry result was
+  settlement-robust before anything was computed. Only a *difference* could move, which is why the
+  ordering edge was the number worth measuring.
+- **DISCHARGED for Member P** on this corpus at this horizon; future P-family results cite the file
+  rather than re-deriving. **NOT DISCHARGED for Member Q**, whose 120-minute horizon lands squarely in
+  the settlement-exposed region, nor for any change of horizon, exit law or contract universe. Future
+  declarations must state which case they are in; silence on settlement exposure makes a declaration
+  incomplete.
+
+**2 — Member Q: NOT FITTED, and deliberately NOT closed.** Status is **PRESERVED, NOT RUN**. No
+`DO_NOT_RETEST` row is written, and that restraint is the decision.
+
+- **Four reasons not to spend an experiment on it now.** (a) Its **own preregistered sparsity answers
+  it before any fit**: the design states that on the owned year only **0.72%** of contract-actions
+  beat waiting, median Q(enter) **−$173** against median Q(wait) **+$1,437**. (b) Member P has now
+  measured the same economics unconditionally across **1.3M actions** — population mean **−$28** per
+  action — so a calibrated model never fires, which is Q's answer arrived at from the other side.
+  (c) The design **already declares "P leads; Q may not be promoted over P on point estimates"**,
+  written before either was fitted, so even a strong Q could not overturn P's failure. (d) It costs
+  alpha against a bar now at 0.6606, and its twin obligation is **un-discharged**, so it is materially
+  more work than P was.
+- **Why it is nonetheless preserved rather than closed.** Q is the **single remaining hypothesis whose
+  full specification predates every outcome in this corpus.** That makes it the one experiment whose
+  declaration could be genuinely *source-compiled* under the discipline the cold ruling demanded —
+  which is exactly the scarce asset a `DO_NOT_RETEST` row would burn. **If this corpus is ever
+  reopened, Q is the correct first experiment**, and it must run under the Outcome Run Gate with the
+  zero-recovery twin as a declared evaluation variant.
+
+**3 — The charter/DRAFT textual conflict: RULED ON, and the file deliberately NOT edited.**
+Ruling: [`PROTOCOL_V2_ADOPTION_NOTE_2026_08_22.md`](../../governance/PROTOCOL_V2_ADOPTION_NOTE_2026_08_22.md).
+
+- The charter §3 adopted **A1–A13 revision 2** on 2026-08-15 while the file's own header still read
+  *"DRAFT. Nothing here is adopted"* — the repository asserting simultaneously that these amendments
+  bound every job-46 fit and that nothing in them was adopted. **The charter governs; the header is
+  stale text never re-read after signing.**
+- **An in-place header repair was attempted and the project's own guard correctly refused it.** The
+  file is pinned by `PREACQUISITION_SEMANTIC_FREEZE_V1.json` (`71463cc0…`), whose `post_contact_rule`
+  forbids any listed source changing after the preflight;
+  `test_preflight_prices_every_session_schema_before_writing_passing_receipt` failed on
+  **`semantic freeze source drift`** and the edit was reverted.
+- **The guard is right and the header stays.** That file is pinned because it defines the training
+  law that governed a **$19.2450 vendor purchase**, and the freeze exists to prove those semantics are
+  byte-identical to what is on disk today. Repairing a sentence nobody acts on, at the cost of the
+  evidence that the purchase was governed by what we claim, is a bad trade — and the sanctioned
+  alternative, sealing the completed acquisition phase against re-running, is wildly disproportionate
+  to a stale header. The standing rule applies unchanged: **a pinned file's hashes are a historical
+  record, not a value to regenerate.**
+- The governance note is therefore the authoritative adoption record, and the filename's `DRAFT` is
+  left alone for the same reason: the charter adopts the file by exact path.
+- **This corrects the first version of this entry**, which reported the header as repaired. It was
+  not, and could not be.
+
+- 1,123 tests green, checker green. No fit run, no spend, no vendor contact, no signed file's substance
+  altered.
