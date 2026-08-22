@@ -234,3 +234,77 @@ ledger would have applied.
 - Fitted entry+exit model: `lifecycle_model_2026_08_21.pt`
 - All under `v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/`.
 - Out-of-fold firewall enforced by `assert_trajectories_are_out_of_fold`, before and after the risk-law cap.
+
+---
+
+# 12. Corrections, after a cold adversarial review. 2026-08-22.
+
+An external cold review (Codex/Sol, commissioned by the owner in place of Fable) ruled on §10 and
+audited the producers. It was right on every material point below. These are recorded here rather
+than edited into the body above, because the body is what was published and the corrections are part
+of the record.
+
+**12.1 — The exit head has no holdout, and §8 did not say so.** `train_exit_head` was given the 644
+risk-law-capped trajectories and the learned exit was then scored **on those same 644**. The
+out-of-fold firewall that §11 cites protects the *entry generator* — no trajectory came from an entry
+model that trained on its own session — and it does **not** create a holdout for the exit head. §8's
+numbers are therefore an **in-sample engineering result for the exit head**, and calling it a Phase 5
+exit verdict would be wrong. The reviewer's own reading of the consequence is the right one and makes
+the stop *stronger*, not weaker: the learned rule loses to always-hold by $16.41 a trade **even where
+it was trained**. But the claim must carry its correct label.
+
+**12.2 — The results were not reproducible when published.** Both producers load
+`prefix_statistics.npz` from a prior session's scratchpad, which has since been cleaned. The file was
+absent at review time, so neither fit could be reproduced from a clean checkout. It has now been
+**refitted and archived** as `prefix_statistics_2026_08_21.npz` beside the receipts, and verified
+deterministic: two independent `FeatureStatistics.fit` passes over the same 405-session prefix are
+bitwise identical, and the artifact is byte-for-byte the same size as the original. Reusing a
+scratchpad file as a fit dependency instead of archiving it into evidence was the error.
+
+**12.3 — The ordering diagnostic ran an undisclosed fit.** `entry_fit_ordering_diagnostic_2026_08_21.py`
+constructs a fresh model and runs `_plateau_fit` on 60 prefix sessions to recover the epoch count.
+That is a fit. §4 presented it as a convergence check and did not disclose it as an additional
+optimisation. Whether the charter's "each fit" wording is meant to charge a diagnostic optimisation
+is **UNKNOWN** and is an owner question, but it must be on the list either way.
+
+**12.4 — §10's "there was no bar" was too broad.** No Phase 5 *declaration-specific inference law*
+existed. But `PLAN.md` phase 5 had already precommitted the **45–50% survival target against a 31.65%
+baseline** and the rule that **always-cut / always-hold behaviour is not skill**. Both fits fail those
+precommitted bars: entry survival 30.07%, and the learned exit is the always-hold pattern on 79.5% of
+trades. The results are not unmeasurable against signed text — they fail it.
+
+**12.5 — §10's ledger comparison mixed quantities.** The alpha ledger's `next_bar` of 0.6527 is a
+**directional-accuracy** bar; 0.3007 is label survival. Phase 4a's own declaration records
+precision-like statistics as null precisely because they are not comparable. §10's "nothing here is
+close to the bar the ledger would have applied" overstates a loose scale comparison as if it were a
+formal gate. It is not one.
+
+**12.6 — A signed-design-versus-code conflict in the fitted member, inherited rather than introduced.**
+`LEARNING_CONTENT_DESIGN_2026_08_16.md` names `move_from_open_points` and `move_15m_rel` as the tape
+channels and **excludes `return_1m` as dominated by the 15-minute term**. The fitted member reads
+`close_from_session_open_points`, `range_position`, **`return_1m`** and `realised_vol_15m`. The first
+is the design's name for the same quantity; the conflict is real for the other two — and it is worse
+than a substitution, because **no 15-minute return feature exists in `CANDLE_FEATURES` at all**, so
+the design's momentum channel was never implementable as written and the excluded feature was used in
+its place.
+
+This is **not** a defect of this session: the member was built in commit `25e2e1f7`, is pinned by
+`PHASE_4A_DECLARATION_V1.json`, and was sealed before any fit — so the conflict passed the Phase 4a
+adjudication as well. Phase 4b independently measured this channel family as near-worthless
+(randomized tie-breaking collapses the tape group to −0.16pp; `realised_vol_15m` alone is −1.07pp), so
+it probably does not change any conclusion. It is still a signed-text-versus-code conflict and is
+reported rather than resolved.
+
+**12.7 — The §5 boundary crossing was authorised, and the authorisation was not written down.** The
+work log shows an entry-phase STOP for adjudication followed by an exit fit, with no on-disk evidence
+of authority to cross. The review correctly marked this **UNKNOWN** from the artifacts. The
+authorisation existed — the owner instructed this session, in conversation on 2026-08-21, to clear the
+blocker and proceed through the next phase of the plan. Failing to record an in-conversation
+authorisation in the log is the defect, and this paragraph is the record.
+
+**12.8 — What the review did not change.** The entry and exit measurements themselves stand as
+computed; no number in §3 or §8 is withdrawn. What changes is their *status* and their *labels*: the
+exit figure is in-sample for the exit head, and the "+$8.43 ordering effect is real" language of §3
+must be read as **exploratory** — its control, population and inference law were undeclared, so its
+causal significance is **UNKNOWN**, not settled. §5's claim that chain internals "are not an empty
+information family" is downgraded accordingly, from settled to suggestive.

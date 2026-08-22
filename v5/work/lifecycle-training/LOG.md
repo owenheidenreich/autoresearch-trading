@@ -1650,3 +1650,62 @@ No new measurement was run; everything rests on the receipts, the pinned code, a
 - Finding extended in place with sections 7–11. Producer, receipt, log, model and the 644-row exit
   stream archived to `v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/*_2026_08_21.*`.
   No score block fitted, no spend, no vendor contact, no pinned or signed file edited.
+
+### COLD REVIEW OF THE PHASE 5 DILEMMA — ruling received, corrections recorded. 2026-08-22.
+
+- **Owner substituted Codex/Sol for Fable** on the two memo-reserved tasks (§3 items 2 and 3),
+  recorded here so a future session does not read memo §5 and conclude the boundary was crossed
+  silently. Task 1 (the Phase 5 declaration dilemma) returned; task 2 (the exit-evaluation design)
+  is not yet run, and the ruling bears on whether it should be.
+- **Ruling, in one line: a Phase 5 document written today cannot preregister or rehabilitate the
+  2026-08-21 fits.** It may govern a future exactly-locked same-corpus replication, but that run
+  stays development-grade and is never independent confirmation. The reviewer does not recommend
+  spending an attempt to produce a declaration-shaped rerun of a strongly failed specification; its
+  only defensible purpose would be an engineering reproduction audit.
+- **The decisive test was mechanical, not rhetorical:** would a compiler given only pre-2026-08-20
+  sources emit exactly one declaration? It would not. Free parameters found include the seed and
+  environment (undeclared; the nested exit generator constructs each entry model before its internal
+  seed applies), the member (P fitted, **Q never fitted**; 118/120/122-parameter variants all
+  allowed), fold count, static-versus-refitted chronology, capacity statement (required by the
+  charter, never measured for either fit), the population (the runner's `LIMIT` truncation and its
+  catch-all skip), control construction, the stop level (explicitly free at −40% or wider; the −30%
+  used is the *label's* bracket, not the simulator backstop), the statistical unit (signed law is
+  serial per-session account P&L; the report pools per-entry), and every verdict threshold the design
+  had explicitly deferred *to the Phase 5 declaration*.
+- **Corrections accepted and recorded in the finding at §12 — five of them are defects in this
+  session's own work.** (1) The exit head was trained and scored on the same 644 trajectories; the
+  out-of-fold firewall protects the *entry generator* only, so §8 is an **in-sample engineering
+  result for the exit head**, which makes the stop stronger but mislabels it. (2) `prefix_statistics.npz`
+  lived in a cleaned scratchpad and was **absent at review time — neither fit was reproducible**; it
+  has been refitted, verified bitwise-deterministic across two independent fits, and archived as
+  `prefix_statistics_2026_08_21.npz`. (3) The ordering diagnostic **runs an undisclosed fit** on 60
+  sessions. (4) "There was no bar" was too broad — PLAN phase 5 precommitted the 45–50% survival
+  target and the always-hold/always-cut degeneracy rule, and **both fits fail those signed bars**.
+  (5) The ledger `next_bar` 0.6527 versus survival 0.3007 comparison mixes directional accuracy with
+  label survival and is not a formal gate.
+- **A signed-design-versus-code conflict, inherited and reported not resolved.** The design names
+  `move_15m_rel` as the momentum channel and excludes `return_1m` as dominated; the fitted member
+  reads `return_1m`, and **no 15-minute return feature exists in `CANDLE_FEATURES` at all**, so the
+  design's channel was never implementable. The member is commit `25e2e1f7`, pinned by
+  `PHASE_4A_DECLARATION_V1.json` and sealed before any fit — so this also passed the Phase 4a
+  adjudication. Phase 4b measured the family as near-worthless, so it likely changes no conclusion.
+- **The §5 boundary crossing was authorised in conversation on 2026-08-21 and was not written down.**
+  The reviewer correctly marked it UNKNOWN from the artifacts. Recorded now; the recording failure
+  was real.
+- **Status downgrade.** No measured number is withdrawn. The +$8.43 ordering effect is **exploratory,
+  causal significance UNKNOWN** — its control, population and inference law were undeclared — and §5's
+  "chain internals are not an empty information family" drops from settled to suggestive.
+- **Root cause named: opt-in governance.** Declaration and ledger checks live in cooperative
+  `v5/ops` wrappers, not at the irreversible point where outcomes are opened. `train_entry_phase` and
+  `train_exit_head` accept no declaration or ledger argument, so an ad-hoc script reaches them
+  directly. Proposed remedy is an **Outcome Run Gate**: a one-use `DeclaredFitPermit` that the
+  trainers and outcome accessors refuse to work without, writing an append-only `STARTED` exposure
+  record *before* any outcome column opens, so a crash leaves a spent attempt rather than a silent gap.
+- **Open, and all owner decisions — nothing below was actioned:** two `DO_NOT_RETEST` rows (drafted by
+  the reviewer, one for entry and one for exit, each with its own reopening condition); an append-only
+  **late-exposure reconciliation** of the ticket-widening amendment, the void 08-20 fit, the 08-21
+  entry and exit fits and possibly the diagnostic fit — **without** rewriting or backdating the
+  existing 4a/4b hash chain; reconciliation of the stale `STATUS.md`, which still omits every 08-21
+  event and whose route section says no rung is startable; and the charter's adoption of a protocol
+  file whose own header still reads "DRAFT. Nothing here is adopted."
+- No fit, no spend, no vendor contact, no pinned or sealed file edited. Checker green.
