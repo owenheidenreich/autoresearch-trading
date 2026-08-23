@@ -2116,3 +2116,38 @@ Audit: [`TWO_ERA_SPXW_CORPUS_AUDIT_2026_08_22.md`](../../research/findings/TWO_E
   answers it.** The substrate cannot certify an economic claim, so continuing to fit it would be
   spending alpha against a bar the sample cannot reach. Recommendation: accept the stop. Deciding
   otherwise is the owner's, but it should be a decision to spend on data, not on fits.
+
+### `STOP_CURRENT_CORPUS_FITS` ACCEPTED. And the binding constraint is calendar, not money. 2026-08-22.
+
+- **Owner ruling: STOP ACCEPTED.** No further fits on the 1,014-session corpus. Job 46's Phase 5 ends
+  as a documented negative: the entry configuration and the exit configuration are closed by
+  `DO_NOT_RETEST` rows, the two-skill exit law is signed at Tier A and is unsatisfiable on this data,
+  and the corpus itself is now audited `NOT-USABLE`.
+- **A structural fact that reframes what comes next, and it is arithmetic.** The next dataset question
+  looked like a budget question. It is not:
+
+  | Quantity | Measured |
+  |---|---:|
+  | Corpus sessions built | 1,014 |
+  | Business days in 2022-06-01 → 2026-07-30 | 1,087 |
+  | **Share of every possible session already held** | **93.3%** |
+  | Measured cost, cbbo-1m at resolved 0DTE scope | **$0.02424/session** |
+  | Charter budget remaining | $36.51 of $75 |
+  | More sessions that budget could buy | **~1,506** |
+  | Tier A outer-holdout requirement | **~2,560 sessions** |
+
+  **We can afford roughly 1,506 more sessions and they do not exist.** SPX did not have daily 0DTE
+  expirations until Cboe completed the Tuesday and Thursday additions in 2022, which is why this
+  corpus begins 2022-06-01 rather than earlier. There is no more daily-0DTE history to buy at any
+  price. **Money was never the binding constraint; calendar is.**
+- **The consequence for direction: the axis must change from more sessions to more information per
+  session.** Buying breadth is exhausted. What is untouched is depth — this corpus is 1-minute
+  consolidated BBO *quotes only*, so intra-minute price action, actual trade prints, size, and where
+  trades land relative to the spread have never been available to any model here. Whether that is a
+  real information family or another dead one is exactly what the next investigation must decide
+  **before** anything is bought.
+- **What remains authorized and what does not:** $36.51 of the $75 charter ceiling is unspent, and it
+  is scoped to the Phase-2 backfill. **A different schema, a different resolution, or any live
+  subscription is outside it and needs fresh owner authorization with an exact preflight first.**
+  Nothing here authorizes a purchase.
+- No fit, no spend, no vendor contact. Checker green, 1,138 tests green.
