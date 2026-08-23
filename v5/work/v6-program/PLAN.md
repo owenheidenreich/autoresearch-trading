@@ -16,6 +16,10 @@ This is a free market-structure measurement, not Phase 1 and not an alpha exposu
 
 The hard boundary is conditioning: clock, horizon, direction, move threshold, adverse threshold and source era define the terrain grid; no feature, indicator, signal, prior state, label, option outcome or fitted quantity may select a window. Crossing that boundary requires stopping for a separately charged experiment. The separately produced option-greeks move requirement may be joined to the finished receipt only as an arithmetic translation after both inputs exist; it may not be used to tune this census's grid. This job adopts no strategy and opens no reserved session.
 
+**Completed 2026-08-23.** The final [finding](../../research/findings/UNCONDITIONAL_SPX_MOVE_TERRAIN_2026_08_23.md) and [attempt-004 receipt](../../../v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/receipt.json) bind 1,014 tape files and analyze 1,011 clean sessions after the three declared whole-session exclusions. The fixed grid produced 32,000 excursion, 64,000 first-observed-race and 14,000 companion necessary-condition rows; all row-count, denominator, symmetry, race-partition and monotonicity checks pass. The companion join was arithmetic only and did not choose or alter a terrain threshold.
+
+The result does not establish historical option expected P&L. Early under-cap companion hurdles receive substantial unconditional motion support; cheap 60-point-OTM late hurdles receive almost none. A threshold-hit share is not a break-even probability, so neither profitability nor structural death follows without the joint historical option payoff distribution. Fixed-point era differences partly disappear under entry-level scaling, while remaining changes are mixed and source is exactly date-confounded; stability is recorded as `UNKNOWN`, not inferred. No strategy is adopted and every conditional reuse remains alpha-gated.
+
 ## Phase 0 exit ledger
 
 | Criterion | 2026-08-23 evidence | State |

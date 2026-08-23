@@ -2807,3 +2807,89 @@ honest answer to whether this strategy class can pay before any signal exists.**
 terrain's price; the other half is the terrain.
 
 - 1,206 tests green (1,193 + 13), checker green, semantic freeze intact — `greeks.py` untouched.
+
+### JOB 48: THE UNDERLYING CAN CLEAR MANY EARLY HURDLES; CHEAP FAR-OTM LATE HURDLES HAVE ALMOST NO SUPPORT. NECESSARY CONDITION ONLY. 2026-08-23.
+
+Owner directive: measure the unconditional SPX move distribution by clock, horizon, size and side,
+including adverse excursions and gain-before-loss races, then translate the separately fixed contract
+requirements without fitting or conditioning on anything.
+
+- **FREE terrain measurement, not an alpha exposure.** Job 48 stayed inside its registered boundary:
+  exact clock, horizon, side and fixed barriers only. No feature, indicator, signal, prior state,
+  option outcome or label selected a window; no fit, threshold search, reserved session, vendor/broker
+  contact, spend, order or strategy adoption occurred. The four race adverse barriers
+  `{2,5,10,20}` were fixed before outcomes because they span tight, medium and material wrong-way
+  moves without creating a stop search.
+- **Population proved and bound.** The input manifest hashes all **1,014** parity-tape files,
+  2022-06-01 through 2026-07-30. The known 2023-06-26, 2023-10-19 and 2023-10-25 interior-freeze
+  sessions were excluded whole before price read; vendor-padded 2022-11-25 was already absent.
+  Analyzed **1,011 sessions = 768 backfill + 243 owned**, with year counts
+  **144/239/245/241/142**. Zero session on or after the 2026-08-06 reservation entered.
+- **Clock law corrected and fail-closed.** These are one-minute parity snapshots with O=H=L=C, not
+  intraminute candles. Bar labels 09:30–15:59 contain observations 09:31–16:00; window `t,N` uses
+  exact observed snapshots `t+1..t+N`. Late cells ending after 16:00 are explicitly unobservable,
+  never truncated or encoded as misses. Touch/race therefore means first **observed snapshot**;
+  continuous intraminute touch and double-touch order remain unknown.
+- **Fixed grid and inference.** Sixteen exact starts, eight holds `{5,10,15,20,30,45,60,90}`, eight
+  move thresholds `{2,5,10,15,20,30,40,50}`, both sides and four adverse barriers produce **100
+  observable clock/hold cells**, **32,000 excursion** and **64,000 race** rows. Each cell has exactly
+  one window per eligible session, so Wilson intervals use sessions—not overlapping intraday
+  windows—as Bernoulli observations; Newcombe intervals compare disjoint session groups. They are
+  pointwise descriptions, not adjacent-session moving-block or simultaneous family bands.
+- **Raw terrain is U-shaped by clock.** Pooled +10 points in ten minutes is **15.2% call / 16.9%
+  put at 09:31**, falls to **4.2% / 4.1% at 12:30**, and returns to **10.4% / 11.1% at 15:50**.
+  At 09:31, +20 in 20 minutes is **7.1% / 9.0%** and +20 in 45 minutes is **17.3% / 19.5%**.
+  All full-grid threshold and horizon monotonicity checks pass.
+- **The adverse path is not a footnote.** At 09:31 over 20 minutes, a call reaches +10 before −5 in
+  **23.7% [21.2,26.5]** of sessions; −5 arrives first in **49.0%**, and neither in **27.3%**. The
+  put figures are 23.4%, 50.6% and 26.0%. At 15:30 over 20 minutes, +10 before −10 is only
+  **10.8% call / 13.5% put**, with **75.8% neither**. No option stop or decay exit was inferred from
+  this SPX path.
+- **Companion arithmetic answers a narrower question than the prompt assumed.** Under the fixed
+  SPX=6,800, IV=13%, 20-minute companion scenario, the **scale-adjusted** required move for a
+  25-point-OTM contract is observed in **68.4%–74.8%** of 09:31–10:30 sessions and a 60-OTM hurdle
+  in **55.3%–65.7%**. At 15:30 those ranges collapse to **9.2%–11.4%** and **0.2%–0.8%**.
+  Mechanism is exact: the 25-OTM requirement grows from about **2.27–2.29 to 14.89–14.92 points**;
+  60 OTM grows from **3.82–3.91 to 45.98–46.31**. Cheapness is the lost-delta hurdle, not leverage.
+- **The $2,000 cap side effect reproduces.** At 09:31 the scenario ATM contract is over cap; the
+  first under-cap call is 10 OTM at **$1,813**, the first under-cap put 5 OTM at **$1,937**. At
+  10:30 both first under-cap strikes are 5 OTM; from 12:30 ATM is admitted. This records the
+  mechanical action-set effect without reopening the owner's cap ruling.
+- **Two companion corrections are now explicit.** `STATUS.md` says **$17.92 belongs to ES futures**,
+  not this option round trip. The companion option law uses **$3.08 fees + one crossed spread**:
+  $13.08 ATM or $23.08 OTM under its assumptions. Also **330 minutes to 16:00 is 10:30**, not 09:31;
+  09:31 has **389 minutes** remaining.
+- **The multiplication premise is false as expected-value arithmetic.** A required move is the
+  terminal fixed-scenario spot change solving P&L=0. The terrain reports whether an intrahold maximum
+  touched it. A touch can reverse; wins and misses have different sizes; IV and spreads move; fills
+  differ. There is no break-even success probability until `W` and `L` exist, because the bar is
+  `L/(W+L)`. Therefore the verified answer is: **motion scarcity does not kill the whole long-option
+  class; it strongly screens cheap late far-OTM contracts; no cell is proved worth buying or
+  profitable.** ADOPT NOTHING.
+- **Stability is UNKNOWN.** A fixed +10 call at 09:31/20m rises backfill→owned **23.3%→42.4%**, but
+  the level-scaled 25-OTM companion hurdle is **74.5%→75.7%** and 60 OTM **65.4%→66.7%**; higher SPX
+  explains much of the early point gap. Some later scaled cells still move materially and signs vary
+  by side. Source equals date, 2022/2026 are partial, June–July common support is only 40/41 sessions,
+  and there is no simultaneous drift law or equivalence margin. Neither “stable” nor causal “drift”
+  is established.
+- **Evidence is immutable and independently checked.** Final receipt:
+  `v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/receipt.json`, self-hash
+  **`e0a1732f5e3c0352b6458eed2053c5b527eb1a33dd1dafcacd604a19c9c0afe4`**. It binds archived wrapper
+  and analysis sources, full CSVs, readable table, upstream receipts and tape manifest. Attempts
+  001–003 remain preserved and were superseded only by added QC, scale-adjusted presentation and an
+  explicit serial-interval limitation; none was overwritten. Final QC: row counts exact, denominator
+  identity, call/put reversal, full race partition, zero impossible ties and zero monotonicity
+  violations. An independent raw-file check reproduces 282/1,011 hits and the 240/495/276 race.
+- **Health.** New targeted suite **8 passed**. `v5/ops/check_project.py` green. Canonical full v5 suite
+  **1,214 passed, 105 warnings**. A repository-root pytest collection also enters historical
+  `archive/`/`v4/` copies and fails before current tests on nine inherited duplicate-module/missing
+  retired-import errors; protected evidence was not altered to make that noncanonical sweep collect.
+  Semantic freeze verified after all work: **12 pinned files, 0 drifted**, freeze self-hash valid;
+  `greeks.py` and Opus-owned higher-order/contract modules were untouched.
+
+Durable records: [finding](../../research/findings/UNCONDITIONAL_SPX_MOVE_TERRAIN_2026_08_23.md),
+[receipt](../../../v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/receipt.json),
+[readable table](../../../v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/readable_tables.md),
+[complete excursion CSV](../../../v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/excursion_grid.csv),
+[race CSV](../../../v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/race_grid.csv),
+and [companion necessary-condition CSV](../../../v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/contract_necessary_condition_grid.csv).
