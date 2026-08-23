@@ -2790,11 +2790,22 @@ than inferred.
 
 | minutes left | ATM | 10pt OTM | 25pt OTM | 60pt OTM |
 |---:|---:|---:|---:|---:|
-| 330 (09:31) | **$2,094 — over the cap** | $1,633 | $1,074 | $331 |
+| 330 (**10:30**, see correction) | **$2,094 — over the cap** | $1,633 | $1,074 | $331 |
 | 240 | $1,781 | $1,327 | $802 | $189 |
 | 60 | $885 | $477 | $150 | $12 |
 
-**At the open, the at-the-money contract costs more than the cap allows.** The cap is a capital-safety
+**At the open, the at-the-money contract costs more than the cap allows.**
+
+> **CORRECTION, same day, found by the parallel review.** The row above is labelled `330 (09:31)`
+> and **330 minutes before 16:00 is 10:30, not 09:31**. The real open has **389** minutes
+> remaining, and `FIRST_DECISION_MINUTE` is 09:35, i.e. 385. Re-measured at the true open the
+> at-the-money ask is **$2,278**, not $2,094 — so the cap conflict is **larger** than stated, but
+> the label was wrong and is corrected rather than quietly fixed.
+>
+> **A second loose statement, corrected:** earlier prose called the round trip `$17.92`. That is
+> the **STATUS-controlled ES futures** friction (0.358 ES points). The **option** friction used by
+> the module — correctly, in code — is **$3.08 fees plus the spread crossed once**, i.e. **$13.08**
+> at an ATM $0.10 spread and **$23.08** at a $0.20 OTM spread. The code was right; the prose was not. The cap is a capital-safety
 rule, and it is doing something nobody intended: **forcing selection away from the strikes with the
 lowest required move and toward the ones needing multi-point moves.** The owner ruled on 2026-08-23
 that the cap stays at $2,000; this is recorded not to reopen that, but because the cap's *side effect
@@ -2893,3 +2904,53 @@ Durable records: [finding](../../research/findings/UNCONDITIONAL_SPX_MOVE_TERRAI
 [complete excursion CSV](../../../v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/excursion_grid.csv),
 [race CSV](../../../v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/race_grid.csv),
 and [companion necessary-condition CSV](../../../v4/audit/autoresearch/unconditional_spx_move_terrain_2026_08_23_attempt004/contract_necessary_condition_grid.csv).
+
+### THE JOIN: what a contract needs, against how often the tape delivers it. 2026-08-23.
+
+Two halves built in parallel and multiplied. Opus: the **required** favourable SPX move for each
+strike and clock, repriced through the pinned pricer at measured friction. Codex: the **unconditional
+frequency** of favourable excursions, 1,011 clean sessions, session-clustered intervals, no
+conditioning and no outcome read. Producer `terrain_requirement_join_2026_08_23.py`.
+
+**UPPER-BOUND WIN RATE — P(favourable excursion ≥ the move the contract needs). 20-minute hold, IV 13%.**
+
+| start | mins left | ATM | 10pt OTM | 25pt OTM | 60pt OTM |
+|---|---:|---|---|---|---|
+| 09:35 | 385 | 1.4pt → **73%** | 1.9pt → **73%** | 2.3pt → 70% | 3.9pt → 57% |
+| 11:30 | 270 | 1.7pt → 68% | 2.2pt → 65% | 2.8pt → 58% | 5.2pt → 35% |
+| 13:30 | 150 | 2.1pt → 61% | 2.9pt → 51% | 4.0pt → 39% | 9.5pt → 11% |
+| 15:00 | 60 | 3.3pt → 46% | 4.9pt → 33% | 7.9pt → 17% | 27.5pt → **1%** |
+| 15:30 | 30 | 4.6pt → 37% | 8.0pt → 17% | 14.9pt → 5% | 46.0pt → **0%** |
+
+**THIS IS AN UPPER BOUND, NOT AN EDGE — the label matters more than the number.** It asks whether a
+session *ever* offered an excursion big enough, which requires selling at the maximum. **A real exit
+rule scores below it, never above.** Codex's race grid shows how far below: at 09:31 over 20 minutes,
+**+10 before −5 happened on 23.7%** of call paths while **−5 arrived first on 49.0%**. The adverse
+path is the larger problem, and nothing here measures it.
+
+**What the terrain nonetheless says, and it is the first mechanism-grounded direction this project
+has had.**
+
+1. **The class is not structurally dead.** 73% at the open near the money is not a number a dead
+   strategy produces. Motion scarcity alone does not reject it.
+2. **The viable region is EARLY and NEAR THE MONEY, and it collapses in two directions at once.**
+   09:35 ATM is 73%; 15:30 at 60 points out is **0%**. **15 of 32 cells clear 50%, and every one of
+   them is before 14:30.**
+3. **It inverts what every model here actually did.** Job 46 bought **cheap, far, late and often** —
+   209 entries a session at a **$579 average ticket**. The terrain says **expensive, near, early and
+   rarely**. The models were not merely unlucky in this space; they were in the opposite corner of it.
+4. **AND THE $2,000 CAP EXCLUDES THE SINGLE BEST CELL.** 09:35 at-the-money asks **$2,266** — over the
+   cap — for the joint-highest 73%. The best *affordable* cell is **09:35, ~10 points OTM: needs 1.9
+   points, delivered on 73% of sessions, costs $1,801.** That is a concrete specification, arrived at
+   from mechanism rather than fitting, and it is where a rule should be aimed.
+
+**Corrections accepted from the parallel review, both mine.** `330 minutes` was labelled `09:31`; it
+is **10:30**, the open has **389** minutes and `FIRST_DECISION_MINUTE` 09:35 has 385 — re-measured, the
+true-open ATM ask is **$2,278**, so the cap conflict is larger than first stated. And loose prose
+called the round trip `$17.92`, which is the **ES futures** friction; the option friction the code
+correctly used is **$3.08 + spread crossed once** = $13.08 ATM / $23.08 OTM.
+
+**Still unknown, and named rather than glossed:** no cell is proven profitable. A hit-probability
+upper bound is not an expected value — that needs win/loss magnitudes, reversal timing, a real exit,
+and IV that varies by time of day rather than the flat 13% used here. Era stability is also
+unresolved, since source and date remain perfectly confounded.
