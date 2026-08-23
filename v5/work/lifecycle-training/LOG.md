@@ -2715,3 +2715,47 @@ buys an answer to "is live CME worth $199/month?" for roughly one month's fee di
 **Test on $87 of history; subscribe only if it shows something.** Note this would still cost an alpha
 exposure and would be development-grade only, since a historical-only ES result could not be deployed
 under the parity rule without the live feed.
+
+### V6 FOUNDATION, STEP 1: SECOND- AND THIRD-ORDER GREEKS. 2026-08-23.
+
+Owner directive: found v6 on options fundamentals including primary, secondary and tertiary greeks,
+engineered so training and live behave identically.
+
+- **Built additively, because `greeks.py` is hash-pinned.** `v5/research/greeks.py` is one of the 12
+  files in `PREACQUISITION_SEMANTIC_FREEZE_V1.json`, so editing it would break the proof that fixes
+  the semantics behind a completed purchase — the same trap that stopped the protocol-v2 header
+  repair. New module [`v5/research/greeks_higher_order.py`](../../research/greeks_higher_order.py)
+  **imports** the pinned one. **Verified after the work: 12 pinned files, 0 drifted.**
+- **Delivered: vanna, charm, vomma, speed, color**, with time derivatives **per minute** to match the
+  pinned `theta_per_minute`. Parity discipline inherited unchanged — every quantity derives from the
+  four inputs a live feed holds at decision time (the option's own price, a parity spot, the strike,
+  the clock) through the pinned implied-volatility solve. **No vendor greek field is read**, so the
+  same function runs on both sides of the train/live boundary.
+- **31 tests, and they earned their keep by failing three times.**
+  1. Round-tripping through `implied_volatility` to get a numerical derivative was **the wrong
+     instrument**: its bisection tolerance is 1e-6, so a 1e-4 sigma step measures solver noise (~1%)
+     and a 1e-2 step measures truncation error. Vanna and vomma are now differentiated **straight off
+     the pinned pricer**, which has no solve in the loop.
+  2. A tolerance of 1e-4 was tighter than a mixed second-order central difference can deliver.
+     Measured analytic/numeric ratios are **1.0001–1.0007**, so the honest bar is ~1e-3. **The
+     formula was right and the assertion was wrong.**
+  3. **The charm expectation was backwards and the data corrected it** — see below.
+- **THE FINDING THAT CAME OUT OF THE FAILURE, and it is a trading insight rather than a coding one.**
+  Charm was expected to accelerate into expiry for any OTM call. Measured, it does so **only near the
+  money**:
+
+  | Minutes left | 10pt OTM call: delta / charm-per-minute | 50pt OTM call: delta / charm-per-minute |
+  |---:|---|---|
+  | 240 | 0.4167 / −2.0e−4 | 0.1309 / −5.1e−4 |
+  | 120 | 0.3781 / −5.3e−4 | 0.0548 / **−7.5e−4 (peak)** |
+  | 60 | 0.3270 / −1.4e−3 | 0.0116 / −5.8e−4 |
+  | 20 | 0.2156 / −5.8e−3 | 0.0000 / −1.6e−5 |
+  | 10 | 0.1320 / **−1.2e−2** | 0.0000 / −1.9e−8 |
+
+  **The near-money contract's delta drains sixtyfold faster into the close. The far-OTM contract's
+  charm collapses toward zero — not because it is safe, but because it has already finished dying.**
+  A model reading only the level would see a small charm on the cheap strike and call it stable. That
+  is the mechanism behind `RIGHT IDEA, WRONG UNITS` and behind the measured **$579 average ticket**:
+  optimising percentage return selects contracts whose delta is already gone. Both behaviours are now
+  pinned by test.
+- **1,193 tests green** (1,162 + 31), checker green, semantic freeze intact, no pinned file touched.
