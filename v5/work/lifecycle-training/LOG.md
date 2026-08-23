@@ -2151,3 +2151,45 @@ Audit: [`TWO_ERA_SPXW_CORPUS_AUDIT_2026_08_22.md`](../../research/findings/TWO_E
   subscription is outside it and needs fresh owner authorization with an exact preflight first.**
   Nothing here authorizes a purchase.
 - No fit, no spend, no vendor contact. Checker green, 1,138 tests green.
+
+### DEPTH-DATA ACCESS SCOPED. Databento blocked on a credential; Polygon is listing-only. 2026-08-22.
+
+Owner authorised a preflight in conversation. Neither half could be priced, and both reasons are
+concrete rather than vague.
+
+- **The Databento preflight CANNOT RUN: there is no `DATABENTO_API_KEY` on this machine.** `.env`
+  carries `ANTHROPIC_API_KEY` and five Polygon variables and nothing else; the environment and the
+  usual config locations are empty. The `databento` package is installed (0.77.0), so it is purely
+  the credential. **No estimate was substituted** — the charter is explicit that an estimate may not
+  stand in for a preflight.
+- **Two hazards found for whoever does write that preflight.** (1) `download_spxw_history.py` is
+  structurally incapable of pricing anything else: `_bounds()` raises `AcquisitionError` on any schema
+  outside `("definition", "cbbo-1m")`, so a depth preflight is new code, not a flag. (2) Its cost call
+  uses `symbols=["SPXW.OPT"], stype_in="parent"` narrowed only by **time**, not by symbol — the same
+  parent scope that produced the **$671.90 false alarm**. That was harmless for `cbbo-1m`; on a
+  message-volume-priced schema it could return a wildly inflated number and trigger a false STOP. The
+  0DTE ladder must be resolved before pricing.
+- **Polygon holds exactly the depth data we want, and we cannot read it.** Listing succeeds across the
+  whole `flatfiles` bucket: `us_options_opra/` carries `trades_v1/`, `quotes_v1/`, `minute_aggs_v1/`
+  and `day_aggs_v1/`. **Every object read returns HTTP 403** — options, stocks and indices alike, at
+  every date tried, on a 1 KB ranged request. So the credentials permit bucket listing and not object
+  retrieval, and the subscription is either lapsed, downgraded, or never included flat-file reads.
+  **This data is visible, not owned.** No bytes of market data were transferred.
+- **The volume census is worth keeping regardless, because it shapes the whole approach:**
+
+  | Dataset | Coverage | Per day (2026) | 1,014 sessions | Feasible in bulk? |
+  |---|---|---:|---:|---|
+  | `trades_v1` | 2014–2026 | ~57 MB | **~58 GB** | **yes** |
+  | `minute_aggs_v1` | 2014–2026 | ~23 MB | ~23 GB | yes |
+  | `quotes_v1` | 2022–2026 | **~109 GB** | **~110 TB** | **no** |
+
+- **That table settles the architecture question even though the entitlement failed.** Flat files are
+  per-day-all-symbols, so pulling SPXW 0DTE quotes out of `quotes_v1` means moving 110 TB to extract
+  perhaps a few GB — the wrong access pattern by four orders of magnitude. **Trade prints are cheap
+  and bulk-feasible; tick quotes are not, and must come from a symbol-filtered API rather than flat
+  files.** Databento's filtered request is exactly that tool, which is what the original acquisition
+  already used.
+- Wrappers archived: `polygon_entitlement_scope_2026_08_22.py`,
+  `polygon_opra_volume_scope_2026_08_22.py`, `polygon_read_entitlement_probe_2026_08_22.py`.
+- **No spend, no purchase, no market data transferred, no vendor account modified.** Listing a
+  flat-rate bucket carries no marginal cost.
