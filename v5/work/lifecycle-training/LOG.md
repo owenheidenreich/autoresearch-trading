@@ -2617,3 +2617,38 @@ the ceiling, so it needs a charter amendment — but for tens of dollars, not th
 trade prints would have cost.
 
 Wrappers archived as `es_parity_scope_2026_08_23.py`, `es_price_2026_08_23.py`.
+
+### IBKR CHECKED, READ-ONLY, ON OWNER AUTHORISATION. LIVE ES IS NOT SUBSCRIBED. 2026-08-23.
+
+Owner authorised checking the running IB Gateway. **No orders were constructed, staged or submitted.**
+The vetted `v4/scripts/check_ibkr_live_data_entitlements.py` was inspected first — the toolbox classes
+`v4/scripts/` as owner-gated and able to submit paper orders, so the inspection was mandatory; that
+file contains no order path. A second minimal probe was written for ES, importing no `Order` type and
+calling only `reqContractDetails` and `reqMktData`, connecting with `readonly=True`.
+
+| Feed | Result |
+|---|---|
+| Gateway connection, port **4002** (paper) | **connected**, server 176 |
+| SPX index, live | **YES — 7641.16** |
+| VIX index, live | **YES — 16.01** |
+| **ES futures, live** | **NO — IBKR error 354, "Requested market data is not subscribed… Delayed market data is available"** |
+| SPXW 0DTE options | **UNTESTABLE TODAY** — it is Sunday; the report itself records `Regular market hours: False` and 0 contracts qualified because no 0DTE contract exists on a Sunday. **This is not an entitlement result and must not be read as one.** |
+
+**The ES answer is an entitlement refusal, not a closed market.** Contract resolution succeeded — ESU6,
+conId 649180671, 21 contracts enumerated — so the contract database is reachable and only the
+real-time CME subscription is absent. Delayed ES is offered and is useless for a live signal.
+
+**Consequence for the futures ruling, which narrows it usefully.** Of the three configurations:
+
+- **A — Databento ES → Databento live ES.** One vendor both sides, the cleanest parity. Historical is
+  confirmed and cheap ($87.39 for `ohlcv-1s` across 1,014 sessions). **Live GLBX entitlement remains
+  `UNKNOWN`** and needs an account check or an authorised live test.
+- **B — Databento ES → IBKR live ES.** **Now measured as blocked**: it would need a new IBKR CME
+  real-time subscription *and* still carries the cross-vendor mismatch the parity gate exists for.
+  This was already the weakest option on the owner's own test; it is now also the most expensive.
+- **C — IBKR ES both sides.** Impossible; IBKR has no deep history to train on.
+
+**So if futures are admitted, the path is Databento on both sides, and the single open question is
+whether the Databento subscription includes live CME.**
+
+Artifacts: `ibkr_es_readonly_probe_2026_08_23.py`, `ibkr_entitlement_check_2026_08_23.log`.
