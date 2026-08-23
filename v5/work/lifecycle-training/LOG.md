@@ -2008,3 +2008,111 @@ Two of the three parked rulings are taken; the third waits on the corpus audit.
   judges whether the substrate supports any hypothesis at all. Deciding to stop before knowing whether
   the data is even usable would settle the question for the wrong reason.
 - No fit, no spend, no vendor contact, no pinned or sealed file touched. Checker green.
+
+### TWO-ERA CORPUS AUDIT RETURNS NOT-USABLE; PART 2 NOT REACHED. 2026-08-22.
+
+- **Owner-facing finding:**
+  [`TWO_ERA_SPXW_CORPUS_AUDIT_2026_08_22.md`](../../research/findings/TWO_ERA_SPXW_CORPUS_AUDIT_2026_08_22.md).
+  The recommendation is not adopted here; `STATUS.md`, the alpha ledger, declarations, signed laws,
+  and `DO_NOT_RETEST.md` remain unchanged pending the owner's ruling.
+- **The standing broad `ONE POPULATION` claim does not survive for target or dollar-economic
+  inference.** The replacement audit finding is narrower than `TWO POPULATIONS`: source versus
+  market regime is **NOT IDENTIFIED**. Backfill ends 2025-07-31, owned starts 2025-08-01, and same-date
+  overlap across those acquisition laws is zero. The corrected 11-field minute-state probe's
+  direction-specific AUC 0.4322 reverses to 0.5678, but its 45-session holdout, correlated minute-row
+  scoring, missing cluster interval, and omitted contract inputs leave separability inconclusive—not
+  proof that the full policy-input target law is exchangeable. Treat the eras as
+  separate/non-poolable strata unless paired source evidence exists.
+- **The current corpus fails a new structural gate.** The archived exhaustive raw-book attempt 002
+  scanned **1,014 sessions, 167,097,488 in-clock quote rows, and 394,446 adjacent whole-book
+  comparisons**. Gate `FAIL_INTERIOR_FULL_BOOK_FREEZES_PRESENT` found exactly three included
+  backfill sessions: 2023-06-26 (10:29–10:30, 340 contracts), 2023-10-19 (12:16–12:18, 308), and
+  2023-10-25 (10:17–10:20 and 10:22–10:39, 322). Four interior runs contain **23 duplicate minute
+  transitions**, change before and after, match acquisition hashes, and persist through repaired
+  normalized quotes, current ladder/minute summaries, and parity tape. Producer SHA-256
+  `d2d9cd111079fea320df70530aed04a7779b7fbd6c5c5d5a5c6b44ab41a93a23`; receipt self-hash
+  `a9d3acd5dd53570b3bd40a3129a77a19c5ad514e8a69ffa2b310df13b74b9211`.
+- **The failed producer path is preserved, not hidden.** Attempt 001 stopped nonzero with `KeyError:
+  ts_recv` because Pandas promoted the owned clock to an index. Its byte-identical archived producer
+  SHA is `e94350ac3b7997bcd0809014f6121cb86d4010227405b390bdb12a5c0481de13`; failure-receipt self-hash is
+  `4b6f054a61ecd8ebd03e43f4cc128406e6760662edf83de13edc8118310c243e`. Attempt 002 changed only the
+  Arrow extraction needed to keep `ts_recv` a column.
+- **The prior repairs otherwise held.** All 1,014 current candle/tape sessions carry 390 rows on the
+  09:30–15:59/09:31–16:00 clocks with zero tape/corpus mismatches; 214 current carried-close sessions
+  carry exactly one minute; every previously clock-rejected session stays out; and 2022-11-25 is
+  absent from every current table and tape. Its raw 474-contract book directly reproduces the known
+  13:00–16:00 trailing freeze. Existing liveness code checked only tails, while the pre-fit signature
+  included recalculated IV fields whose time drift masked interior frozen quotes.
+- **Honest population after exclusion is provisional, not sealed:** **1,011 sessions = 768 backfill +
+  243 owned**. Backfill is the largest single-source candidate, with 766 label-bearing and 765
+  ESS-tool-eligible sessions. Its measured effective size is **UNKNOWN**. The published pooled ESS
+  includes all three failed dates, and the old owned receipt is tied to different geometry: current
+  773,105 rows/79,109 session-minutes versus historical 698,231/77,254. The geometry wrapper is
+  SHA-256 `3c288b4019f55bc16a54e20aa8645a594880bd0032d30c2a01bdf4de91b107a9`; receipt self-hash
+  `25b350dcde3e2c8f727888ea6800cf4d9a328ff6705301dd7c64188b3592a9c3`.
+- **No present population certifies the signed effect.** Even the barred pooled counterfactual leaves
+  only 607 sessions after a 404-session prefix, below refused Tier B's ~640 outer-session requirement;
+  signed Tier A needs ~2,560 outer sessions, and weakening it requires a fresh owner signature. The
+  $22.44 target-delta planning proxy needs ~1,132 sessions at 80% or ~1,568 at 90%, both above even
+  the barred 1,011 pooled ceiling; the honest largest source stratum is 768 before its 307/461 role
+  split. These are power limits, not evidence that a replacement edge is measured absent.
+- **Part 2 is not reached.** No replacement target, gate, feature contract, built module, fit
+  declaration, or experiment is advanced. Member Q remains `PRESERVED, NOT RUN`; its 120-minute
+  zero-recovery twin remains undischarged. Rows 187–188 stay intact.
+- **Required change before reconsideration:** exclude the three sessions at the raw clock gate,
+  rebuild/re-receipt every corpus table with output hashes and the interior detector, resolve inference
+  to one source or acquire paired same-date source evidence, obtain owner authorization for a clean
+  target-specific ESS/power exposure, and preserve enough materially unseen sessions for the signed
+  economic law.
+- **Verification:** `check_project.py` green; full V5 suite **1,123 passed, 105 warnings, exit 0 in
+  64.80s**, with unpiped output retained at `/tmp/v5-pytest-two-era-audit-20260822.out`. No fit, alpha
+  charge, new outcome statistic, reserved session read, spend, vendor/broker contact, download,
+  paper/live order, or protected-file edit.
+
+### CORPUS AUDIT RETURNS `NOT-USABLE`, INDEPENDENTLY VERIFIED; THE FREEZE GATE NOW EXISTS. 2026-08-22.
+
+Audit: [`TWO_ERA_SPXW_CORPUS_AUDIT_2026_08_22.md`](../../research/findings/TWO_ERA_SPXW_CORPUS_AUDIT_2026_08_22.md)
+(Codex/Sol). **Verified here with a detector written from scratch rather than by re-running theirs.**
+
+- **THE THREE FROZEN SESSIONS ARE REAL, AND ONE IS BAD.** An independent whole-book digest per minute
+  confirms interior freezes in all three: **2023-06-26** (10:29-10:30, 2 min), **2023-10-19**
+  (12:16-12:18, 3 min), and **2023-10-25**, which carries **4 minutes at 10:17-10:20 and 18 minutes
+  at 10:22-10:39** — twenty-two minutes of fabricated flat book in the middle of a session. All three
+  are **inside the built 1,014-session corpus**. Seven control sessions spanning 2022-2026, including
+  the narrow-ladder 2022 era and the accused sessions' own immediate neighbours, show **zero repeated
+  books, maximum run 1**. The separation is clean, not marginal.
+- **They passed every existing gate** — 390 minutes, terminal bar, live two-sided quotes, plausible
+  prices — and none sits at a close, so no early-close calendar would have caught them.
+- **THE GATE NOW EXISTS AND IS MECHANICAL:**
+  [`v5/ops/verify_interior_book_liveness.py`](../../ops/verify_interior_book_liveness.py) plus 15
+  tests, 7 of them against the real corpus, pinning the three defective sessions as FAIL and four
+  healthy neighbours as PASS. It is **fail-closed**: an unreadable file, a missing book field or an
+  empty session is a FAIL, never a skip. The bar is *any* repeated book, justified by the measured
+  zero-repeat baseline rather than by preference, and sizes are part of the digest because a pad
+  repeats sizes too — which is what made 2022-11-25 legible in the first place.
+- **This defect class has now been found twice and both times by hand.** 2022-11-25 was caught in the
+  2026-08-18 pre-fit review and correctly excluded, but **the scan was never turned into a gate**, so
+  three more walked straight through four months of downstream work. `grep` confirms the builder's
+  only occurrence of "frozen" was `@dataclass(frozen=True)`. That is the whole lesson: a one-off scan
+  is not a control.
+- **Verdict `NOT-USABLE`, and it is carefully scoped rather than sweeping.** The audit states it is a
+  *substrate and identification failure*, **not** evidence that every possible SPXW 0DTE edge is
+  absent. Its legs: three liveness failures still inside the corpus; source era still perfectly
+  confounded with the 2025-08-01 cutoff so the eras cannot support pooled economic inference; no
+  effective-size measurement for either cleaned stratum without a newly authorised outcome exposure;
+  and **even raw pooled session counts fall below the signed economic certification requirement** —
+  1,014 against the ~2,560 outer-holdout sessions Tier A demands, before any partitioning.
+- **The audit also unsettles the standing one-population ruling on method, not vibes.** The
+  2026-08-18 review's era probe used a **45-session holdout (11 owned, 34 backfill)** while scoring
+  AUC on **16,648 correlated minute rows with no session-clustered interval**. That is inconclusive
+  rather than confirmatory, and the ruling it supported should not be leaned on.
+- **Part 2 was correctly not reached.** No replacement hypothesis was proposed, which is the right
+  behaviour when Part 1 returns NOT-USABLE.
+- **Verification:** 1,138 tests green (1,123 + 15 new), checker green, ledger untouched at 6
+  experiments, `STATUS.md`, `DO_NOT_RETEST.md`, the alpha ledger, every signed and pinned file, and
+  the unrelated `pickles-weekly-ranges/` all unmodified. The audit's failed first wrapper attempt is
+  preserved rather than deleted.
+- **OWNER RULING NOW LIVE: `STOP_CURRENT_CORPUS_FITS` was deferred pending this audit, and the audit
+  answers it.** The substrate cannot certify an economic claim, so continuing to fit it would be
+  spending alpha against a bar the sample cannot reach. Recommendation: accept the stop. Deciding
+  otherwise is the owner's, but it should be a decision to spend on data, not on fits.
