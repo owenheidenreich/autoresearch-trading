@@ -56,7 +56,7 @@ def _row(*, ask: float, money: float, spot: float = 5000.0, right: str = "C") ->
 
 
 def test_ceiling_is_the_signed_dollar_amount() -> None:
-    assert MAX_ENTRY_TICKET_USD == 2_000.0
+    assert MAX_ENTRY_TICKET_USD == 2_500.0
 
 
 def test_equity_constants_are_deleted_not_merely_unused() -> None:
@@ -112,16 +112,25 @@ def test_no_equity_reference_anywhere_in_the_eligibility_path() -> None:
 
 
 def test_ceiling_charges_fees_as_the_amendment_states() -> None:
-    """The signed law is 'entry premium plus fees at most $2,000'."""
+    """The signed law is 'entry premium plus fees at most the cap'.
+
+    Written against the cap constant rather than a literal, so raising the cap
+    tests the same principle instead of needing the number edited. The 2026-08-23
+    raise from $2,000 to $2,500 is what exposed the hardcoded form.
+    """
 
     just_under = (MAX_ENTRY_TICKET_USD - ENTRY_FEES_USD) / 100.0
     assert bool(eligible_entry(_row(ask=just_under - 0.01, money=-5.0)).iloc[0])
-    # A ticket whose premium alone is $2,000 breaches once fees are added.
-    assert not bool(eligible_entry(_row(ask=20.00, money=-5.0)).iloc[0])
+    # A ticket whose premium alone equals the cap breaches once fees are added.
+    at_cap_premium = MAX_ENTRY_TICKET_USD / 100.0
+    assert not bool(eligible_entry(_row(ask=at_cap_premium, money=-5.0)).iloc[0])
 
 
 def test_expensive_otm_contract_is_refused() -> None:
-    assert not bool(eligible_entry(_row(ask=25.00, money=-5.0)).iloc[0])
+    """Comfortably past the cap, whatever the cap currently is."""
+
+    beyond = (MAX_ENTRY_TICKET_USD / 100.0) * 1.25
+    assert not bool(eligible_entry(_row(ask=beyond, money=-5.0)).iloc[0])
 
 
 # ------------------------------------------------- moneyness is separate
@@ -174,7 +183,7 @@ def test_eligibility_is_unchanged_by_any_notion_of_account_size() -> None:
 def test_risk_simulator_ceiling_is_dollars_not_a_share() -> None:
     from v5.ops.check_occupancy_risk import CHARTER_PREMIUM_CEILING_USD, simulate
 
-    assert CHARTER_PREMIUM_CEILING_USD == 2_000.0
+    assert CHARTER_PREMIUM_CEILING_USD == 2_500.0
     parameters = inspect.signature(simulate).parameters
     assert "premium_ceiling_usd" in parameters
     assert "premium_ceiling" not in parameters, "the share parameter must be gone"

@@ -41,7 +41,7 @@ CONTRACT_MULTIPLIER = 100.0
 # $100,000 account. The equity constants are deleted rather than left computed
 # but unused, so the ceiling is structurally incapable of drifting.
 # Evidence: research/findings/SCALE_SENSITIVITY_2026_08_16.md
-MAX_ENTRY_TICKET_USD = 2_000.0
+MAX_ENTRY_TICKET_USD = 2_500.0
 ENTRY_FEES_USD = 3.08
 MAX_ENTRY_ASK_USD = MAX_ENTRY_TICKET_USD - ENTRY_FEES_USD
 QUOTE_AGE_CAP_MS = 90_000.0

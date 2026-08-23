@@ -45,7 +45,7 @@ def stable_seed(*values: object) -> int:
 class SignedLaw:
     """The 2026-08-16 signed risk law, as simulated."""
 
-    premium_cap_usd: float = 2000.0  # absolute dollars, never a share of equity
+    premium_cap_usd: float = 2500.0  # absolute dollars, never a share of equity
     daily_breaker_share: float = 0.20  # of session-starting equity
     declared_stop: float = 0.40  # −40%, the tightest the addendum permits
     max_trades_per_session: int = 2

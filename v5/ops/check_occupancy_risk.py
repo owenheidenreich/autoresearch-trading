@@ -50,7 +50,7 @@ SURVIVAL_FLOOR = 0.50
 CHARTER_PREMIUM_SHARE = 0.13  # superseded 2026-08-16; retained to reproduce prior receipts
 # The signed 2026-08-16 amendment states the ceiling in DOLLARS. A share of
 # equity drifts as the account compounds; a dollar ceiling cannot.
-CHARTER_PREMIUM_CEILING_USD = 2_000.0
+CHARTER_PREMIUM_CEILING_USD = 2_500.0
 SESSIONS_PER_YEAR = 252
 
 # Starting account sizes to report. The bot buys one contract, so the account is

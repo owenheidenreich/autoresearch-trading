@@ -2954,3 +2954,32 @@ correctly used is **$3.08 + spread crossed once** = $13.08 ATM / $23.08 OTM.
 upper bound is not an expected value — that needs win/loss magnitudes, reversal timing, a real exit,
 and IV that varies by time of day rather than the flat 13% used here. Era stability is also
 unresolved, since source and date remain perfectly confounded.
+
+### TICKET CAP RAISED TO $2,500. Owner ruling 2026-08-23.
+
+Amendment: [`TICKET_CAP_AMENDMENT_2026_08_23.md`](../../governance/TICKET_CAP_AMENDMENT_2026_08_23.md).
+Everything else in the 2026-08-16 risk law — 20% daily breaker, −40%-or-wider declared stop,
+compounding account, dollars-not-percentages, **two tickets per day** — is preserved unchanged.
+
+- **Why: the old cap excluded the best cell in the terrain grid.** 09:35 at-the-money needs **1.4
+  points** and gets them on **73%** of sessions, the joint-highest in the whole table — and asked
+  **$2,266**, over the $2,000 cap. The cap was written for capital safety and was silently selecting
+  *against* the lowest-requirement strikes. Now admissible: **$2,266 + $3.08 fees = $2,269 against a
+  $2,500 cap.**
+- **The risk this buys, shown to the owner before the ruling.** On the signed $10,000 account a ticket
+  moves from 20% to **25% of equity**, two tickets from 40% to **50% deployed**, and a −40% stop on one
+  ticket from −$800 to **−$1,000, i.e. 10% of equity on a single trade**. The breaker and the declared
+  stop are unchanged and remain the binding protections; this enlarges a single loss, not their number.
+- **Four constants moved**, in `audit_causal_day_coverage.py`, `check_occupancy_risk.py`,
+  `unconditional_spx_moves.py` and `scale_sensitivity.py`. **No hash-pinned file was touched** —
+  `drawdown_preflight.py` matched a `2000` grep but it is `bootstrap_draws`, not the cap. Freeze
+  verified after: **12 pinned files, 0 drifted.**
+- **A brittleness found and fixed rather than patched.** `test_entry_ceiling_is_dollars.py` asserted
+  the boundary with the literal `ask=20.00`, which encoded the old cap into a test of the *principle*.
+  Both boundary tests are now written against `MAX_ENTRY_TICKET_USD`, so a future cap change tests the
+  same law instead of needing the number edited. The raise is what exposed it.
+- **What the raise does not do:** it does not authorise more tickets, does not make at-the-money
+  preferred, and does not license buying the most expensive admissible contract. The terrain says
+  near-the-money is favourable **early** — by 15:00 the same strike needs 3.3 points and gets them 46%
+  of the time.
+- 1,214 tests green, checker green.
