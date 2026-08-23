@@ -2534,3 +2534,46 @@ defect in yesterday's gate.**
 - **The STOP stands.** Signed flow supports a credible *experiment*, not a credible bot. The honest
   signing share is 40.78% rather than 55.03%, the Sharpe bar at 229 clusters is implausible for this
   strategy class, and the runtime that would have to carry any signal does not exist.
+
+### OWNER RULINGS 2026-08-23, AND A SCALE DEFECT THE OWNER CAUGHT.
+
+- **TICKET CAP: OWNER RULES IT STAYS AT $2,000.** Stated reason: capital to work with, and a
+  preference for the upper side. Recorded plainly: this **overrides**
+  [`CHARTER_AMENDMENT_TICKET_AND_BREAKER_2026_08_16.md:207`](../../governance/CHARTER_AMENDMENT_TICKET_AND_BREAKER_2026_08_16.md),
+  which makes the $2,000 cap conditional on an edge existing and says an edgeless result withdraws its
+  justification. Job 46's Phase 5 was edgeless. The owner has been told and has ruled; the override is
+  the decision, not an oversight. Codex's recommendation to revert to $1,000 is **declined**.
+- **BRANCH PUSHED.** `codex/v6-phase-0` is on the remote. 521 commits of work are no longer
+  single-disk.
+
+**THE ECONOMIC BAR IS MIS-SCALED, AND THE OWNER SPOTTED IT FROM INTUITION BEFORE ANY MEASUREMENT.**
+The owner rejected `+$25/executed ticket` as "basically break-even", noting real 0DTE positions swing
+−55 to +50 within thirty seconds, and that their own trading targeted roughly **−$200 on a bad day and
++$500 on a good day over 3–5 trades**. Measured against the corpus, that objection is correct:
+
+| Quantity | Measured |
+|---|---:|
+| **Mean position actually traded in every v5 test** | **$579** |
+| Median | $520 |
+| Share of candidates under $1,000 | **86.4%** |
+| Share anywhere near the $2,000 cap | **0.1%** |
+
+**The $2,000 cap was never the size being traded.** The models bought whatever was cheap enough to
+clear the cap, which is a documented bias — the Phase 4a tie-break analysis found the pick landing on
+"the two deepest-OTM puts, the cheapest and most leveraged contracts in the band."
+
+**Consequence: a bar stated in absolute dollars is meaningless here**, because position size varies
+sevenfold across candidates. `+$25` is **16.7%** of a 10th-percentile $150 ticket and **1.2%** of a
+$2,000 one. The same number is a demanding bar and a trivial one depending on which contract it lands
+on. The headline `−$15.66/entry` is likewise **−2.7%** at the traded size, not −0.8% at the cap.
+
+**Converting the owner's stated experience onto the same axis** — recollection, not measurement, and
+flagged as such — gives roughly **+12.5% per trade on good days and −5% on bad ones at $1,000
+tickets**. Against an oracle of +92% of premium and a fitted model at −2.7%, that sits between the
+two, which is the first calibration point suggesting the realistic target is far below the oracle and
+well above anything a model here has reached.
+
+**Directive for the v6 bar, replacing `+$25/ticket`:** state it as **percent of premium at risk**, or
+in dollars **at a single fixed position size that is also declared**. A dollar figure floating across
+a sevenfold size range cannot mean one thing. The `+$10/eligible session` companion has the same
+defect and needs restating with it.
