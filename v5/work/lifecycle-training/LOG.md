@@ -2652,3 +2652,35 @@ real-time CME subscription is absent. Delayed ES is offered and is useless for a
 whether the Databento subscription includes live CME.**
 
 Artifacts: `ibkr_es_readonly_probe_2026_08_23.py`, `ibkr_entitlement_check_2026_08_23.log`.
+
+### FUTURES RULING: NO. The owner's own parity rule decides it. 2026-08-23.
+
+**Ruling: ES and other futures are NOT admissible as a training input.** Not on preference — on the
+owner's stated rule that *a training input must exist identically in the live process*, applied to
+two measured facts.
+
+| Live path | Status |
+|---|---|
+| IBKR live ES | **REFUSED — error 354, "Requested market data is not subscribed"** (measured 2026-08-23; contract resolution succeeded, so this is entitlement, not a closed market) |
+| Databento live CME | **NOT ON THE ACCOUNT** (owner statement, 2026-08-23) |
+
+**No live ES path exists, therefore ES may not enter training.** The rule does the work; no separate
+ban is needed.
+
+**One distinction preserved for a future session, because it bounds any revisit.** Databento's
+catalogue lists CME live as "included in paid plans", and this key can *price* CME historical data —
+**$87.39** for `ohlcv-1s` across 1,014 sessions, **$80.48** for `bbo-1s`. Pricing is not entitlement,
+and the owner states the account lacks it. But if futures are ever revisited the cost is **known and
+small**, so it is a bounded decision rather than an open-ended one.
+
+**Consequence for the Pickles row, and it changes the reason rather than the verdict.**
+`DO_NOT_RETEST` row 1 closes the SPX-only Pickles VWAP proxy with the reopening condition **"Exact
+ES/NQ/A-D inputs and executable SPXW replay"**, and the ledger records that **"Pickles actually
+watched ES."** Those inputs cannot currently be obtained in a form that survives to live. **The row
+therefore stays closed because the infrastructure to test it fairly does not exist — not because the
+hypothesis was refuted.** A future session must not read it as a defeated idea.
+
+**The 2026-08-19 SPXW/SPX-only ruling is independently vindicated.** It was made on provenance
+grounds — that "the candles are ES" is the kind of quiet inconsistency a future session inherits. It
+now turns out the live infrastructure forbids futures regardless. The ruling is more robust than the
+argument originally given for it.
