@@ -2577,3 +2577,43 @@ well above anything a model here has reached.
 in dollars **at a single fixed position size that is also declared**. A dollar figure floating across
 a sevenfold size range cannot mean one thing. The `+$10/eligible session` companion has the same
 defect and needs restating with it.
+
+### THE PICKLES/FUTURES RULING — MEASURED INPUTS FOR AN OWNER DECISION. 2026-08-23.
+
+Metadata calls only; nothing downloaded, no spend, no live session opened.
+
+**The conflict being ruled on.** `DO_NOT_RETEST` row 1 closes the **SPX-only Pickles Row-1 VWAP
+proxy** (MFE +30bps 8.8% vs random 10.2%) and states its reopening condition as **"Exact ES/NQ/A-D
+inputs and executable SPXW replay."** The ledger notes elsewhere that **"Pickles actually watched
+ES."** So the one hypothesis derived from a real trader's method was tested with an SPX-only
+imitation of it. The 2026-08-19 owner ruling then barred futures input entirely. **The reopening
+condition requires precisely what the later ruling forbids.**
+
+**Measured feasibility — the futures path is same-vendor and cheap.**
+
+| Fact | Measured |
+|---|---|
+| `GLBX.MDP3` visible on the same Databento key as `OPRA.PILLAR` | **yes** |
+| Coverage | **2010-06-06 → 2026-08-23** — far beyond the 0DTE window |
+| Schemas | `mbo, mbp-1, mbp-10, tbbo, trades, bbo-1s, bbo-1m, ohlcv-1s/1m/1h/1d, definition, statistics, status` |
+| ES `ohlcv-1s`, full 1,014 sessions | **$87.39** ($0.0862/session) |
+| ES `bbo-1s`, full 1,014 sessions | **$80.48** ($0.0794/session) |
+| ES `mbp-1`, full 1,014 sessions | $1,040.35 |
+| ES data already on disk | **20 files** — `glbx_es_ohlcv_1m`, `glbx_es_bbo_1s_measurement_2026_08_04` |
+
+**The parity argument, which is the owner's stated test and cuts in favour rather than against.** The
+owner's condition is that a training input must exist identically in live. For ES that is
+**Databento historical → Databento live: one vendor, one API, one client library, one schema.** The
+option execution path we already depend on is **Databento (train) → IBKR (live)**, a genuine
+cross-vendor mismatch, and it is what the hard parity gate exists for. **ES parity is structurally
+easier than the parity we have already accepted.**
+
+**The one unresolved item: live GLBX entitlement is `UNKNOWN`.** Historical visibility is not a live
+subscription, and no live session was opened to test it — that would be a vendor action beyond
+scoping. The owner can confirm it from the account, or authorise a check.
+
+**Budget.** $80–87 for full-history 1-second ES against **$36.51 remaining** on the $75 charter. Over
+the ceiling, so it needs a charter amendment — but for tens of dollars, not the $3,644 the option-side
+trade prints would have cost.
+
+Wrappers archived as `es_parity_scope_2026_08_23.py`, `es_price_2026_08_23.py`.
