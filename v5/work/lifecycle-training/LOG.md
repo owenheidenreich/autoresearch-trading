@@ -2193,3 +2193,53 @@ concrete rather than vague.
   `polygon_opra_volume_scope_2026_08_22.py`, `polygon_read_entitlement_probe_2026_08_22.py`.
 - **No spend, no purchase, no market data transferred, no vendor account modified.** Listing a
   flat-rate bucket carries no marginal cost.
+
+### DEPTH PREFLIGHT COMPLETE. `ohlcv-1s` is free at 60x the current resolution. 2026-08-22.
+
+Owner supplied the Databento key and authorised the preflight. **Pricing only — every vendor call was
+`metadata.get_cost`, `get_record_count`, `symbology.resolve` or `get_dataset_range`. No
+`timeseries.get_range`, no bytes of market data, no purchase.** Receipt:
+`depth_preflight_receipt_2026_08_22.json`.
+
+- **Attempt 1 is VOID and is archived as such.** It priced **parent scope**, replicating what
+  `download_spxw_history.py` appears to request, and its known-answer control **failed at ~20x** the
+  receipted `cbbo-1m` cost — the same parent-versus-resolved ratio behind the $671.90 false alarm.
+  The control existed precisely to catch that, and it did. Attempt 2 prices the **±25-point corpus
+  band** (32–56 contracts/session) as OSI raw symbols verified against the vendor's symbology service,
+  and its one-sided control **PASSES**: band `cbbo-1m` is **$0.002497/session** against the receipted
+  **$0.024238**, correctly cheaper because the band is strictly narrower than the purchase scope.
+- **`$0.00` was interrogated rather than believed.** `get_record_count` separates "free" from "no
+  data", and the answer is free: `ohlcv-1s` returns **151,160 records** for the 2023-06-27 band and
+  **287,551** for 2025-11-04, at **$0.00**.
+
+  | Schema | Coverage from | Band cost/session | Corpus (1,014) | Note |
+  |---|---|---:|---:|---|
+  | **`ohlcv-1s`** | **2013-04-01** | **$0.00** | **$0** | **60x current resolution, full history** |
+  | `ohlcv-1m` | 2013-04-01 | $0.00 | $0 | free |
+  | `cbbo-1m` | 2013-04-01 | $0.002497 | ~$2.53 | what we already have |
+  | `cmbp-1` | 2023-03-28 | $0.185–$0.322 | ~$260 | misses the 2022 corpus start |
+  | **`trades`** | 2013-04-01 | **$4.63 (pre-2025-08-25)** | **~$3,644** | **free from 2025-08-25** |
+  | `tcbbo` | 2023-03-28 | ~$5.50 | ~$5,580 | misses the 2022 start |
+  | `cbbo-1s` | 2025-02-20 | — | — | far too late to cover the corpus |
+
+- **The `trades` free boundary is 2025-08-25**, narrowed by probe: $7.16 on 08-15, $10.39 on 08-20,
+  **$0.00 from 08-25 onward**. That splits the corpus **787 paid / 227 free**. Buying the paid portion
+  costs **~$3,644 against $36.51 remaining on a $75 charter** — two orders of magnitude out of reach,
+  so full-history trade prints are not purchasable under any current authorization.
+- **The headline is that the best available option costs nothing.** `ohlcv-1s` is **free across the
+  entire corpus window** and carries **~10x the records of `ohlcv-1m`** — one-second trade bars where
+  every model built here has seen one-minute quote snapshots. It is *trade* information, not quotes,
+  so it is sparse by construction and is **not** a replacement for the BBO: it is the order-flow
+  family this project has never had, at zero marginal cost.
+- **What this does NOT establish.** That the data is free says nothing about whether it carries an
+  edge — this project has censused several free information families dead. It also does not authorize
+  a download: acquiring `ohlcv-1s` is a new schema outside the charter's `definition`/`cbbo-1m` scope
+  and needs owner authorization, though at $0.00 the spend gate is moot and the real costs are
+  bandwidth, storage and the parity obligations that follow any new feature source.
+- **A consequence for the recent era, worth stating separately:** everything is free from 2025-08-25,
+  including `trades` and `tcbbo`. **227 corpus sessions carry free full trade prints**, and the
+  reservation bars only 2026-08-06 onward, so a recent-era study has depth data available now at no
+  cost.
+- Wrappers and receipts archived under `depth_*_2026_08_22.*`, with the void attempt preserved.
+- **No purchase, no download, no data transferred, no vendor account modified.** The API key is in
+  `.env`, which is git-ignored and was not committed.
