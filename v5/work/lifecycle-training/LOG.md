@@ -2337,3 +2337,52 @@ Finding: [`DATABENTO_SUBMINUTE_DIRECTION_DECISION_2026_08_22.md`](../../research
 - **Verification:** 1,138 tests green, checker green, ledger untouched at 6 experiments, `STATUS.md`,
   `DO_NOT_RETEST.md` and every signed and pinned file unmodified, `pickles-weekly-ranges/` untouched.
   No spend, no download, no outcome read, no vendor or broker action.
+
+### THE UNTESTED THING IS TESTED. `SEMANTICS_PASS_ONLY` on 64 owned CMBP sessions. 2026-08-23.
+
+Owner authorised "the $4.80 spend". **There was no spend to make** — $4.80 was the cost already paid
+months ago in the v4 era for data sitting on disk. This cost **$0**, downloaded nothing, contacted no
+vendor, and **read no outcome, so no alpha was charged.**
+
+- **Manifest frozen first**, before any result was seen:
+  [`CMBP_SEMANTIC_GATE_MANIFEST_2026_08_23.json`](CMBP_SEMANTIC_GATE_MANIFEST_2026_08_23.json)
+  (`55dd5a92…`) pins **64 sessions, 248 session-symbol pairs, 173,470,783 rows**, 2024-10-01 →
+  2024-12-31, and names the forbidden tables (labels, P&L, entry/exit value, forward returns).
+- **The gate is code with tests, not a one-off script:**
+  [`v5/ops/verify_cmbp_touch_semantics.py`](../../ops/verify_cmbp_touch_semantics.py) plus 12 tests.
+  The signing law is pinned by test: a print is signed only against the touch standing **strictly
+  before** it, never the trade row's own book; **inside-touch prints are retained as ambiguous and
+  never guessed**; locked and crossed prior books are excluded and counted; instruments cannot leak
+  into each other's touch; an empty or malformed slice fails closed.
+- **VERDICT: `SEMANTICS_PASS_ONLY`** over all 64 sessions, **0 failures**, 1,588,281 trades.
+
+  | Quantity | Measured |
+  |---|---:|
+  | Trades signable by strict prior touch | **874,002 — 55.03%** |
+  | Inside-touch, **ambiguous and not guessed** | 704,734 — 44.37% |
+  | Outside touch | 2,259 |
+  | Locked / crossed prior book | **0 / 0** |
+  | No prior quote | 7,286 |
+  | Buyer-initiated : seller-initiated | 424,126 : 449,876 (**ratio 0.943**) |
+  | Touch moved on the next event after a trade | 22.93% |
+  | Ask rose after a buy / bid fell after a sell | 21.95% / 22.24% |
+  | Per-session signed share | min **9.2%**, median 49.7%, max **65.5%** |
+
+- **DBN/Parquet decode identity verified** on the first three sessions: row counts, trade counts and
+  trade price sums all agree. The parquet is a faithful decode, not a lossy re-write.
+- **The sanity signals are good.** Zero locked and zero crossed prior books across 173M rows; a
+  near-balanced buy/sell ratio of 0.943; and a symmetric book response — 21.95% of buys move the ask
+  up against 22.24% of sells moving the bid down. A signing bug would almost certainly break that
+  symmetry.
+- **What this does NOT say, and the caveats are load-bearing.** (1) **It says nothing about edge.**
+  The gate reads no outcome by construction; a pass establishes that the mechanism can be *built*.
+  (2) **The slice is heavily selected** — 7 symbols and ~31 chosen trades per session, picked around a
+  prior route — so **event prevalence on an unbiased full band remains UNKNOWN**. (3) **The
+  construction discards 45% of the tape**, and (4) the retained share is **unstable session to
+  session, 9.2% to 65.5%**, so a strategy resting on it would have wildly varying observation counts.
+- **Consequence for the standing STOP: it is unchanged.** The gate has done exactly its stated job —
+  it removes "we cannot even parse this" from the list of unknowns, and leaves every economic question
+  where it was. The route still lacks affordable unbiased history, live parity, a compliant runtime,
+  and entry-specific power.
+- Producer and log archived as `cmbp_semantic_gate_producer_2026_08_23.py` /
+  `cmbp_semantic_gate_2026_08_23.{json,log}`.

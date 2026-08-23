@@ -1,0 +1,531 @@
+{
+  "files": [
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-01.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-01.cmbp-1.parquet",
+      "rows": 6442354,
+      "session": "2024-10-01",
+      "symbols": 7
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-02.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-02.cmbp-1.parquet",
+      "rows": 1573774,
+      "session": "2024-10-02",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-03.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-03.cmbp-1.parquet",
+      "rows": 5824026,
+      "session": "2024-10-03",
+      "symbols": 5
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-04.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-04.cmbp-1.parquet",
+      "rows": 3890640,
+      "session": "2024-10-04",
+      "symbols": 5
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-07.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-07.cmbp-1.parquet",
+      "rows": 3594940,
+      "session": "2024-10-07",
+      "symbols": 5
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-08.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-08.cmbp-1.parquet",
+      "rows": 729284,
+      "session": "2024-10-08",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-09.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-09.cmbp-1.parquet",
+      "rows": 503162,
+      "session": "2024-10-09",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-10.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-10.cmbp-1.parquet",
+      "rows": 931461,
+      "session": "2024-10-10",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-11.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-11.cmbp-1.parquet",
+      "rows": 1394023,
+      "session": "2024-10-11",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-14.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-14.cmbp-1.parquet",
+      "rows": 1381792,
+      "session": "2024-10-14",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-15.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-15.cmbp-1.parquet",
+      "rows": 1552433,
+      "session": "2024-10-15",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-16.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-16.cmbp-1.parquet",
+      "rows": 719113,
+      "session": "2024-10-16",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-17.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-17.cmbp-1.parquet",
+      "rows": 3275609,
+      "session": "2024-10-17",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-18.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-18.cmbp-1.parquet",
+      "rows": 1716043,
+      "session": "2024-10-18",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-21.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-21.cmbp-1.parquet",
+      "rows": 3420644,
+      "session": "2024-10-21",
+      "symbols": 5
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-22.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-22.cmbp-1.parquet",
+      "rows": 1712708,
+      "session": "2024-10-22",
+      "symbols": 5
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-23.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-23.cmbp-1.parquet",
+      "rows": 1852590,
+      "session": "2024-10-23",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-24.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-24.cmbp-1.parquet",
+      "rows": 1154461,
+      "session": "2024-10-24",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-25.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-25.cmbp-1.parquet",
+      "rows": 2460413,
+      "session": "2024-10-25",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-28.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-28.cmbp-1.parquet",
+      "rows": 1640908,
+      "session": "2024-10-28",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-29.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-29.cmbp-1.parquet",
+      "rows": 1396774,
+      "session": "2024-10-29",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-30.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-30.cmbp-1.parquet",
+      "rows": 2572693,
+      "session": "2024-10-30",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-31.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-10-31.cmbp-1.parquet",
+      "rows": 2258541,
+      "session": "2024-10-31",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-01.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-01.cmbp-1.parquet",
+      "rows": 6066457,
+      "session": "2024-11-01",
+      "symbols": 6
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-04.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-04.cmbp-1.parquet",
+      "rows": 2960680,
+      "session": "2024-11-04",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-05.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-05.cmbp-1.parquet",
+      "rows": 3092466,
+      "session": "2024-11-05",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-06.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-06.cmbp-1.parquet",
+      "rows": 10955607,
+      "session": "2024-11-06",
+      "symbols": 10
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-07.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-07.cmbp-1.parquet",
+      "rows": 952255,
+      "session": "2024-11-07",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-08.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-08.cmbp-1.parquet",
+      "rows": 854593,
+      "session": "2024-11-08",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-11.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-11.cmbp-1.parquet",
+      "rows": 1546568,
+      "session": "2024-11-11",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-12.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-12.cmbp-1.parquet",
+      "rows": 1738538,
+      "session": "2024-11-12",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-13.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-13.cmbp-1.parquet",
+      "rows": 3475654,
+      "session": "2024-11-13",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-14.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-14.cmbp-1.parquet",
+      "rows": 2767457,
+      "session": "2024-11-14",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-15.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-15.cmbp-1.parquet",
+      "rows": 2803427,
+      "session": "2024-11-15",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-18.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-18.cmbp-1.parquet",
+      "rows": 1411448,
+      "session": "2024-11-18",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-19.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-19.cmbp-1.parquet",
+      "rows": 3439750,
+      "session": "2024-11-19",
+      "symbols": 6
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-20.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-20.cmbp-1.parquet",
+      "rows": 4493935,
+      "session": "2024-11-20",
+      "symbols": 6
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-21.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-21.cmbp-1.parquet",
+      "rows": 5589200,
+      "session": "2024-11-21",
+      "symbols": 6
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-22.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-22.cmbp-1.parquet",
+      "rows": 7296129,
+      "session": "2024-11-22",
+      "symbols": 7
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-25.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-25.cmbp-1.parquet",
+      "rows": 3425040,
+      "session": "2024-11-25",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-26.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-26.cmbp-1.parquet",
+      "rows": 2445033,
+      "session": "2024-11-26",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-27.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-27.cmbp-1.parquet",
+      "rows": 3119451,
+      "session": "2024-11-27",
+      "symbols": 6
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-29.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-11-29.cmbp-1.parquet",
+      "rows": 85500,
+      "session": "2024-11-29",
+      "symbols": 1
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-02.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-02.cmbp-1.parquet",
+      "rows": 415412,
+      "session": "2024-12-02",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-03.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-03.cmbp-1.parquet",
+      "rows": 1215192,
+      "session": "2024-12-03",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-04.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-04.cmbp-1.parquet",
+      "rows": 1583807,
+      "session": "2024-12-04",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-05.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-05.cmbp-1.parquet",
+      "rows": 419834,
+      "session": "2024-12-05",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-06.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-06.cmbp-1.parquet",
+      "rows": 2062126,
+      "session": "2024-12-06",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-09.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-09.cmbp-1.parquet",
+      "rows": 1830611,
+      "session": "2024-12-09",
+      "symbols": 5
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-10.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-10.cmbp-1.parquet",
+      "rows": 1031067,
+      "session": "2024-12-10",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-11.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-11.cmbp-1.parquet",
+      "rows": 384139,
+      "session": "2024-12-11",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-12.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-12.cmbp-1.parquet",
+      "rows": 1000540,
+      "session": "2024-12-12",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-13.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-13.cmbp-1.parquet",
+      "rows": 1330062,
+      "session": "2024-12-13",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-16.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-16.cmbp-1.parquet",
+      "rows": 962049,
+      "session": "2024-12-16",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-17.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-17.cmbp-1.parquet",
+      "rows": 5973422,
+      "session": "2024-12-17",
+      "symbols": 6
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-18.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-18.cmbp-1.parquet",
+      "rows": 1831571,
+      "session": "2024-12-18",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-19.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-19.cmbp-1.parquet",
+      "rows": 4852264,
+      "session": "2024-12-19",
+      "symbols": 4
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-20.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-20.cmbp-1.parquet",
+      "rows": 2284247,
+      "session": "2024-12-20",
+      "symbols": 3
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-23.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-23.cmbp-1.parquet",
+      "rows": 6196237,
+      "session": "2024-12-23",
+      "symbols": 7
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-24.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-24.cmbp-1.parquet",
+      "rows": 158795,
+      "session": "2024-12-24",
+      "symbols": 1
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-26.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-26.cmbp-1.parquet",
+      "rows": 699765,
+      "session": "2024-12-26",
+      "symbols": 2
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-27.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-27.cmbp-1.parquet",
+      "rows": 5570301,
+      "session": "2024-12-27",
+      "symbols": 6
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-30.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-30.cmbp-1.parquet",
+      "rows": 9005878,
+      "session": "2024-12-30",
+      "symbols": 8
+    },
+    {
+      "dbn": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-31.cmbp-1.dbn.zst",
+      "parquet": "data/raw/audit/protocol101_highres_opra/cmbp-1/2024-12-31.cmbp-1.parquet",
+      "rows": 4145890,
+      "session": "2024-12-31",
+      "symbols": 4
+    }
+  ],
+  "forbidden": [
+    "any label table",
+    "any P&L or entry/exit value",
+    "any forward return",
+    "any corpus outcome column"
+  ],
+  "frozen_on": "2026-08-23",
+  "manifest_sha256": "55dd5a92f969c6218ffaada8eddceeff355d4d12407fdffed9a5735592149b69",
+  "purpose": "outcome-blind semantic gate; pins the in-scope slice so no session can be added or dropped after results are seen",
+  "schema": "cmbp-1",
+  "schema_version": "v5.cmbp-semantic-gate.manifest.v1",
+  "session_symbol_pairs": 248,
+  "sessions": [
+    "2024-10-01",
+    "2024-10-02",
+    "2024-10-03",
+    "2024-10-04",
+    "2024-10-07",
+    "2024-10-08",
+    "2024-10-09",
+    "2024-10-10",
+    "2024-10-11",
+    "2024-10-14",
+    "2024-10-15",
+    "2024-10-16",
+    "2024-10-17",
+    "2024-10-18",
+    "2024-10-21",
+    "2024-10-22",
+    "2024-10-23",
+    "2024-10-24",
+    "2024-10-25",
+    "2024-10-28",
+    "2024-10-29",
+    "2024-10-30",
+    "2024-10-31",
+    "2024-11-01",
+    "2024-11-04",
+    "2024-11-05",
+    "2024-11-06",
+    "2024-11-07",
+    "2024-11-08",
+    "2024-11-11",
+    "2024-11-12",
+    "2024-11-13",
+    "2024-11-14",
+    "2024-11-15",
+    "2024-11-18",
+    "2024-11-19",
+    "2024-11-20",
+    "2024-11-21",
+    "2024-11-22",
+    "2024-11-25",
+    "2024-11-26",
+    "2024-11-27",
+    "2024-11-29",
+    "2024-12-02",
+    "2024-12-03",
+    "2024-12-04",
+    "2024-12-05",
+    "2024-12-06",
+    "2024-12-09",
+    "2024-12-10",
+    "2024-12-11",
+    "2024-12-12",
+    "2024-12-13",
+    "2024-12-16",
+    "2024-12-17",
+    "2024-12-18",
+    "2024-12-19",
+    "2024-12-20",
+    "2024-12-23",
+    "2024-12-24",
+    "2024-12-26",
+    "2024-12-27",
+    "2024-12-30",
+    "2024-12-31"
+  ],
+  "total_rows": 173470783
+}
