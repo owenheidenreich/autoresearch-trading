@@ -1,0 +1,99 @@
+{
+  "schema_version": "v5.regime-fold-diagnostic-precommit.v1",
+  "created_on": "2026-08-22",
+  "status": "FROZEN_BEFORE_RECEIPT_SYNTHESIS",
+  "authority": "NOT_A_FIT_DECLARATION",
+  "scope": {
+    "allowed": [
+      "hash-verify and synthesize statistics already published in the named receipts",
+      "audit whether chronology, training-window size, and data-source era are identifiable from the published design",
+      "rank prospective routes without opening a new outcome"
+    ],
+    "forbidden": [
+      "fit or refit any model",
+      "open corpus outcomes to create a new statistic, comparator, threshold, or verdict",
+      "edit v5/work/lifecycle-training/ALPHA_LEDGER.json",
+      "create a Phase 5 declaration or DeclaredFitPermit",
+      "treat this synthesis as independent confirmation"
+    ]
+  },
+  "published_inputs": [
+    {
+      "path": "v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/phase_4b_receipt.json",
+      "sha256": "8ce864c97239ef39bacdcb51acaec384bfaba4de55d97d380c7d05a462dcc429"
+    },
+    {
+      "path": "v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/entry_fit_receipt_2026_08_21.json",
+      "sha256": "674637564dbc5dcc3123c41168ef8e29900988ac01ac4ab81873b6fb8a8c6844"
+    },
+    {
+      "path": "v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/prefit_review_receipt.json",
+      "sha256": "d533614bdd5391c79af94730da59b50b6e58a3ff6daa77e2e37b721d22dc4210"
+    },
+    {
+      "path": "v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/prefit_review_followups.json",
+      "sha256": "cb0f658edf867a7430c0f52d4e613d3c8ec81065f8a7b07ce927225c19ee4f3d"
+    },
+    {
+      "path": "v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/zero_recovery_twin_2026_08_22.json",
+      "sha256": "61345799a25c38e574aebda04d35bda6e3ee027c2b97c887492828a1450e4757"
+    },
+    {
+      "path": "v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/exit_fit_receipt_2026_08_21.json",
+      "sha256": "2b437b287d86bd4b9f318e76501ee5c46bda7820f7e039f187a8dda3fce3b57c"
+    }
+  ],
+  "known_before_this_synthesis": {
+    "phase_4b_nested_fold_ordering_component_pp": [
+      0.735470884724615,
+      9.596579590404724,
+      9.399948059332885,
+      13.713925956266964
+    ],
+    "phase_4b_expanding_training_sessions": [81, 162, 243, 324],
+    "entry_fixed_fit_score_block_ordering_edge_usd": [
+      7.248567634961139,
+      5.876656304736322,
+      5.157628649335177,
+      11.875103878216777,
+      14.8131577624767
+    ],
+    "entry_fixed_fit_score_block_ordering_edge_hit_rate_pp": [
+      -0.16371946313922803,
+      -0.855645746788547,
+      -0.5389693171912069,
+      0.2703973303192553,
+      0.8534955018344503
+    ],
+    "entry_score_block_first_dates": [
+      "2024-01-30",
+      "2024-07-30",
+      "2025-01-30",
+      "2025-08-01",
+      "2026-02-03"
+    ],
+    "data_source_boundary": "2025-08-01",
+    "interpretation": "These are inherited published observations, not blinded discoveries. This precommit governs only their deterministic synthesis and the prospective route rules below."
+  },
+  "primary_discriminating_statistics": {
+    "fixed_fit_material_contrast_usd": "mean(entry ordering edge in score blocks 3-4) minus mean(entry ordering edge in blocks 0-2)",
+    "fixed_fit_label_contrast_pp": "mean(entry ordering hit-rate edge in score blocks 3-4) minus mean(entry ordering hit-rate edge in blocks 0-2)",
+    "phase4b_design_confounding": "Spearman correlation between expanding training-session count and chronological fold index",
+    "score_design_confounding": "whether recent-block indicator (blocks 3-4) equals owned-data-era indicator for every score block",
+    "source_overlap": "number of same sessions observed under both owned and backfill quote laws"
+  },
+  "thresholds_and_verdict_law": {
+    "fold_size_excluded_for_fixed_fit_score_gradient": "TRUE only if one unchanged fitted model and one unchanged training prefix produced all five score blocks, fixed_fit_material_contrast_usd >= 4.00, and each recent block exceeds every earlier block. This excludes expanding fit size only for this fixed-fit score-period contrast.",
+    "phase4b_regime_vs_expanding_window_separable": "TRUE only if chronology and training size are not perfectly rank-confounded, or a published common-model/common-period comparison supplies orthogonal variation. Otherwise NOT_SEPARABLE.",
+    "recent_regime_vs_data_era_separable": "TRUE only if the recent indicator and source-era indicator are not identical and source_overlap > 0, or an equivalent published orthogonal design exists. Otherwise NOT_IDENTIFIABLE_ON_CURRENT_DATA.",
+    "label_composition_materiality_pp": 2.5,
+    "restart_evidence_floor": "A future fixed-policy, session-unit analysis must be declared before outcomes and show a lower 95% bound above +4.00 USD per entry for the within-source regime contrast, with a same-direction ordering-label contrast of at least +0.50 percentage points and no greater than 2.50 percentage-point population label-composition shift. A same-date dual-source twin must either bound the source effect to +/-2.00 USD per entry or explicitly attribute the effect to source mechanics.",
+    "current_route_finished": "YES if either attribution comparison is structurally rank-confounded and no already-published orthogonal evidence breaks it. Finish as NOT_SEPARABLE; do not fit to resolve a design-identification failure."
+  },
+  "expected_result_before_synthesis": {
+    "fixed_fit_score_gradient": "material, with expanding training-window size excluded by construction",
+    "phase4b_gradient": "NOT_SEPARABLE between chronology/regime and expanding-window fit size",
+    "fixed_fit_recent_gradient": "NOT_IDENTIFIABLE between genuine recent regime and the 2025-08-01 data-source era seam",
+    "overall": "MIXED_NOT_SEPARABLE; no fit restart is justified on the current corpus"
+  }
+}

@@ -1571,7 +1571,7 @@ No new measurement was run; everything rests on the receipts, the pinned code, a
   `candle_prefix="last"`, which the equivalence test licenses). Target coverage **asserted before the
   fit**: 99.83% of feasible actions priced, valued equal to labelled. Against a **minute-matched**
   control — same minute, random contract — the model gains **+$8.43 per held-out entry**, positive in
-  **five score blocks of five** and **growing chronologically, +$5.16 → +$14.81**, the same gradient
+  **five score blocks of five** and **stepping +$7.25/+$5.88/+$5.16 | +$11.88/+$14.81** — which a later synthesis showed is a decline across the backfill blocks and a level shift at the 2025-08-01 source seam, not the same gradient
   Phase 4b found and could not explain. The member is structurally capable of reordering: its scores
   leave a **41% residual** against an additive minute+slot decomposition, where V5's dead architecture
   scored **2.4e-7**.
@@ -1936,3 +1936,41 @@ and nothing in the review required correction.**
 - Signing makes the law constructible. It does **not** reopen either closed configuration, authorize
   any fit, create a holdout, or imply an exit study is feasible.
 - 1,123 tests green, checker green. No fit, no spend, no vendor contact, no pinned file touched.
+
+### REGIME VERSUS FOLD SIZE CLOSED AS NOT IDENTIFIED; ROUTE CENSUS COMPLETE. 2026-08-22.
+
+- **A non-fit precommit was frozen before the dedicated synthesis:**
+  [`REGIME_FOLD_DIAGNOSTIC_PRECOMMIT_2026_08_22.json`](REGIME_FOLD_DIAGNOSTIC_PRECOMMIT_2026_08_22.json),
+  SHA-256 `0aa07718751b34f6b339df2ccfe178d0bff4ad8bc0ae1a4477130f596539c1d7`.
+  It is not a fit declaration and has no permit authority. The protected alpha ledger was not edited.
+- **The two published gradients are different.** Phase 4b refits on 81/162/243/324 sessions while
+  moving its holdout forward, so fit size and chronology have rank correlation **1.000** and are not
+  separable. The Phase-5 entry fit uses one unchanged 118-parameter model across all five score
+  blocks: earlier dollar-ordering edge averages **+$6.0943**, recent **+$13.3441**, a material
+  **+$7.2498/entry** contrast. Expanding fit size is therefore excluded for that fixed-model contrast.
+- **Market regime versus source era is still not identified.** The recent score indicator is exactly
+  the owned-data indicator (`0 0 0 1 1`) and there are zero same-session dual-source observations.
+  The largest move lands at the 2025-08-01 seam: +$6.7175/entry in dollars but only +0.8094pp on the
+  binary ordering label. Dollar edges decline 7.25→5.88→5.16 through backfill, jump to 11.88 at the
+  seam, then reach 14.81. The published 3.03/3.64/3.03/2.25/1.84% spread-to-premium profile leaves
+  liquidity as the strongest artifact alternative. Settlement value itself is excluded by the
+  existing exact-$0 Member-P twin; ladder width and coverage are stable.
+- **Receipt synthesis only — no new outcome statistic.** The exact attempt-001 wrapper stopped on a
+  Python boolean typo before output; both it and its failure receipt are preserved. Attempt 002 fixed
+  only the boolean aliases and wrote
+  `regime_fold_receipt_synthesis_2026_08_22_attempt002.json`, self-hash
+  `e67da9bd3e223f352eb9724882ab58963fd50c91515027d4ec2e0102ecaf29ab`, under
+  `v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/`. It opened published JSON receipts
+  only: no corpus table, reserved session, model target, fit, declaration, permit or ledger write.
+- **Owner-facing ruling and route census:**
+  [`REGIME_VS_FOLD_SIZE_AND_ROUTE_CENSUS_2026_08_22.md`](../../research/findings/REGIME_VS_FOLD_SIZE_AND_ROUTE_CENSUS_2026_08_22.md).
+  Recommendation: `STOP_CURRENT_CORPUS_FITS`; preserve Member Q without running it and preserve the
+  forward confirmation reserve. If the terminal branch is rejected, the only retained design idea
+  is executable clock-hold-relative contract ranking with a separately frozen entry gate. The honest
+  power anchors are ~640 outer sessions for a very large +$50/trade effect and ~2,560 for the
+  economically derived +$25/trade floor; the target-delta planning proxy is ~1,132 sessions at 80%
+  or ~1,568 at 90%. Recent-era fitting remains blocked until same-date source evidence breaks the
+  source/time alias. Member Q remains preserved, its 120-minute settlement twin un-discharged.
+- **Verification:** `check_project.py` green; outcome-run gate **14 passed**; full V5 suite
+  **1,123 passed, 105 warnings, exit 0 in 64.50s**. No fit, spend, vendor/broker contact, download,
+  paper/live order, protected-file edit or `DO_NOT_RETEST` change.

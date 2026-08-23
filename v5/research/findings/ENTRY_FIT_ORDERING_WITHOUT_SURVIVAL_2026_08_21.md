@@ -60,6 +60,18 @@ against a control that holds the minute fixed and randomises only the contract �
 selection, not luck about when to trade. It also **grows chronologically**, +$5.16 → +$14.81, which
 is the same gradient Phase 4b found in the ordering component and could not explain.
 
+> **CORRECTION, 2026-08-22 — this sentence is wrong and the error is in the presentation, not the
+> arithmetic.** "+$5.16 → +$14.81" quotes the minimum and the maximum, not the first and last blocks.
+> **In true chronological order the series is +$7.25, +$5.88, +$5.16, +$11.88, +$14.81** — it
+> *declines* monotonically across the three backfill blocks and then **steps** at block 3. Block 3
+> begins **2025-08-01, which is exactly the boundary between the parity-settled backfill quote source
+> and the officially-settled owned source**, so "recent" and "owned data era" are perfectly collinear
+> here (`0 0 0 1 1` against `0 0 0 1 1`) and no statistic on these five blocks can tell a market
+> regime from a data-source change. The model's own selected population also shifts across the seam
+> (213.5 → 172.2 entries/session). **This is a level shift at a provenance seam, not a chronological
+> trend, and it is `NOT_IDENTIFIABLE` on current data.** See
+> [`REGIME_VS_FOLD_SIZE_AND_ROUTE_CENSUS_2026_08_22.md`](REGIME_VS_FOLD_SIZE_AND_ROUTE_CENSUS_2026_08_22.md).
+
 **The entry does not survive.** −$15.66 per entry over 126,900 held-out entries is **−$1,987,457**.
 Only 31.1% of entries are profitable. Survival is **30.07% against a pre-committed 45–50% target**,
 and it does not beat its own control: the minute-matched random pick survives at 30.25%, and the
