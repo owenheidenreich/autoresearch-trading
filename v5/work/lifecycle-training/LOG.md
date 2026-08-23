@@ -2229,8 +2229,16 @@ Owner supplied the Databento key and authorised the preflight. **Pricing only �
 - **The headline is that the best available option costs nothing.** `ohlcv-1s` is **free across the
   entire corpus window** and carries **~10x the records of `ohlcv-1m`** — one-second trade bars where
   every model built here has seen one-minute quote snapshots. It is *trade* information, not quotes,
-  so it is sparse by construction and is **not** a replacement for the BBO: it is the order-flow
-  family this project has never had, at zero marginal cost.
+  so it is sparse by construction and is **not** a replacement for the BBO.
+
+  > **CORRECTION, 2026-08-23.** This entry went on to call `ohlcv-1s` *"the order-flow family this
+  > project has never had"*. **That is wrong and the error is mine.** Order flow means *signed* flow —
+  > knowing whether a trade was buyer- or seller-initiated — and an OHLCV record cannot supply it.
+  > Verified against the record layout: `OHLCVMsg` carries **only** open/high/low/close/volume, with
+  > `bid_px`, `ask_px`, `side`, `action` and `flags` all **absent**. `ohlcv-1s` is an *unsigned,
+  > aggregated last-trade tape*. It cannot sign a trade, cannot show the touch it printed against, and
+  > cannot measure book resilience. A cold review vetoed it for alpha on exactly this ground and the
+  > veto is correct. The free-and-60x facts stand; the interpretation placed on them did not.
 - **What this does NOT establish.** That the data is free says nothing about whether it carries an
   edge — this project has censused several free information families dead. It also does not authorize
   a download: acquiring `ohlcv-1s` is a new schema outside the charter's `definition`/`cbbo-1m` scope
@@ -2243,3 +2251,89 @@ Owner supplied the Databento key and authorised the preflight. **Pricing only �
 - Wrappers and receipts archived under `depth_*_2026_08_22.*`, with the void attempt preserved.
 - **No purchase, no download, no data transferred, no vendor account modified.** The API key is in
   `.env`, which is git-ignored and was not committed.
+
+### SUB-MINUTE DIRECTION SYNTHESIS — STOP UNDER CURRENT CONSTRAINTS. 2026-08-22.
+
+Finding: [`DATABENTO_SUBMINUTE_DIRECTION_DECISION_2026_08_22.md`](../../research/findings/DATABENTO_SUBMINUTE_DIRECTION_DECISION_2026_08_22.md).
+
+- **Independent data, microstructure, measurability, runtime/parity and adversarial reviews agree on
+  STOP.** No candidate survives as an economic or fit route under the current data budget, session
+  power, train/live-parity requirement and signed risk law. The strongest scientific idea is strict
+  trade-at-touch flow conditioned on post-trade book resilience; it remains a paper question, not a
+  runnable bot route.
+- **The free schema does not inherit the rich mechanism.** `ohlcv-1s` is vendor-aggregated
+  last-trade OHLCV: no individual print order, prior BBO, touch, aggressor or quote response, and no
+  executable bid/ask label. The finding vetoes it as an alpha direction because it is the dead
+  last-trade/chart/magnitude family at a finer clock. Its five sampled $0 quotes and two positive
+  record-count probes are retained; full-corpus $0 remains inferred rather than an all-session quote.
+- **The event-data cost was coverage-corrected rather than repeated from the receipt's deliberately
+  simple 1,014-session extrapolation.** There are 813 corpus sessions on or after the 2023-03-28
+  CMBP/TCBBO coverage start and 586 before the observed recent-free era. The exact paid samples imply
+  planning totals of about **$148.60 CMBP** and **$3,224.57 TCBBO**, not exact acquisition quotes;
+  both remain above the $36.51 balance and outside its schema authority. The exact all-session sum is
+  UNKNOWN until a new owner decision permits the specified metadata-only census.
+- **Owned depth is useful only for a kill gate.** The existing 64 selected-symbol CMBP sessions
+  (173,470,783 rows, 248 session-symbols) and 175 selected-symbol CBBO-1s sessions may support an
+  outcome-blind parser/semantic check. Their selected population cannot support unbiased economics,
+  and no such check was run here.
+- **Messages do not solve the calendar wall.** Economic inference clusters by session; 644 paths in
+  323 clusters had effective size near 385. Entry-specific effect and power remain UNKNOWN. Signed
+  Tier A still requires about 2,560 outer sessions (~10.2 years) for exit, so no exit work reopens.
+  One future outcome look would charge the ledger 6→7; the current `0.66059463` bar is directional
+  geometry only and cannot stand in for option P&L.
+- **Runtime remains a hard stop.** The current twin is minute-specific; no CMBP live twin exists;
+  Databento live entitlement and price are UNKNOWN; IBKR event equivalence is unproved; and the v5
+  simulator still carries a 5% breaker/no mandatory percentage stop against signed 20% and
+  -40%-or-wider laws. The finding specifies same-schema no-order parity, symbol/clock/drop/fill
+  receipts and law-current risk enforcement before any fit or paper path.
+- **Recommended owner decision:** accept `STOP_UNDER_CURRENT_CONSTRAINTS`. If the owner explicitly
+  declines, authorize only the outcome-blind semantic gate on already-owned CMBP; a pass is
+  `SEMANTICS_PASS_ONLY`, never acquisition or fit authority.
+- No fit, outcome statistic, reserved session, vendor call, download, spend, subscription, broker
+  connection, paper/live order, protected-file edit, wrapper or receipt was produced by this
+  synthesis. Member Q remains **PRESERVED, NOT RUN**.
+- **Verification green:** project/repository checker PASS; full v5 suite **1,138 passed** with 105
+  existing numerical warnings, process exit 0 in 68.72 seconds.
+
+### SUB-MINUTE DIRECTION DECISION VERIFIED: `STOP_UNDER_CURRENT_CONSTRAINTS`. 2026-08-23.
+
+Finding: [`DATABENTO_SUBMINUTE_DIRECTION_DECISION_2026_08_22.md`](../../research/findings/DATABENTO_SUBMINUTE_DIRECTION_DECISION_2026_08_22.md)
+(Codex/Sol). **Verified here. Both of this session's challenges to it failed, and the finding stands.**
+
+- **The `ohlcv-1s` veto is CORRECT and the error it overturns is mine.** Checked against the record
+  layout: `OHLCVMsg` carries **only** open/high/low/close/volume — `bid_px`, `ask_px`, `side`,
+  `action` and `flags` are all **absent**. So `ohlcv-1s` is an **unsigned aggregated last-trade
+  tape**: it cannot sign a trade, cannot show the touch a print landed against, and cannot measure
+  book resilience. The 2026-08-22 entry above called it *"the order-flow family this project has
+  never had"*, which conflates a trade tape with **signed** flow. Corrected in place. **Free and 60x
+  resolution were both true; the interpretation placed on them was not.**
+- **"VERIFIED partly owned" is CORRECT and this session's scepticism was misplaced.** Filesystem
+  searches under `/Volumes/AR_TRADING_DATA` and `~/.autoresearch-trading` found nothing, and the row
+  counts appeared nowhere in the repo — so the claim looked unsupported. **Both checks were looking in
+  the wrong place.** The inventory is
+  [`v4/audit/databento_protocol101_highres_downloads.jsonl`](../../../v4/audit/databento_protocol101_highres_downloads.jsonl)
+  and the totals reproduce **exactly**: `cmbp-1` **64 sessions, 173,470,783 rows, 2024-10-01→2024-12-31**;
+  `cbbo-1s` **175 sessions, 18,287,307 rows, 2025-07-01→2026-03-30**. The paths are **repo-relative**
+  (`data/raw/audit/protocol101_highres_opra/…`), and **all 239 DBN and all 239 Parquet files are
+  present on disk.** Recorded acquisition cost was **$4.80 total**, cheap because it is selected-symbol.
+- **The named hypothesis is constructible on data already owned.** `cmbp-1` carries `action`, `price`,
+  `size` and the **contemporaneous `bid_px_00`/`ask_px_00`/`bid_sz_00`/`ask_sz_00`**, so a trade row
+  can be signed by comparing its print to the touch standing at that instant. That is exactly "strict
+  trade-at-touch flow plus book resilience", and it is why OPRA's unpopulated `side=N` is not fatal.
+  6,442,354 rows in a single 118.9 MB session file.
+- **One refinement rather than a correction.** The finding's CMBP planning figure of **~$148.60** uses
+  a **two-sample** mean of $0.253577 taken from this session's own 2023-06-27 and 2024-07-01 probes.
+  Four further probes across 2025 return **$0.31–$0.70/session**, so the true mean is higher and the
+  paid-partition cost is plausibly **$250–$400** rather than $148.60. The finding already labels the
+  figure `INFERRED` with "exact total UNKNOWN", so this sharpens it rather than contradicting it. The
+  free boundary measured here for `cmbp-1` is **~2025-09-02**, giving **222 free / 591 paid** of the
+  813 sessions inside its 2023-03-28 coverage, with **201 corpus sessions uncoverable** because they
+  precede that coverage at all.
+- **Verdict accepted: `STOP_UNDER_CURRENT_CONSTRAINTS`.** The route lacks affordable unbiased history,
+  live parity, a compliant runtime, and entry-specific power. If the owner rejects the stop, the only
+  admissible move is the finding's own: an **outcome-blind semantic gate on the 64 owned CMBP
+  sessions** — free, already on disk, no spend, and it tests whether the decoder and the
+  trade-at-touch semantics work *before* anyone prices history.
+- **Verification:** 1,138 tests green, checker green, ledger untouched at 6 experiments, `STATUS.md`,
+  `DO_NOT_RETEST.md` and every signed and pinned file unmodified, `pickles-weekly-ranges/` untouched.
+  No spend, no download, no outcome read, no vendor or broker action.
