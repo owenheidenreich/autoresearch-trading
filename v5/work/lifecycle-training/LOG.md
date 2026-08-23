@@ -2684,3 +2684,34 @@ hypothesis was refuted.** A future session must not read it as a defeated idea.
 grounds — that "the candles are ES" is the kind of quiet inconsistency a future session inherits. It
 now turns out the live infrastructure forbids futures regardless. The ruling is more robust than the
 argument originally given for it.
+
+### CORRECTION TO THE FUTURES RULING, SAME DAY. It is a price, not an impossibility. 2026-08-23.
+
+The ruling above was recorded on an incomplete picture and the reason it gave is wrong. The verdict
+does not change; the reasoning does, and the difference matters for any future session.
+
+**What the owner's subscription page actually shows:** *"You can currently access historical market
+data for the services below at usage-based rates. **Subscribe to activate live data.**"* — with **CME
+Globex MDP3.0 at $199/month**.
+
+| | Corrected status |
+|---|---|
+| Historical CME/ES | **ALREADY ACCESSIBLE** at usage-based rates. The $87.39 `ohlcv-1s` quote for 1,014 sessions is a real purchasable price, not a hypothetical. |
+| Live CME/ES | **$199/month**, requires a Standard upgrade. **Available, not impossible.** |
+| IBKR live ES | Still refused — error 354, unchanged. |
+
+**So the parity rule is satisfiable at a price.** The earlier entry said "no live ES path exists".
+That is **false**: one exists and costs $199/month. Corrected here rather than edited above.
+
+**The verdict stands — no futures for now — but as an economic judgement rather than a physical
+constraint.** $199/month is **$2,388/year** added to an existing OPRA subscription that is itself not
+yet used, for a hypothesis whose only test to date showed **MFE +30bps 8.8% against random 10.2%** —
+i.e. worse than random. Spending a recurring fee to chase that, before the foundation exists and
+before anything runs forward on data already paid for, is the wrong order.
+
+**A cheap sequence exists if it is ever revisited, and it should be recorded so nobody buys the
+subscription first.** Historical ES is purchasable **now for ~$87** without any subscription. That
+buys an answer to "is live CME worth $199/month?" for roughly one month's fee divided by two.
+**Test on $87 of history; subscribe only if it shows something.** Note this would still cost an alpha
+exposure and would be development-grade only, since a historical-only ES result could not be deployed
+under the parity rule without the live feed.
