@@ -2386,3 +2386,26 @@ vendor, and **read no outcome, so no alpha was charged.**
   and entry-specific power.
 - Producer and log archived as `cmbp_semantic_gate_producer_2026_08_23.py` /
   `cmbp_semantic_gate_2026_08_23.{json,log}`.
+
+### 229 SESSIONS OF UNBIASED BROAD-BAND CMBP-1 ARE FREE. 2026-08-23.
+
+Measured while scoping the next research session. Metadata only; nothing downloaded, no spend.
+
+- **`cmbp-1` is free from 2025-08-21**, giving **229 corpus sessions (2025-08-21 → 2026-07-30)**, all
+  usable — the confirmation reservation bars 2026-08-06 onward and the corpus ends 2026-07-30.
+- **This is not the selected slice.** The 64 owned sessions carry 7 symbols apiece, chosen around a
+  prior route. These 229 would be requested at the **full ±25-point band** and are unbiased by
+  construction. Uniform provenance across all 229, so **no internal era seam** of the kind that made
+  the two-era corpus `NOT-USABLE`.
+- **The cost is engineering, not money.** One free session at broad band is **130,310,192 rows across
+  52 contracts** — twenty times the owned slice's 6.4M rows for 7 contracts. Across 229 sessions that
+  projects to **~29.8 billion rows and roughly 0.55 TB** of parquet at the owned slice's observed
+  density. That is a serious build, not a casual download.
+- **What it would and would not fix.** It removes the selection bias the semantic gate had to caveat,
+  and it is the only unbiased signed-flow sample obtainable at zero cost. It does **not** fix
+  chronological breadth: 229 sessions is one era and roughly eleven months, so any chronological split
+  is shallow, and it remains far below the ~2,560 sessions Tier A certification demands.
+- **Still requires owner authorization.** `cmbp-1` is outside the charter's `definition`/`cbbo-1m`
+  scope. The spend gate is moot at $0; the storage, decode throughput and train/live parity
+  obligations are not.
+- Wrapper archived as `free_cmbp_scope_2026_08_23.py`.
