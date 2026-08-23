@@ -17,3 +17,13 @@ dependencies = [
     "ib_insync>=0.9.86",
     "databento>=0.76",
 ]
+
+[dependency-groups]
+test = [
+    "pytest==9.0.2",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "owned_data: requires protected local market data and is excluded from hosted CI",
+]

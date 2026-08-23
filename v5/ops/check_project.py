@@ -24,6 +24,9 @@ V5 = ROOT / "v5"
 STATUS = V5 / "STATUS.md"
 
 REQUIRED = (
+    ROOT / ".gitattributes",
+    ROOT / "uv.lock",
+    ROOT / ".github/workflows/v5-guards.yml",
     V5 / "README.md",
     STATUS,
     V5 / "AGENTS.md",
@@ -34,6 +37,9 @@ REQUIRED = (
     V5 / "research/findings/V5_WORKFLOW_CAPABILITY_AUDIT_2026_08_05.md",
     V5 / "research/training_twin.py",
     V5 / "research/feature_admission.py",
+    V5 / "research/outcome_run_gate.py",
+    V5 / "ops/verify_interior_book_liveness.py",
+    V5 / "ops/verify_cmbp_touch_semantics.py",
     V5 / "research/validation/candidate_packet.py",
     V5 / "history/jobs/measurement-review/BRIEF.md",
     V5 / "history/jobs/g1-direction/PLAN.md",

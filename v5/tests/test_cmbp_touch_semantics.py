@@ -113,6 +113,7 @@ def test_an_unsignable_slice_stops_rather_than_passing() -> None:
     assert r["verdict"] == "SEMANTIC_STOP_UNSIGNABLE"
 
 
+@pytest.mark.owned_data
 @needs_slice
 def test_the_owned_slice_signs_a_real_share_of_its_tape() -> None:
     r = verify_parquet(SLICE / "2024-10-01.cmbp-1.parquet", "2024-10-01")

@@ -1,11 +1,17 @@
 # autoresearch-trading
 .env
+.env.*
+!.env.example
 .deploy-state
 results.tsv
 run.log
 loop.log
 trade_log.csv
 # Model checkpoints (large binaries, never commit)
+*.pt
+*.pt.*
+*.pkl
+*.pickle
 v2/models/*.pt
 v2/model.pt
 v2/model_candidate.pt
@@ -44,7 +50,6 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-uv.lock
 
 # Data cache
 data/
@@ -96,6 +101,8 @@ ART squared.heic
 
 # Local transcript history backup (never commit session contents)
 _history_backup/
+/discord_exports/
+/pickles-weekly-ranges/
 
 # Local agent state and iCloud conflict copies (never commit)
 .claude/

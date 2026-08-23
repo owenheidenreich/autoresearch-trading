@@ -82,13 +82,14 @@ def test_readme_alone_answers_the_fresh_agent_orientation_drill() -> None:
     readme = " ".join((V5 / "README.md").read_text().lower().split())
     required_answers = {
         "goal": ("automated day-trading bot", "spx 0dte", "directional skill"),
-        "measurement blocker": ("254 owned es sessions", "cannot reliably measure"),
-        "current job": ("independent", "measurement-capacity review"),
-        "next permitted action": ("review the measurement limits", "do not run the g1"),
-        "closed experiments": ("five research campaigns", "no edge", "do-not-retest"),
-        "cost bar": ("0.358 es points", "$17.92"),
-        "data state": ("254 usable es sessions", "251 option sessions", "914 opra"),
-        "tools": ("clock/parity", "feature-admission", "validation packet"),
+        "canonical authority": ("only current-state page", "status.md"),
+        "current job": ("job 47", "safe local phase 0", "phase 1 is not authorised"),
+        "research blocker": ("effect size", "causal identification", "no directional family"),
+        "next permitted action": ("repository and guard infrastructure", "do not open outcomes"),
+        "economic distinction": ("0.358 es points", "$17.92", "not a universal spxw"),
+        "forward evidence": ("2026-08-06", "confirmation-only"),
+        "closed experiments": ("do-not-retest", "unchanged retry"),
+        "durable guards": ("outcome run gate", "interior book-liveness", "cmbp touch-semantics"),
         "safety restrictions": ("no training", "broker/vendor contact", "owner authorization"),
     }
     missing = {
@@ -97,6 +98,12 @@ def test_readme_alone_answers_the_fresh_agent_orientation_drill() -> None:
         if not all(term in readme for term in terms)
     }
     assert missing == {}
+    for obsolete in (
+        "with 254 owned es sessions",
+        "current job: obtain the independent",
+        "only rung 1 is currently authorized",
+    ):
+        assert obsolete not in readme
 
 
 def test_training_readiness_work_is_registered_and_catalogued() -> None:

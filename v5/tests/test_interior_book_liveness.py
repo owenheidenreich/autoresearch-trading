@@ -141,6 +141,7 @@ def _quote_path(session: str) -> Path:
     return BACKFILL_QUOTES / f"databento_spxw_0dte_{session}.parquet"
 
 
+@pytest.mark.owned_data
 @needs_corpus
 @pytest.mark.parametrize("session", KNOWN_FROZEN)
 def test_the_three_audit_sessions_fail(session: str) -> None:
@@ -153,6 +154,7 @@ def test_the_three_audit_sessions_fail(session: str) -> None:
     assert result.runs, "a failing session must report where it froze"
 
 
+@pytest.mark.owned_data
 @needs_corpus
 @pytest.mark.parametrize("session", KNOWN_HEALTHY)
 def test_healthy_neighbours_still_pass(session: str) -> None:

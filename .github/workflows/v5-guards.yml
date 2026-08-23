@@ -1,0 +1,66 @@
+name: v5 non-fitting guards
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v5-guards-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  structure-and-guard-contracts:
+    name: Structure and guard contracts
+    # Arm64 avoids PyPI's 906 MB x86 Torch wheel and CUDA dependency set.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      UV_NO_PROGRESS: "1"
+      UV_PYTHON: "3.12.13"
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.10.10"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install pinned Python and locked dependencies
+        run: |
+          uv python install "$UV_PYTHON"
+          uv sync --locked --group test --inexact
+
+      - name: Check the governed project boundary
+        run: uv run --no-sync python v5/ops/check_project.py
+
+      - name: Run non-fitting guard contracts
+        run: |
+          uv run --no-sync python -m pytest \
+            -p no:cacheprovider \
+            --strict-markers \
+            --maxfail=1 \
+            -q -ra \
+            -m "not owned_data" \
+            v5/tests/test_project_structure.py \
+            v5/tests/test_interior_book_liveness.py \
+            v5/tests/test_cmbp_touch_semantics.py \
+            v5/tests/test_outcome_run_gate.py::test_the_real_phase_4b_declaration_reproduces_its_own_digest \
+            v5/tests/test_outcome_run_gate.py::test_an_edited_declaration_is_refused \
+            v5/tests/test_outcome_run_gate.py::test_a_declaration_that_no_longer_matches_the_code_is_refused \
+            v5/tests/test_outcome_run_gate.py::test_a_declaration_pinning_nothing_is_refused \
+            v5/tests/test_outcome_run_gate.py::test_an_unresolved_exposure_blocks_the_next_run \
+            v5/tests/test_outcome_run_gate.py::test_classifying_the_crashed_run_unblocks_the_gate \
+            v5/tests/test_outcome_run_gate.py::test_the_journal_is_append_only \
+            v5/tests/test_outcome_run_gate.py::test_the_exposure_is_journalled_before_the_fit_not_after \
+            v5/tests/test_outcome_run_gate.py::test_a_corpus_episode_cannot_be_fitted_without_a_permit \
+            v5/tests/test_outcome_run_gate.py::test_the_exit_phase_is_gated_on_the_same_evidence
