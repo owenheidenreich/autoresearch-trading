@@ -10,6 +10,12 @@
 
 Keep **v6 as a programme label inside v5 governance**. Do Phase 1 before any outcome-bearing paper run. The only parallel forward work worth considering is outcome-blind capture, identity, completeness, latency, and parity work, with no simulated fills or economics, and only after owner authorisation. Separate research opportunities from executable tickets: a session may contain many causal observations, but it is still one inference cluster and the live policy remains capped at two one-contract tickets unless the owner amends the signed risk law. No directional family is presently evidenced as better than opening-range/gap; strict prior-touch signed option flow plus causal non-replenishment is the only materially new primitive found, but its current verdict is `STOP`, not “run.” The economic bar below is a Tier-2 proposal awaiting owner signature, not inherited law.
 
+## Job 48 — unconditional SPX move terrain (registered 2026-08-23)
+
+This is a free market-structure measurement, not Phase 1 and not an alpha exposure. On the pre-reservation SPX parity tape, measure unconditional favourable and adverse excursions, gain-before-loss races, clock shape, and era drift. Session is the inference cluster even when a table contains many overlapping windows. The three known whole-book-freeze sessions and the vendor-padded 2022-11-25 session are excluded mechanically and reported; the two source eras are reported separately as well as pooled. Every estimate carries session-clustered uncertainty.
+
+The hard boundary is conditioning: clock, horizon, direction, move threshold, adverse threshold and source era define the terrain grid; no feature, indicator, signal, prior state, label, option outcome or fitted quantity may select a window. Crossing that boundary requires stopping for a separately charged experiment. The separately produced option-greeks move requirement may be joined to the finished receipt only as an arithmetic translation after both inputs exist; it may not be used to tune this census's grid. This job adopts no strategy and opens no reserved session.
+
 ## Phase 0 exit ledger
 
 | Criterion | 2026-08-23 evidence | State |

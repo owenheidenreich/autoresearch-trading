@@ -2759,3 +2759,51 @@ engineered so training and live behave identically.
   optimising percentage return selects contracts whose delta is already gone. Both behaviours are now
   pinned by test.
 - **1,193 tests green** (1,162 + 31), checker green, semantic freeze intact, no pinned file touched.
+
+### V6 FOUNDATION, STEP 2: WHAT EACH CONTRACT REQUIRES. And the cap works against us. 2026-08-23.
+
+[`v5/research/contract_economics.py`](../../research/contract_economics.py) + 13 tests. Computes, by
+**repricing with the pinned Black-Scholes pricer** rather than a Taylor expansion — gamma is too large
+on 0DTE for the expansion to hold — the smallest favourable SPX move that makes a round trip break
+even. Friction is the repository's measured friction: **fees $3.08**, and the **spread crossed once**,
+using corpus-median spreads of **$0.10–0.20** (1.6–2.1% of mid). Table archived as
+`required_move_table_2026_08_23.txt`.
+
+**REQUIRED SPX MOVE IN POINTS, 20-MINUTE HOLD, IV 13%:**
+
+| minutes left | ATM | 10pt OTM | 25pt OTM | 60pt OTM |
+|---:|---:|---:|---:|---:|
+| 330 | **1.5** | 2.0 | 2.5 | 4.4 |
+| 150 | **2.1** | 2.9 | 4.0 | 9.5 |
+| 60 | **3.3** | 4.9 | 7.9 | **27.5** |
+| 30 | **4.6** | 8.0 | 14.9 | **46.0** |
+
+**THE INVERSION, STATED PLAINLY: the expensive contract needs the smaller move.** At 60 minutes left
+an at-the-money call breaks even on **3.3 points** while a 60-point-out call needs **27.5** — eight
+times the move, on the same clock. At 30 minutes it is 4.6 against 46.0, a factor of ten. **Cheapness
+is not leverage; it is a larger hurdle disguised as a smaller ticket.** This is the mechanism behind
+`RIGHT IDEA, WRONG UNITS` and behind job 46's measured **$579 average ticket**, now quantified rather
+than inferred.
+
+**AND THE SIGNED $2,000 TICKET CAP MECHANICALLY SELECTS THE WORSE CONTRACTS.** Entry costs at a
+10-minute hold:
+
+| minutes left | ATM | 10pt OTM | 25pt OTM | 60pt OTM |
+|---:|---:|---:|---:|---:|
+| 330 (09:31) | **$2,094 — over the cap** | $1,633 | $1,074 | $331 |
+| 240 | $1,781 | $1,327 | $802 | $189 |
+| 60 | $885 | $477 | $150 | $12 |
+
+**At the open, the at-the-money contract costs more than the cap allows.** The cap is a capital-safety
+rule, and it is doing something nobody intended: **forcing selection away from the strikes with the
+lowest required move and toward the ones needing multi-point moves.** The owner ruled on 2026-08-23
+that the cap stays at $2,000; this is recorded not to reopen that, but because the cap's *side effect
+on contract selection* was never part of the ruling and is now measured.
+
+**What this does NOT establish.** Whether any of these moves actually happen. A requirement of 3.3
+points is only useful next to the frequency of 3.3-point moves in twenty minutes, which is exactly
+what the parallel unconditional move-distribution work measures. **The two multiply into the first
+honest answer to whether this strategy class can pay before any signal exists.** This half is the
+terrain's price; the other half is the terrain.
+
+- 1,206 tests green (1,193 + 13), checker green, semantic freeze intact — `greeks.py` untouched.
