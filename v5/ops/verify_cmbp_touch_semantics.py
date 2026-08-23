@@ -29,6 +29,21 @@ bid seller-initiated, and anything strictly inside the touch is **ambiguous and
 is retained as ambiguous rather than guessed**. Locked (`bid == ask`) and crossed
 (`bid > ask`) prior books are excluded from signing and counted, because a sign
 taken from a degenerate book is not a sign.
+
+**Tied clocks, added 2026-08-23 after a cold review found this missing.** OPRA
+delivers events that share a timestamp, and this parquet carries **no `sequence`
+field** to order them -- only `ts_recv`, `ts_event` and `ts_in_delta`. When the
+event immediately preceding a trade shares that trade's timestamp, "strictly
+before" is decided by *file order*, which is an assumption about the vendor's
+serialisation rather than a verified fact. Measured on 2024-10-01, **20.96% of
+signs** rest on such a tie.
+
+Those signs are therefore reported separately as `signed_tie_ambiguous`, and
+**the verdict is taken on the unambiguous share alone.** The first version of this
+gate counted them silently, which overstated its own headline. That is precisely
+the defect class that contaminated Phase 4a's ablation rows, where a stable
+lexsort resolved equal scores by frame order and the resulting pick looked like a
+measurement.
 """
 from __future__ import annotations
 
@@ -69,19 +84,32 @@ class SessionSemantics:
     touch_moved_after_trade: int
     ask_rose_after_buy: int
     bid_fell_after_sell: int
+    signed_tie_ambiguous: int = 0
 
     @property
     def signed(self) -> int:
         return self.at_ask_buyer_initiated + self.at_bid_seller_initiated
 
     @property
+    def signed_unambiguous(self) -> int:
+        """Signs whose prior event did not share the trade's timestamp."""
+        return self.signed - self.signed_tie_ambiguous
+
+    @property
     def signed_share(self) -> float:
         return self.signed / self.trades if self.trades else 0.0
+
+    @property
+    def unambiguous_share(self) -> float:
+        """The honest headline: the verdict is taken on this, not on `signed_share`."""
+        return self.signed_unambiguous / self.trades if self.trades else 0.0
 
     def payload(self) -> dict[str, Any]:
         d = asdict(self)
         d["signed"] = self.signed
         d["signed_share"] = self.signed_share
+        d["signed_unambiguous"] = self.signed_unambiguous
+        d["unambiguous_share"] = self.unambiguous_share
         return d
 
 
@@ -103,6 +131,13 @@ def classify_session(frame: pd.DataFrame, session: str) -> SessionSemantics:
     g = d.groupby("instrument_id", sort=False)
     prev_bid, prev_ask = g["bid_px_00"].shift(1), g["ask_px_00"].shift(1)
     post_bid, post_ask = g["bid_px_00"].shift(-1), g["ask_px_00"].shift(-1)
+    # There is no `sequence` field to order same-timestamp events, so a prior
+    # event sharing the trade's clock leaves "strictly before" resting on file
+    # order rather than on anything verified.
+    tie = pd.Series(False, index=d.index)
+    for clock in ("ts_recv", "ts_event"):
+        if clock in d.columns:
+            tie = tie | (d[clock] == g[clock].shift(1))
 
     is_trade = d["action"].astype(str) == TRADE_ACTION
     t = d[is_trade]
@@ -119,6 +154,8 @@ def classify_session(frame: pd.DataFrame, session: str) -> SessionSemantics:
     inside = clean & (t["price"] > pb) & (t["price"] < pa)
     outside = clean & ((t["price"] < pb) | (t["price"] > pa))
     moved = clean & ((qb != pb) | (qa != pa))
+    signed_mask = at_ask | at_bid
+    tie_t = tie[is_trade]
 
     return SessionSemantics(
         session=session, rows=int(len(d)), symbols=int(d["symbol"].nunique()),
@@ -130,6 +167,7 @@ def classify_session(frame: pd.DataFrame, session: str) -> SessionSemantics:
         touch_moved_after_trade=int(moved.sum()),
         ask_rose_after_buy=int((at_ask & (qa > pa)).sum()),
         bid_fell_after_sell=int((at_bid & (qb < pb)).sum()),
+        signed_tie_ambiguous=int((signed_mask & tie_t).sum()),
     )
 
 
@@ -148,8 +186,14 @@ def build_receipt(results: list[SessionSemantics], *, manifest_sha256: str,
                   decode_identity: dict[str, Any] | None = None) -> dict[str, Any]:
     trades = sum(r.trades for r in results)
     signed = sum(r.signed for r in results)
+    tie_ambiguous = sum(r.signed_tie_ambiguous for r in results)
+    unambiguous = signed - tie_ambiguous
     share = signed / trades if trades else 0.0
-    verdict = "SEMANTICS_PASS_ONLY" if share >= MIN_SIGNED_SHARE else "SEMANTIC_STOP_UNSIGNABLE"
+    # The verdict rests on the UNAMBIGUOUS share. A sign whose prior event shares
+    # its clock is an assumption about vendor serialisation, not a measurement.
+    unambiguous_share = unambiguous / trades if trades else 0.0
+    verdict = ("SEMANTICS_PASS_ONLY" if unambiguous_share >= MIN_SIGNED_SHARE
+               else "SEMANTIC_STOP_UNSIGNABLE")
     return {
         "schema_version": SCHEMA_VERSION,
         "manifest_sha256": manifest_sha256,
@@ -162,6 +206,11 @@ def build_receipt(results: list[SessionSemantics], *, manifest_sha256: str,
         "trades": trades,
         "signed": signed,
         "signed_share": share,
+        "signed_tie_ambiguous": tie_ambiguous,
+        "signed_unambiguous": unambiguous,
+        "unambiguous_share": unambiguous_share,
+        "verdict_taken_on": "unambiguous_share",
+        "no_sequence_field": True,
         "inside_ambiguous": sum(r.inside_ambiguous for r in results),
         "outside_ambiguous": sum(r.outside_ambiguous for r in results),
         "locked_prior": sum(r.locked_prior for r in results),

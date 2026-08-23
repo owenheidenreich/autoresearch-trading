@@ -120,3 +120,44 @@ def test_the_owned_slice_signs_a_real_share_of_its_tape() -> None:
     assert r.locked_prior == 0 and r.crossed_prior == 0
     assert 0.40 < r.signed_share < 0.70, f"signed share drifted: {r.signed_share:.3f}"
     assert r.inside_ambiguous > 0, "a real tape always has inside prints"
+
+
+def test_a_sign_whose_prior_event_shares_its_clock_is_flagged_ambiguous() -> None:
+    """No `sequence` field exists, so a tied clock leaves order resting on file order.
+
+    This is the Phase-4a defect class: a stable sort silently resolving a tie and
+    the result reading as a measurement.
+    """
+
+    f = _rows([
+        _quote(1, 1, 1.00, 1.20),
+        _quote(1, 5, 1.05, 1.25),                              # same clock as the trade
+        (1, 5, "T", "N", 1.25, 5, 1.05, 1.25, "X", 1),
+    ])
+    r = classify_session(f, "s")
+    assert r.signed == 1
+    assert r.signed_tie_ambiguous == 1, "a tied-clock predecessor must be flagged"
+    assert r.signed_unambiguous == 0
+    assert r.unambiguous_share == 0.0
+
+
+def test_an_untied_sign_is_not_flagged() -> None:
+    f = _rows([_quote(1, 1, 1.00, 1.20), (1, 9, "T", "N", 1.20, 5, 1.00, 1.20, "X", 1)])
+    r = classify_session(f, "s")
+    assert r.signed == 1 and r.signed_tie_ambiguous == 0 and r.signed_unambiguous == 1
+
+
+def test_the_verdict_rests_on_the_unambiguous_share_not_the_raw_one() -> None:
+    """A slice that signs well only because of tied clocks must not pass."""
+
+    rows = [_quote(1, 0, 1.00, 1.20)]
+    for i in range(20):                                        # every sign tied
+        rows += [_quote(1, i + 1, 1.00, 1.20),
+                 (1, i + 1, "T", "N", 1.20, 5, 1.00, 1.20, "X", 1)]
+    r = classify_session(_rows(rows), "s")
+    receipt = build_receipt([r], manifest_sha256="abc")
+    assert receipt["signed_share"] >= MIN_SIGNED_SHARE, "raw share looks fine"
+    assert receipt["unambiguous_share"] == 0.0
+    assert receipt["verdict"] == "SEMANTIC_STOP_UNSIGNABLE", "must fail on the honest share"
+    assert receipt["verdict_taken_on"] == "unambiguous_share"
+    assert receipt["no_sequence_field"] is True

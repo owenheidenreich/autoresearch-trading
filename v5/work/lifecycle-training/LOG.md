@@ -2358,7 +2358,7 @@ vendor, and **read no outcome, so no alpha was charged.**
 
   | Quantity | Measured |
   |---|---:|
-  | Trades signable by strict prior touch | **874,002 — 55.03%** |
+  | Trades signable by strict prior touch | **874,002 — 55.03%** *(superseded: see 08-23 correction)* |
   | Inside-touch, **ambiguous and not guessed** | 704,734 — 44.37% |
   | Outside touch | 2,259 |
   | Locked / crossed prior book | **0 / 0** |
@@ -2409,3 +2409,128 @@ Measured while scoping the next research session. Metadata only; nothing downloa
   scope. The spend gate is moot at $0; the storage, decode throughput and train/live parity
   obligations are not.
 - Wrapper archived as `free_cmbp_scope_2026_08_23.py`.
+
+### SIGNED FLOW MOVES US TOWARD A VALID EXPERIMENT, NOT A PROFITABLE BOT. 2026-08-23.
+
+Finding:
+[`SIGNED_ORDER_FLOW_BOT_DECISION_2026_08_23.md`](../../research/findings/SIGNED_ORDER_FLOW_BOT_DECISION_2026_08_23.md).
+**Decision: NO under current constraints; retain `STOP_UNDER_CURRENT_CONSTRAINTS`.** The owned flow
+contains real short-lived structure and the free broad build is computationally possible, but 229
+session clusters are not demonstrably powered for the economic gate, causal order is unresolved for
+a quarter of the pinned signs, and no CMBP live twin or law-current runtime exists. No acquisition,
+outcome, fit, alpha charge, vendor/broker call, protected-file edit or order occurred.
+
+- **Compute is feasible only as a chunked external-SSD build.** Five disjoint size strata measured
+  DBN scan at **4.547–4.931M rows/s**, DBN→Snappy Parquet at **1.040–1.115M rows/s**, and the
+  outcome-blind feature pass at **5.797–7.562M rows/s**. Extrapolated build plus one feature pass is
+  **8.52–9.39 hours**; these are min/max sensitivities, not confidence intervals. The conservative
+  footprint is **1.071 TB**, leaving about **879.7 GB** on the external disk; the internal disk had
+  **11.72 GB** free and is unusable. The 130.3M-row broad session is 11.9× the largest probe input,
+  so full-scale rate and memory remain **UNKNOWN**. Receipt:
+  `cmbp_compute_feasibility_probe_2026_08_23_attempt003.json` (`a97e4a99…`). Attempts 001 and 002,
+  their receipts, logs and partial outputs remain preserved.
+- **The selected owned slice is bursty and persistent at the event scale, not at a useful economic
+  horizon yet.** Across the exact 64-session census there were **1,588,281 trades** and **874,002**
+  pinned prior-touch signs. Deterministic 10,000-resample whole-session intervals give adjacent
+  same-direction probability **68.19% [67.09%, 69.22%]** versus a **50.16% [50.09%, 50.25%]**
+  independence baseline, 1-minute net-contract ACF **0.0238 [0.0011, 0.0466]**, and 5/15-minute ACFs
+  whose intervals include zero. Within-30-minute Fano is **17.16 [13.73, 20.84]**. Median prior spread
+  is **181.7 bps [164.1, 200.2]** and the typical print is one contract. No future value or outcome
+  was read; this is characterization, not alpha.
+- **The earlier semantic pass needs a material correction.** Exactly **226,288 / 874,002 (25.89%)**
+  pinned signs use a prior row with the same `ts_recv` and `ts_event`; **199,728** are cross-publisher
+  non-trade priors and **26,560** are prior trades. Neither stored Parquet nor independently inspected
+  DBN records expose `sequence`, and the earlier identity check compared counts and price sum, not
+  event order. Causal chronology for tied clocks is therefore **UNKNOWN**. Requiring
+  `prior_ts_recv < trade_ts_recv` retains **647,714** signs: same-direction excess remains
+  **+15.10 pp [+14.09, +16.05]**, within-bin Fano **13.11 [10.50, 15.91]**, and 1-minute ACF
+  **0.0321 [0.0101, 0.0550]**; strict contract imbalance **+1.88% [−0.03%, +3.99%]** does not exclude
+  zero. Receipt verdict:
+  `OUTCOME_BLIND_CHARACTERIZATION_ONLY_CAUSAL_ORDER_UNVERIFIED` (`7d715901…`).
+- **Selection remains terminal for prevalence.** These files contain up to seven symbols chosen
+  around roughly 31 prior-route trades/session. Session-bootstrap intervals quantify variability
+  within those frozen bytes; they cannot establish market-wide event supply, trigger occupancy or
+  broad-band economics.
+- **229 is economically weak and direct-P&L power is UNKNOWN.** With six prior experiments, a
+  proposed seventh uses one-sided `alpha=.05/7`. The optimistic independent-session sensitivity at
+  n=229 detects only annualised Sharpe **3.453** with 80% power; Sharpe 1.0/1.5/2.0/2.5/3.0 require
+  **2,731/1,214/683/437/304 sessions**. In the existing two-point payoff analogue, the exact
+  66.0595% accuracy bar has only **49.05%** power at 229, while 68.6595% reaches **79.37%**. Actual
+  trigger occupancy, session-P&L variance and paired-control covariance are unmeasured. Two tickets
+  in one day remain one cluster. Power receipt: `signed_flow_power_scope_2026_08_23_attempt002.json`
+  (`448b894b…`).
+- **One no-fit experiment is specified but not adopted or run.** It freezes strict-touch
+  premium-notional flow conditioned on causal non-replenishment, a five-second window, same-schema
+  p99 end-to-end latency, first-two-trigger policy, long nearest-eligible OTM call/put, ask-in and
+  causal bid-out at −40% or 60 minutes, $2,000+fees cap, 20% breaker, serial $10,000 account and 50%
+  floor. All 229 sessions, including zero-trigger days, are inference units. The primary gate is the
+  minimum lower bound of absolute net session P&L and paired lift over the same-activity reversed-sign
+  control, with 4/5 positive chronological folds, owner-approved minimum effect, failed negative
+  controls and all parity/risk/twin gates. A synthetic known-answer failure is `UNDERPOWERED` before
+  outcomes; a powered economic nonpass is terminal `NO_TRADABLE_SIGNAL`. Opening real outcomes would
+  be one ledger exposure, **6→7**, and no declaration exists.
+- **The observable is new, but the economic family is not presumed new.** Strict individual prints
+  plus causal non-replenishment cannot be reconstructed from CBBO-1m, so they qualify as a new
+  information source. The closest prior W2-H02 option-microstructure continuation family was
+  `NO_SIGNAL`; high magnitude/activity has already selected dear options without improving P&L. The
+  rule escapes that fate only if it beats the activity-matched reversed-sign control after full
+  latency and spread.
+- **Runtime remains a hard stop.** Generic parity helpers and a historical minute simulator exist.
+  Missing are canonical CMBP ordering, full-field DBN/Parquet identity, one shared historical/live
+  event decoder, CMBP symbology-to-IBKR receipts, event-to-fill clocks, gap/drop/slow-reader handling,
+  realistic partial/reject/cancel/slippage replay, no-order parity, and integrated enforcement of the
+  signed 20%/max-two/−40% law. The frozen v4 paper path is not v5 CMBP parity or authority.
+- Immutable wrappers, failure receipts, logs and successful receipts were archived under
+  `v4/audit/autoresearch/lifecycle_quote_backfill_2026_08_15/`. The characterization implementation
+  is [`analyze_cmbp_signed_flow.py`](../../ops/analyze_cmbp_signed_flow.py) with nine targeted tests.
+- **Final verification green:** project/repository checker PASS; full v5 suite **1,159 passed** with
+  105 pre-existing numerical warnings in 70.72 seconds; `git diff --check` clean. Only the intended
+  finding, analyzer, test and LOG entry changed; unrelated `pickles-weekly-ranges/` remains untouched.
+
+### SIGNED-FLOW VERDICT VERIFIED: NO. And the gate's own headline was overstated. 2026-08-23.
+
+Finding: [`SIGNED_ORDER_FLOW_BOT_DECISION_2026_08_23.md`](../../research/findings/SIGNED_ORDER_FLOW_BOT_DECISION_2026_08_23.md)
+(Codex/Sol). **Verdict: retain `STOP_UNDER_CURRENT_CONSTRAINTS`. Verified here, and it found a real
+defect in yesterday's gate.**
+
+- **THE TIE-BREAK DEFECT IS REAL AND IT IS MINE. Reproduced exactly: 25.89%.** OPRA delivers events
+  sharing a timestamp and this parquet carries **no `sequence` field** — only `ts_recv`, `ts_event`,
+  `ts_in_delta`. When the event immediately before a trade shares that trade's clock, "strictly
+  before" is decided by **file order**, an assumption about vendor serialisation rather than anything
+  verified. Yesterday's gate counted those signs silently.
+  **This is the Phase-4a defect class recurring** — there, a stable lexsort resolved equal scores by
+  frame order and the resulting pick read as a measurement. Same shape, different table.
+- **Corrected headline, and the gate now enforces it:**
+
+  | Quantity | Value |
+  |---|---:|
+  | Signed, raw *(reported 2026-08-22)* | 874,002 — **55.03%** |
+  | of which **tie-ambiguous** | 226,288 — **25.89% of signs** |
+  | **Signed unambiguously — the honest share** | **647,714 — 40.78%** |
+  | Per-session unambiguous | min **8.7%**, median **37.7%**, max **48.2%** |
+
+  `verify_cmbp_touch_semantics.py` now reports `signed_tie_ambiguous` / `signed_unambiguous` and
+  **takes its verdict on the unambiguous share**, with three new tests including one that fails a
+  slice which signs well *only* because of tied clocks. 15 tests total. The verdict is unchanged —
+  `SEMANTICS_PASS_ONLY`, 40.78% against a 20% parser bar — but the number it rests on is smaller and
+  the median session now signs barely a third of its tape.
+- **The rest of the verdict verified.** Build is feasible but heavy: **8.52–9.39 hours** of wall time
+  measured by real throughput probe. Flow is bursty and short-lived. With **229 session clusters** an
+  optimistic 80%-power sensitivity needs an **annualised Sharpe ≥ 3.453**, and actual P&L power
+  remains **UNKNOWN**. No CMBP live twin, no execution-parity path, and no current-law runtime exists.
+  One terminal no-fit experiment is fully specified and was correctly **neither adopted nor run**.
+- **A storage figure reconciled rather than disputed.** Their **1.071 TB** and this session's
+  **0.55 TB** measure different things and both are right: their receipt's
+  `projected_parquet_bytes_at_29_8b_rows` is **0.535 TB**, matching this session's estimate, while
+  1.071 TB is the full footprint including the DBN that must be downloaded to build the parquet plus
+  derived features. **Theirs is the better planning number** — you cannot hold only the output.
+- **A check of mine that was wrong, recorded because it nearly became an accusation.** Two of the
+  three receipts appeared to fail their self-hash. They do not: the convention excludes **only**
+  `receipt_sha256`, while this session's check also stripped `input_sha256`, `manifest_sha256` and
+  `wrapper_sha256`, which are content fields that must sit *inside* the hash. **All three self-hashes
+  match. Codex's claim was right and the checker was wrong.**
+- **Verification:** 1,162 tests green (1,159 + 3 new tie tests), checker green, ledger untouched at 6,
+  no outcome read, no download, no spend, no vendor call, no protected file edited.
+- **The STOP stands.** Signed flow supports a credible *experiment*, not a credible bot. The honest
+  signing share is 40.78% rather than 55.03%, the Sharpe bar at 229 clusters is implausible for this
+  strategy class, and the runtime that would have to carry any signal does not exist.
