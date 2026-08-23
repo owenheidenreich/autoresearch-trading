@@ -1,9 +1,16 @@
-# Amendment to the two-skill exit law — DRAFT, awaiting owner signature
+# Amendment to the two-skill exit law
 
-**Status: DRAFT. Nothing here is in force.** Drafted 2026-08-22 by the executing session at the
-owner's direction, following the cold review
-[`EXIT_TWO_SKILL_REQUIREMENT_COLD_REVIEW_2026_08_22.md`](../research/findings/EXIT_TWO_SKILL_REQUIREMENT_COLD_REVIEW_2026_08_22.md).
-**Amending a signed law is an owner act; this document proposes, it does not amend.**
+> **STATUS: SIGNED AND IN FORCE. Owner signature 2026-08-22, with TIER A selected.**
+> Drafted the same day at the owner's direction following the cold review
+> [`EXIT_TWO_SKILL_REQUIREMENT_COLD_REVIEW_2026_08_22.md`](../research/findings/EXIT_TWO_SKILL_REQUIREMENT_COLD_REVIEW_2026_08_22.md).
+>
+> **This amends `PLAN.md` phase 5. Where the two disagree, this file governs**, and the superseded
+> clause is quoted in §2 so nothing has to be reconstructed from memory.
+>
+> *The filename carries no `DRAFT` on purpose.* This repository has already paid for a signed
+> document whose own header still read "Nothing here is adopted" for a week, and whose filename could
+> not be repaired because a semantic freeze pinned it. Nothing pins this file, so it is named for
+> what it is.
 
 ## 1. Why an amendment is unavoidable
 
@@ -105,8 +112,19 @@ probably cannot be satisfied on this corpus — and that is the useful answer.
 
 ## 6. Signature
 
-- [ ] **Owner signature and date:** ________________
-- [ ] **Tier selected (§4):** A / B / other: ________________
+- [x] **Owner signature and date: repository owner, 2026-08-22.**
+- [x] **Tier selected (§4): TIER A — +$25/trade loss-averted, +5 capture points.**
 
-Until both lines are filled, `PLAN.md` phase 5's original wording stands and remains
-**not constructible**, and no exit study may be designed against either version.
+**What the owner signed, stated plainly so it is not softened later.** Tier A was chosen over the
+reachable Tier B *knowing* its consequence, which is not a study but a finding:
+
+> **On this program's data budget, exit-timing skill is not measurable.** Tier A needs roughly
+> **2,560 outer-holdout sessions — about 10.2 trading years** — on top of separate entry-validation
+> and exit-training samples, at ~252 reserved sessions a year.
+
+This is a deliberate refusal to shrink the bar to fit the sample. **No future session may reopen the
+tier because Tier A proved inconvenient.** Moving to Tier B, or to any weaker effect size, requires a
+fresh owner signature that explicitly acknowledges it is choosing to detect only a large effect.
+
+**The exit-skill question is therefore parked on evidence, not abandoned in confusion.** The law is
+now constructible; the sample to satisfy it does not exist and will not for years.

@@ -1911,7 +1911,7 @@ and nothing in the review required correction.**
   would conclude that route was already closed. `v5/CLAUDE.md` is a symlink, so byte-identity holds
   automatically.
 - **Amendment drafted, unsigned:**
-  [`EXIT_EVALUATION_LAW_AMENDMENT_DRAFT_2026_08_22.md`](../../governance/EXIT_EVALUATION_LAW_AMENDMENT_DRAFT_2026_08_22.md).
+  [`EXIT_EVALUATION_LAW_AMENDMENT_2026_08_22.md`](../../governance/EXIT_EVALUATION_LAW_AMENDMENT_2026_08_22.md).
   It strikes exactly one clause — the degeneracy expectation — and replaces it with **both boundary
   rules posting exactly zero duration-adjusted skill on both statistics, their raw profiles reported
   separately**. Everything else in the signed law is preserved: two skills never averaged,
@@ -1974,3 +1974,37 @@ and nothing in the review required correction.**
 - **Verification:** `check_project.py` green; outcome-run gate **14 passed**; full V5 suite
   **1,123 passed, 105 warnings, exit 0 in 64.50s**. No fit, spend, vendor/broker contact, download,
   paper/live order, protected-file edit or `DO_NOT_RETEST` change.
+
+### THE EXIT LAW IS AMENDED AND SIGNED, TIER A. 2026-08-22.
+
+Two of the three parked rulings are taken; the third waits on the corpus audit.
+
+- **SIGNED: [`EXIT_EVALUATION_LAW_AMENDMENT_2026_08_22.md`](../../governance/EXIT_EVALUATION_LAW_AMENDMENT_2026_08_22.md),
+  owner signature 2026-08-22, TIER A selected.** The two-skill exit law is now constructible. It
+  strikes exactly one clause — the degeneracy expectation — and replaces it with **both boundary rules
+  posting exactly zero duration-adjusted skill on both statistics, raw profiles reported separately**.
+  Everything else is preserved: two skills never averaged, duration-matched controls,
+  attribution-never-selection, serial P&L as the criterion, "beat holding" barred.
+- **The file was renamed to drop `DRAFT` from its name**, because nothing pins it and this repository
+  has already paid once for a signed document whose filename and header both said "draft" — the
+  protocol-v2 amendments, whose name could not be repaired because the semantic freeze pinned them.
+  Not repeating that.
+- **`PLAN.md` phase 5 now carries the supersession inline**, with the original clause struck through
+  rather than deleted, so the superseded wording stays readable and a future session cannot design an
+  exit evaluation against it without meeting the correction first.
+- **TIER A was chosen knowing its consequence, and the consequence is a finding rather than a study:
+  on this program's data budget, exit-timing skill is not measurable.** Tier A's +$25/trade and +5
+  capture points need roughly **2,560 outer-holdout sessions — about 10.2 trading years** — on top of
+  separate entry-validation and exit-training samples, at ~252 reserved sessions a year. Tier B
+  (+$50, +10 points) was reachable at ~640 sessions and was **refused**: it is not a better answer to
+  the same question, it is a decision to detect only a large effect, chosen because it fits the
+  sample. **Shrinking the bar to fit the data is the pattern this project forbids.**
+- **Recorded so no future session reopens it out of inconvenience:** moving to Tier B or any weaker
+  effect size requires a **fresh owner signature that explicitly acknowledges** it is choosing to
+  detect only a large effect. Tier A proving inconvenient is not a reason.
+- **The exit-skill question is parked on evidence, not abandoned in confusion.** The law works; the
+  sample to satisfy it does not exist and will not for years.
+- **Ruling on `STOP_CURRENT_CORPUS_FITS` is deferred** pending the corpus audit now running, which
+  judges whether the substrate supports any hypothesis at all. Deciding to stop before knowing whether
+  the data is even usable would settle the question for the wrong reason.
+- No fit, no spend, no vendor contact, no pinned or sealed file touched. Checker green.

@@ -69,11 +69,22 @@ the measured cost of entry and exit, without mistaking development evidence for 
    3 measured hold-60 at **+$675** on big movers and **−$598** on non-movers, figures that cancel
    almost exactly under a random entry, which is the only regime every prior exit study measured.
 
-   Two guards the declaration must carry with them: a degenerate exit must read as degenerate — an
+   Two guards the declaration must carry with them: ~~a degenerate exit must read as degenerate — an
    always-cut rule should post high loss-averted with near-zero capture, an always-hold rule the
-   reverse, and **neither pattern counts as skill** — and both populations are defined by realised
+   reverse, and **neither pattern counts as skill**~~ — and both populations are defined by realised
    outcome, so this decomposition is **attribution, never a selection rule**. Serial executable P&L
    remains the decision criterion; these two numbers explain it rather than replace it.
+
+   > **SUPERSEDED 2026-08-22 — the struck clause above is not constructible.** A control matched on
+   > duration to a *constant-duration* rule **is** that rule, so always-cut's control-relative loss
+   > averted is **exactly zero, not high**, and always-hold's is zero on both statistics. Duration
+   > matching and the struck degeneracy expectation cannot both hold, and no sample size repairs it.
+   > **Replaced by [`EXIT_EVALUATION_LAW_AMENDMENT_2026_08_22.md`](../../governance/EXIT_EVALUATION_LAW_AMENDMENT_2026_08_22.md),
+   > signed 2026-08-22 with TIER A**, under which both boundary rules must post **exactly zero**
+   > duration-adjusted skill and their raw profiles are reported separately. Everything else in this
+   > paragraph — two skills never averaged, duration-matched controls, attribution-never-selection,
+   > serial P&L as the criterion — is preserved unchanged. **Read the amendment before designing any
+   > exit evaluation against this paragraph.**
 
    **Owner rulings of 2026-08-16, binding on this declaration:**
 
