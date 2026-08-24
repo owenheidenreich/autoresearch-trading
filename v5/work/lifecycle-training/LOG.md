@@ -3130,3 +3130,42 @@ reproduced and receipted before either is used.** Unrecorded numbers do not exis
 
 - Repository state verified coherent across both sessions: **3 commits unpushed**, working tree clean,
   no work lost.
+
+### THE EXPECTANCY CLAIM REPRODUCED, AND THE JACKKNIFE VERIFIED TO THE CENT. 2026-08-23.
+
+**A gap found first: the expectancy headline had no committed producer.**
+`economics_race_join.py` reproduces the *race* — it gave **807/1011 = 79.82%** at 09:35 ATM against
+the published 79.8%, exact. But its own docstring says it "does **not** produce an expected value",
+`simulate_trade` sits at line 377 with **nothing calling it**, and there is no receipt directory. So
+the `+$2.01 / 36 cells / 31 of 36 lose` headline was an assertion — **the same defect that module's
+docstring criticises in this session's earlier work.** Producer now written:
+`pnl_sweep_and_jackknife_2026_08_23.py`, using only committed code.
+
+**Held to the 20-minute horizon, stop at the −40% move, 10,078 simulated trades over 12 cells:**
+
+| start | off | n | mean | median | CI low | CI high | prof% | drop best trade |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 09:35 | 25 | 502 | **+12.63** | −53.64 | −20.25 | +47.37 | 36.7% | **+8.05** |
+| 09:35 | 10 | 1011 | +5.28 | −58.37 | −25.75 | +34.75 | 42.8% | +2.51 |
+| **09:35** | **0** | 1011 | **+2.01** | **−61.54** | −32.77 | +38.85 | **44.5%** | **−0.90** |
+| 15:00 | 0 | 1010 | −29.43 | −114.22 | −51.36 | −6.47 | 27.0% | −33.72 |
+
+- **THE LEAVE-ONE-OUT CLAIM IS TRUE AND REPRODUCES EXACTLY.** 09:35 ATM: **+$2.01 → −$0.90** when the
+  single best of 1,011 sessions is dropped. Mean, median (−$61.54) and profitable share (44.5%) all
+  match the asserted figures. **The best-known cell rests on one session.**
+- **The expectancy null holds: 0 of 12 cells have a 95% interval clearing zero.** Seven lose outright.
+  (The claim said 36 cells / 31 losing; this grid is 4 start times × 3 offsets = 12. Same direction,
+  different denominator — the 36-cell grid also has no committed producer.)
+- **One correction to the framing, in the other direction.** 09:35 ATM is **not** the best cell.
+  **09:35 at 25 points out is, at +$12.63, and it SURVIVES the jackknife at +$8.05.** Its interval
+  still spans zero, and only **36.7%** of its trades profit on a **−$53.64 median** — but "everything
+  collapses when you drop one trade" is not accurate. One cell does; the highest-mean cell does not.
+- **The shape every cell shares, and it is the real finding.** Medians run **−$15 to −$114** while
+  means hover near zero, and the profitable share is **6%–45%**. You lose on most trades and are
+  carried by a few large wins. That is a lottery-ticket payoff — **which is exactly what a long option
+  is.** It also means any mean estimate here is tail-dominated and fragile by construction, which is
+  why the jackknife bites.
+- **Still unverified, and both were asserted in conversation without receipts:** free-fill economics
+  of **+$28.48/ticket CI [−$2.12, +$62.36]**, and a selector at **correlation 0.05 turning +$2.01 into
+  +$43.47**. The second is the strongest remaining argument for continuing and must be reproduced
+  before it is relied on.
