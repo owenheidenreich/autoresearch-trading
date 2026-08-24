@@ -3242,3 +3242,29 @@ Durable records: [finding](../../research/findings/SELECTOR_QUALITY_REQUIREMENT_
 [inverse](../../../v4/audit/autoresearch/selector_quality_requirement_curve_2026_08_23_attempt001/inverse_requirement.csv),
 [analysis](../../research/selector_quality_requirement.py), and
 [wrapper](../../ops/measure_selector_quality_requirement.py).
+
+## 2026-08-23 — independent verification of the selector-quality requirement curve (Claude)
+
+Tier 2, verification pass over the Codex-produced study committed as `b0a4ce6f`, per the standing
+"verify, never rubber-stamp" rule. Reproduced from the input CSV with independent code, not by
+importing the analysis module.
+
+**Reproduced to the cent:** full-population mean `+$2.0123`, median `-$61.5362`, drop-best `-$0.9018`;
+and for the seed-25,474 top-20% reconstruction the mean `+$43.468906`, drop-best `+$29.032079`,
+drop-top-2 `+$17.338944`, drop-top-5 `-$15.505939`, drop-top-10 `-$51.911690`, selected total
+`+$8,780.72`, top-five sum `+$11,835.39`, achieved Pearson `+0.050308`, Spearman `+0.048302`, and the
+768/243 partition means `-$11.71` / `+$45.38`.
+
+**Integrity re-verified independently:** receipt self-hash `d616a07e…` recomputes over the canonical
+JSON with `receipt_sha256` removed; P&L input hash `30d62889…`, live analysis module `a17ee657…`, and
+live wrapper `bde190ca…` all match the receipt. Alpha ledger unchanged at 6 entries, bar
+`0.66059463`. Suite `1243 passed`; `check_project.py` green on both lines.
+
+**One interpretive correction added to the finding as new section 3.1.** The receipt's `why` field
+says the headline "can be manufactured under many rates and seeds," which a later reader could take as
+"the seed was shopped." It was not: across 20,000 independent worlds at nominal rho 0.05 and the
+headline's own 20% rate, the ensemble median is `+$45.01` and `51.6%` of constructions return at least
+`+$43.47`. The headline is the typical outcome of that configuration, not a lucky draw. This does not
+rescue the claim — it relocates the failure from construction variance to session variance, which is
+where the drop-top-five collapse to `-$15.51` and the bootstrap `[-$47.82, +$139.02]` already put it.
+Verdict is unchanged: **ADOPT NOTHING**, no alpha charged, ledger untouched.

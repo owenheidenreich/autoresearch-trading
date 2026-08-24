@@ -23,6 +23,10 @@ sentence explicitly marks them **[INFERRED]** or **[UNKNOWN]**.
 - **[VERIFIED] The headline is reproducible, not discovered.** On all 1,011 sessions, the literal
   formula `0.05*z(P&L) + sqrt(1-0.05^2)*noise`, PCG64 seed 25,474, and the top 20% (202 sessions)
   returns **+$43.4689/ticket**. Achieved Pearson is **+0.05031** and Spearman **+0.04830**.
+- **[VERIFIED] That seed was not cherry-picked, and the refutation does not rest on claiming it was.**
+  See section 3.1: +$43.47 is approximately the *median* of the rho-0.05 ensemble in this exact
+  configuration. The number is typical, not lucky. What fails is the session-level uncertainty around
+  it, not its construction.
 - **[VERIFIED] It does not establish weak-signal sufficiency.** The selected-session bootstrap is
   **[-$47.82, +$139.02]**. Removing the one best selected session leaves **+$29.03**, but its interval
   is **[-$54.61, +$113.23]**. Removing the top five turns the point estimate to **-$15.51**; those
@@ -94,6 +98,46 @@ median correlation is:
 Those ranges describe construction-to-construction variation with sessions fixed; they are not
 confidence intervals. Their width is another reason a bare statement such as “rho = 0.05” does not
 identify selected-tail value.
+
+### 3.1 The seed was not shopped
+
+**[VERIFIED] Added 2026-08-23 by independent reproduction (Claude), after this finding was committed.**
+Every economic figure in section 1 and the claim audit was recomputed from the input CSV with
+independent code and matched to the cent; the receipt self-hash, the P&L input hash, both archived
+source hashes, and all 12 semantic-freeze sources were re-verified.
+
+The receipt's `why` field states that the headline “can be manufactured under many rates and seeds.”
+That is literally true, but a reader can take “manufactured” to mean the seed was searched until a
+flattering number appeared. **It was not, and the record should not imply it.** Drawing 20,000
+independent selector worlds (PCG64 seed 20,260,823) at nominal rho 0.05 and the headline's own top-20%
+rate over all 1,011 sessions:
+
+| nominal rho | median selected mean | 5th pct | 95th pct | P(>= +$43.47) | P(<= $0) |
+|---:|---:|---:|---:|---:|---:|
+| 0.05 | **+$45.01** | -$18.22 | +$108.26 | **51.6%** | 12.0% |
+| 0.10 | +$89.12 | +$25.17 | +$153.11 | 88.1% | 1.1% |
+| 0.1385 | +$124.13 | +$60.15 | +$188.18 | 98.1% | 0.1% |
+
+**[VERIFIED] Seed 25,474 sits near the median of its own ensemble**, which returns at least the
+headline in 51.6% of constructions. A rho-0.05 oracle selector really does return about +$45/ticket on
+this table, about half the time.
+
+**[VERIFIED] This strengthens the finding rather than weakening it, by relocating the failure.** Two
+independent uncertainties stack, and only the second is decisive:
+
+1. *Which sessions a rho-0.05 score happens to pick* — wide (5th–95th percentile spans about $126) but
+   mostly positive.
+2. *Whether these 1,011 sessions represent the future* — the session bootstrap **[-$47.82, +$139.02]**,
+   and the drop-top-five collapse to **-$15.51**.
+
+The correct one-sentence refutation is therefore **not** “that number came from a lucky seed.” It is
+**“that number is real for this table, and this table's mean is carried by five sessions.”** The
+rho-0.1385 row shows the same hazard is not escaped by a better selector: it raises the ensemble median
+to +$124 without touching the session-level tail concentration that the drop-best rule exposes.
+
+**[UNKNOWN] Nothing here makes the score causal.** Every world above still scores each session using
+that session's own realised P&L. This subsection changes the interpretation of the reconstruction, not
+its status: the adoption verdict remains **ADOPT NOTHING**.
 
 ## 4. The inverse requirement
 
