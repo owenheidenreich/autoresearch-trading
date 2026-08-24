@@ -25,6 +25,13 @@ By July, the project was no longer primarily “a neural network that trades.”
 
 The most important result is therefore not a particular profit factor. It is the discovery that, in financial ML, the simulator, data contract, and evidence process are the real product. The model is only one component inside that system.
 
+In August 2026 that system was finally turned on the underlying question and returned a clear answer.
+Roughly a dozen independent measurements -- a model-free variance-premium reading, a 375-cell
+conditional drift census, a 48-parameter causal fit killed by its own pre-registered condition at
+-$15.93 per trade *mid-to-mid*, and a full-corpus expectancy join in which no cell of 36 clears zero --
+agree that the SPXW/SPX 0DTE long side does not pay at the friction a retail taker faces. The platform
+worked. The market's answer was no.
+
 ---
 
 # Chronological history
@@ -423,6 +430,101 @@ As of this change, Path D is a proposed and reviewed architectural direction, no
 
 The systems-level lesson is important: when cross-vendor parity repeatedly consumes the research program, the answer may be to redraw the architecture. Path D stops asking IBKR data to reproduce a Databento-trained decision plane and instead gives each system a narrower responsibility: research and decisions on a controlled market-data plane, execution and confirmed account state on the broker plane.
 
+## 10. August: v5 asks whether the edge exists at all, and answers no
+
+July ended with a governed platform and no proven trader. August did something the project had never
+done: it stopped building the apparatus and used it to ask, directly and repeatedly, whether an edge
+exists in this instrument at all. The answer arrived as roughly a dozen independent negative results,
+and they agree.
+
+### The measurement problem is stated
+
+The campaign opened by making the project's central difficulty explicit. A cost-scale effect needs
+about **8,778 sessions** at once-daily occupancy to detect, and **338** at 26 trades per session, and
+the two-ticket risk law forced the unmeasurable regime. G1 -- the direction gate everything else waits
+on -- stopped **UNDERPOWERED, not falsified**, with a detection floor 22-88x the cost bar. On
+2026-08-12 the corpus grew tenfold to 2,541 sessions for $3.20, which falsified the standing belief
+that only calendar time could move G1. The gate still did not pass. **The binding constraint was
+effect size, not sample size.**
+
+### The instrument is measured without a model in between
+
+The decisive result needed no machine learning. Measuring the variance risk premium directly, the
+straddle's gross P&L is **-$9.7 on a $1,766 premium over fifteen minutes (-0.55%)**, negative in every
+year of the corpus. Against a measured **$25 aggressive round trip on two legs -- 2.83% of premium --
+buyer and seller both lose.** The conclusion is a ratio, and the toll is roughly five times the prize.
+
+A 375-cell conditional drift census then asked whether *any* observable state makes buying near-ATM
+0DTE premium positive. **No state pays.** Since a trading rule is a function of observable state, that
+result closes a rule space rather than a rule.
+
+### Every remaining route is screened and closed
+
+| Route | Verdict |
+|---|---|
+| Buying near-ATM premium, any rule | Efficiently priced; spread is 5x the mispricing |
+| Both sides, eight rules plus a fitted model | Edge is short-side and smaller than the spread |
+| Learned selective entry (2.38M candidates) | The model learns the tape, not the market |
+| The same policy priced at the touch | No timing edge; the print result was the tape |
+| Exit models, both formulations | The exit is solved and worth zero gross -- "a stopwatch" |
+| Passive/midpoint execution | Not available to a taker |
+| 36-cell defined-risk short verticals | Nothing clears fee-only; the pre-committed STOP fired |
+| Causal day trader, 48-parameter fit | **-$15.93/trade mid-to-mid** -- loses with the spread removed |
+
+The causal day trader deserves its own line. It was the one branch with a signed reopening, a frozen
+377-parameter budget, a width set by measured effective sample size rather than chosen for capacity,
+and **seven pre-committed kill conditions**. The fit and an identical shuffled-label null completed
+over 423,053 out-of-fold rows. Kill condition 1 -- mid-to-mid gross must be positive -- failed at
+**-$15.93 per trade across 35 trades on 150 scored sessions**. The evaluator then left the other six
+conditions *unread*, recorded `bid_economics_read=false`, and closed the branch without a threshold,
+seed, horizon, architecture or subgroup retry. That is the governance machinery working exactly as
+designed: a pre-registered kill condition fired and nothing was allowed to relitigate it.
+
+### The morning asymmetry, and why an 80% win rate was worth nothing
+
+The final August result is the most instructive. Building a contract-economics module produced a
+genuinely striking measurement: buying a near-the-money 0DTE call in the first hour needs SPX to move
+only **1.14 points** to break even, while a -40% stop sits **10.94 points** away -- a twelfth as far in
+your favour as against -- and that race is won **79.8%** of the time.
+
+It is worth nothing. **Winning the race to break-even means crossing zero, not profiting.** Joining the
+overshoot distribution to the race showed that across 36 cells over 1,011 clean sessions, **no cell's
+mean P&L has a 95% interval clearing zero**, and 31 of 36 lose outright. The best cell returns
+**+$2.01 per trade on a $1,370 ticket, CI [-$34.61, +$36.98]**, with a median trade of **-$61.54**.
+Wins are small and frequent; losses are large and rare; the flat state is a full loss to theta.
+
+The 12:1 ratio of stop-distance to break-even-distance looks like a payoff ratio and is not one. It is
+the ratio of two thresholds whose crossing probabilities are already in the price -- the option market
+quoting itself correctly. This is the April lesson `RIGHT IDEA, WRONG UNITS` in new costume: a
+favourable-looking ratio that is not denominated in dollars.
+
+That work also produced a governance finding worth recording. The published version of the asymmetry
+table **had no code behind it** -- the commits that introduced it touched only a log file -- and its
+numbers had been revised three times under changing volatility assumptions. Reconstructing it as a
+runnable module using real asks from the ladder rather than modelled prices reproduced the *structure*
+and superseded the *numbers*. A result without an executable is not yet a result.
+
+### What August established
+
+- **The instrument is efficiently priced at the friction this account pays.** The recurring finding is
+  not "no signal exists" but "no signal survives $13-23 of round-trip friction against mispricings
+  measured in single dollars."
+- **Fill quality is the binding term, and it was measured.** On 1,912,157 near-ATM contract-minutes, a
+  midpoint limit order fills 47.5% within a minute and saves ~$10 of spread while suffering **-$84 of
+  adverse selection** -- net **-$74**. Patience raises the fill rate and does not repair the selection.
+  The cost is not an artifact of impatience.
+- **Negative results compound into product knowledge.** The `DO_NOT_RETEST` ledger now closes rule
+  spaces and instruments rather than individual rules, and each row states what would count as
+  genuinely new evidence.
+- **Pre-commitment works.** Kill conditions fired, stopping rules fired, and known-answer preflights
+  caught two real defects before any result was read. The project repeatedly refused to look at
+  numbers that could have tempted a retry.
+
+The honest August summary is that this programme has now measured the SPXW/SPX 0DTE long side --
+conditionally and unconditionally, with and without the spread, with declared rules and with fitted
+models -- and it does not pay for a retail taker. That is a real finding, arrived at by a system built
+to be capable of producing it. The platform did its job; the market's answer was no.
+
 # How the system design evolved
 
 | Dimension | Beginning | Current direction |
@@ -484,6 +586,22 @@ The systems-level lesson is important: when cross-vendor parity repeatedly consu
 
 8. Behavioral equivalence can be more meaningful than field equality. Cross-vendor feeds do not need identical bytes if they produce the same governed decision game within measured uncertainty.
 
+9. **Measure the instrument before modelling it.** The variance-premium and drift-census results needed
+   no machine learning and closed more of the search space than any model did. A model-free reading of
+   the raw economics should precede the first fit, not follow the tenth.
+
+10. **A favourable ratio is not an edge.** Needing to travel a twelfth as far in your favour as against
+    sounds decisive and is worth nothing when both thresholds are already priced. Always convert to
+    dollars per trade before believing a ratio.
+
+11. **Pre-registered kill conditions must be allowed to end things.** The strongest August result is a
+    branch that stopped on its first failed condition and left the remaining six unread, so no
+    downstream number could tempt a retry.
+
+12. **A result without an executable is not a result.** A headline table whose generating code was
+    never committed could not be reproduced and its numbers did not survive reconstruction, even
+    though its qualitative structure did.
+
 # Trading lessons
 
 - 0DTE long options are convex. A low win rate may be acceptable if occasional large winners dominate, so optimizing win rate can destroy the actual payoff profile.
@@ -512,7 +630,11 @@ The systems-level lesson is important: when cross-vendor parity repeatedly consu
 - “One contract wasn’t one risk unit.” Explain the 70× premium range and why affordability and premium caps became part of the product contract.
 - “We stopped adding models and redesigned the product.” Explain the move from staged inherited policies to the Full Trader action space.
 
-The honest closing line is: this project has not yet proven a profitable real-money trader. It has built a substantially more valuable prerequisite—a system capable of determining, with increasing rigor, whether one actually exists.
+The honest closing line is: this project never proved a profitable real-money trader. It built a
+substantially more valuable prerequisite -- a system capable of determining, with increasing rigor,
+whether one exists -- and then used that system to establish, across roughly a dozen independent and
+agreeing measurements, that for this instrument and this cost structure one does not. Being able to
+reach a well-evidenced no, and to stop, is the outcome the apparatus was built for.
 
 
 ### What is actually worth highlighting
