@@ -3097,3 +3097,36 @@ has measured and which is the next join. The **flat** column is a full loss to t
 And all of it is unconditional: this is the terrain a rule would operate on, not a rule.
 
 - 1,229 tests green, checker green, freeze 12 pinned / 0 drifted.
+
+### THE ASYMMETRY PAYS NOTHING — verified, and the error was mine. 2026-08-23.
+
+A parallel session completed the overshoot join this session left open. **Verified here
+independently; it is correct.**
+
+- **The result.** 36 cells, 1,011 sessions: **no cell's 95% interval clears zero, 31 of 36 lose
+  outright.** Best is 09:35 ATM held to horizon at **+$2.01, CI [−$34.61, +$36.98], median −$61.54,
+  44.5% profitable.** Every stated exit rule loses pooled: −$8.49, −$11.48, −$12.05.
+- **The asymmetry reproduces STRONGER, not weaker**: R=1.14 against J=10.94, won **79.8%** (CI
+  77.2–82.2) against the 72% published here earlier. **It is still worth nothing.**
+- **MY ERROR, named precisely: I read a DISTANCE ratio as a PAYOFF ratio.** Needing 1.2 points while
+  the stop sits 14.5 away is not 12:1 odds. It is two thresholds whose crossing probabilities are
+  **already priced into the contract**. Wins are small and frequent (median +$31 at target-at-R),
+  losses large and rare (~$500 at the declared stop), and the flat state is a total loss to theta.
+  That is precisely what a fairly-priced option looks like — the asymmetry is **the price, not an
+  inefficiency**. The superseding banner is on the parent finding.
+- **Independently checked the load-bearing known answer**: held to the 20-minute horizon, arriving at
+  +R returns **exactly $0.00** regardless of *when* it arrives (tested at minutes 1, 5, 10, 15, 20).
+  An earlier spot-check of mine returned +$23.79 and was **my own mis-parameterisation** — it exited
+  at the target on touch rather than holding, which banks un-decayed value. Not a discrepancy.
+- **44 targeted tests pass; the full suite is green.**
+
+**THREE NUMBERS WERE ASSERTED IN CONVERSATION AND ARE NOT IN THE REPOSITORY.** A parallel chat cited
+free-fill economics of **+$28.48/ticket CI [−$2.12, +$62.36]**, a leave-one-out sensitivity flipping
+**+$2.01 to −$0.90** when the single best of 1,011 trades is dropped, and a selector at **correlation
+0.05 turning +$2.01 into +$43.47**. **None appears in the committed finding and none has a receipt.**
+The leave-one-out figure in particular is decisive if true — it would mean the best cell rests on one
+session — and the correlation-0.05 figure is the strongest argument *for* continuing. **Both must be
+reproduced and receipted before either is used.** Unrecorded numbers do not exist here.
+
+- Repository state verified coherent across both sessions: **3 commits unpushed**, working tree clean,
+  no work lost.

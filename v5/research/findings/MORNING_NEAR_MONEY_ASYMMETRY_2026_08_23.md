@@ -1,5 +1,23 @@
 # The morning near-the-money asymmetry — v6's first real result
 
+> **SUPERSEDED THE SAME DAY, AND THE ERROR IS THIS DOCUMENT'S.** The overshoot join
+> ([`MORNING_ASYMMETRY_EXPECTANCY_NULL_2026_08_23.md`](MORNING_ASYMMETRY_EXPECTANCY_NULL_2026_08_23.md))
+> answered the question §7 left open, and the answer is that **the asymmetry pays nothing**. Across 36
+> cells over 1,011 sessions **no cell's 95% interval clears zero and 31 of 36 lose outright**; the best
+> is 09:35 ATM at **+$2.01 on CI [−$34.61, +$36.98], median −$61.54**.
+>
+> **The asymmetry itself reproduces stronger, not weaker** — R=1.14 against J=10.94, won **79.8%**
+> rather than 72%. **It is worth nothing because winning that race means crossing zero, not profiting.**
+>
+> **The analytical error, stated plainly: this document read a DISTANCE ratio as if it were a PAYOFF
+> ratio.** A 12:1 gap between the stop and the break-even point is not 12:1 odds — it is two
+> thresholds whose crossing probabilities the market has already priced. Wins are small and frequent,
+> losses large and rare, and that is what a fairly-priced option looks like. Verified independently:
+> held to the 20-minute horizon, arriving at +R returns **exactly $0.00** whenever it arrives.
+>
+> Everything below stands as measurement. Its framing as "the strongest result" does not.
+
+
 **2026-08-23. Read this after `STATUS.md`. It is the current state of job 47 (v6) and the strongest
 measurement this programme has produced. Nothing here is adopted or tradeable.**
 
