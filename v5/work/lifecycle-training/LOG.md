@@ -3047,3 +3047,53 @@ Durable records: [finding](../../research/findings/UNCONDITIONAL_SPX_RACE_AND_IV
 [race CSV](../../../v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/race_surface.csv),
 [conditional quantiles](../../../v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/conditional_quantiles.csv),
 and [IV clock CSV](../../../v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/iv_by_time.csv).
+
+### THE REALISTIC RACE, AT THE MEASURED IV CLOCK. And a correction to my cap claim. 2026-08-23.
+
+Producer `realistic_race_join_2026_08_23.py`. Three measured things multiplied, no outcome table read:
+**R**, the SPX move to break even, repriced through the pinned pricer; **J**, the adverse move that
+trips the signed −40% stop, from the same pricer; and **who wins that race**, from Codex's
+unconditional surface over 1,011 sessions. IV is the **measured clock**, not an assumption.
+
+| start | IV | strike | ask | **R** | **J** | win | lose | flat |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 09:35 | 10.0% | ATM | $1,748 | **1.2** | **14.5** | **72%** | 10% | 18% |
+| 09:35 | 10.0% | 10pt | $1,292 | 1.6 | 12.5 | **72%** | 10% | 18% |
+| 11:30 | 8.9% | ATM | $1,314 | 1.2 | 10.4 | 67% | 9% | 24% |
+| 13:30 | 8.9% | 10pt | $549 | 2.4 | 4.6 | 59% | 25% | 16% |
+| 15:00 | 9.6% | ATM | $657 | 2.5 | 2.8 | 49% | 47% | 5% |
+| 15:00 | 9.6% | 25pt | $54 | 8.4 | **0.0** | 8% | 59% | 32% |
+
+**THE STRUCTURE IS AN ASYMMETRY THAT DECAYS THROUGH THE DAY.** At 09:35 the break-even move is
+**1.2 points while the stop sits 14.5 points away** — you need to travel **a twelfth as far in your
+favour as against**. By 15:00 that is 2.5 against 2.8, a coin flip, and the win rate falls from 72%
+to 49% accordingly. **At 15:00 a 25-point-out contract has J = 0.0: the spread and immediate decay
+have already breached a −40% stop before SPX moves at all.**
+
+**A −5 stop costs only 14.9% of eventual winners** — of 282 paths that eventually reached +10 from
+09:31, **240 got there without touching −5 first (85.1%, CI 80.5–88.8)**. Stops and winners can
+coexist here, which is not something this project could previously assert.
+
+**CORRECTION, AND IT IS MINE.** My earlier entry said the $2,000 cap *excluded* the best cell,
+citing a $2,266 at-the-money ask. **That used a flat 13% IV, which sits near the 70th percentile of
+the measured distribution.** Measured at 09:35: q10 6.67%, **q50 9.95%**, q75 14.04%, q90 19.31%.
+
+| | measured |
+|---|---|
+| 09:35 ATM ask at the **median** IV of 9.95% | **$1,748 — comfortably inside the old $2,000 cap** |
+| 09:35 ATM ask at the flat 13% I assumed | $2,266 |
+| IV at which 09:35 ATM crosses $2,000 | 11.43% → binds on roughly **41% of sessions** |
+| IV at which it crosses $2,500 | 14.38% → binds on roughly **24% of sessions** |
+
+**So the cap did not exclude the best cell; it excluded it on about 41% of sessions.** The raise to
+$2,500 cuts that to about 24%, and the days it still binds are the highest-volatility ones. The
+amendment's *rationale* is narrower than I wrote it and is corrected here rather than edited; the
+owner's ruling stands on its own terms and the raise remains defensible, but not for the absolute
+reason I gave.
+
+**What is still missing before any of this is an expectancy.** Winning the race to **R** means
+**breaking even, not profiting** — real P&L needs the overshoot distribution beyond R, which Codex
+has measured and which is the next join. The **flat** column is a full loss to theta and runs 5–32%.
+And all of it is unconditional: this is the terrain a rule would operate on, not a rule.
+
+- 1,229 tests green, checker green, freeze 12 pinned / 0 drifted.
