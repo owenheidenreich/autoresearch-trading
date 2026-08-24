@@ -336,3 +336,93 @@ def _summarise(per_session: pd.DataFrame) -> pd.DataFrame:
             row[f"{state}_ci_95_high"] = hi
         out.append(row)
     return pd.DataFrame(out)
+
+
+# ---------------------------------------------------------------------------
+# Expectancy: what the position is actually worth at the exit
+# ---------------------------------------------------------------------------
+#
+# Reaching `R` means breaking even. To learn what a trade *keeps*, the position
+# has to be repriced at the exit at the spot the tape actually delivered, under
+# a stated exit rule. This is the join the finding names as its next step.
+
+
+def _exit_dollars(
+    *,
+    spot_at_exit: float,
+    entry_spot: float,
+    strike: float,
+    sigma: float,
+    minutes_to_expiry: float,
+    hold_minutes: float,
+    spread: float,
+    entry_ask: float,
+    fees: float = FEES_PER_ROUND_TRIP_USD,
+) -> float:
+    """Dollars kept, repricing the contract at the exit spot."""
+
+    return _exit_pnl(
+        spot_at_exit - entry_spot,
+        spot=entry_spot,
+        strike=strike,
+        minutes_to_expiry=minutes_to_expiry,
+        hold_minutes=hold_minutes,
+        sigma=sigma,
+        spread=spread,
+        entry_ask=entry_ask,
+        fees=fees,
+    )
+
+
+def simulate_trade(
+    path: list[float],
+    *,
+    strike: float,
+    sigma: float,
+    minutes_to_expiry: float,
+    spread: float,
+    entry_ask: float,
+    stop_move: float,
+    target_move: float | None,
+    fees: float = FEES_PER_ROUND_TRIP_USD,
+) -> tuple[float, str, int]:
+    """Run one trade to its exit and return `(dollars, reason, minutes_held)`.
+
+    The exit rule, stated rather than fitted: leave on the declared stop, on the
+    target if one is given, otherwise at the horizon. The stop is evaluated
+    before the target within a minute, which charges ambiguous bars to the loss.
+    """
+
+    entry = path[0]
+    for i, price in enumerate(path[1:], start=1):
+        move = price - entry
+        if math.isfinite(stop_move) and -move >= stop_move:
+            return (
+                _exit_dollars(
+                    spot_at_exit=price, entry_spot=entry, strike=strike,
+                    sigma=sigma, minutes_to_expiry=minutes_to_expiry,
+                    hold_minutes=i, spread=spread, entry_ask=entry_ask, fees=fees,
+                ),
+                "stop",
+                i,
+            )
+        if target_move is not None and move >= target_move:
+            return (
+                _exit_dollars(
+                    spot_at_exit=price, entry_spot=entry, strike=strike,
+                    sigma=sigma, minutes_to_expiry=minutes_to_expiry,
+                    hold_minutes=i, spread=spread, entry_ask=entry_ask, fees=fees,
+                ),
+                "target",
+                i,
+            )
+    held = len(path) - 1
+    return (
+        _exit_dollars(
+            spot_at_exit=path[-1], entry_spot=entry, strike=strike, sigma=sigma,
+            minutes_to_expiry=minutes_to_expiry, hold_minutes=held,
+            spread=spread, entry_ask=entry_ask, fees=fees,
+        ),
+        "horizon",
+        held,
+    )
