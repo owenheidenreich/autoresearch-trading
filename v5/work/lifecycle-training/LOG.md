@@ -3169,3 +3169,76 @@ docstring criticises in this session's earlier work.** Producer now written:
   of **+$28.48/ticket CI [−$2.12, +$62.36]**, and a selector at **correlation 0.05 turning +$2.01 into
   +$43.47**. The second is the strongest remaining argument for continuing and must be reproduced
   before it is relied on.
+
+### THE RHO 0.05 CLAIM IS CONSTRUCTIBLE, NOT ROBUST — AND NO SIGNAL EXISTS HERE. 2026-08-23.
+
+**Interpretation first: this requirements study contains no predictor.** Every synthetic score uses
+the realised P&L of the same session it scores. A chronological suffix can show whether this
+outcome-conditioned oracle valuation changes across eras; it cannot create genuine outcome-blind
+OOF evidence. Signal existence, causal attainability, and true OOF value all remain **UNKNOWN**.
+**ADOPT NOTHING.**
+
+- **Alpha position agreed and preserved.** This used only the already-open P&L table, constructed no
+  market feature, fit no model, and tested no new market hypothesis. No alpha was spent. The ledger
+  remains exactly **6 experiments**, head `4551e28252af0838678424b63ab7deedcfc430f84825a92399d1ed76ef203b57`,
+  next bar **0.66059463**, file SHA-256
+  `40517c1e19d2442e6969286e98e9e16c24a24c788b2f966eb2418771105e840c`.
+- **The input was consumed, not rebuilt.** Exact upstream P&L SHA-256
+  `30d628892be455e4bd31e4932a35244daf2bdee194851b2737eba42fbfd1d2d2`: **10,078 rows, 12 cells,
+  1,011 sessions**, 2022-06-01–2026-07-30, exact schema/reason/cell-count law. The curve is scoped to
+  disputed 09:35 ATM. Calibration is the **768-session backfill prefix through 2025-07-31**; later is
+  the **243-session owned suffix from 2025-08-01**. Calibration scale and numeric thresholds are
+  frozen before the suffix. Date and quote source remain perfectly confounded.
+- **The missing +$43.47 is reproduced exactly, but the implication is refuted.** The literal formula,
+  PCG64 seed 25,474 and top 20% returns **+$43.46890568/ticket**, achieved Pearson/Spearman
+  **+.05030779/+.04830189**. Session CI is **[-$47.82,+$139.02]**. Dropping the best selected session
+  leaves **+$29.03 [-$54.61,+$113.23]**; dropping the top five makes the mean **-$15.51**. Those five
+  wins total **$11,835**, exceeding the subset's entire **$8,781** net. The original claim omitted
+  rate, seed/RNG, partition and correlation metric, so its provenance remains **UNKNOWN**.
+- **The preregistered rho .05 curve fails after the required deletion at every rate.** On the later
+  oracle suffix, drop-best mean/95% session CI is **+$14.50 [-$59.37,+$90.36]** at 5%, **+$52.98
+  [-$27.41,+$135.11]** at 10%, **+$69.83 [-$14.91,+$156.51]** at 20%, **+$63.40
+  [-$25.37,+$152.24]** at 50%, and unconditional **+$34.99 [-$52.07,+$123.61]**. The raw sparse-rate
+  means look spectacular because the score reads the outcome tail; none survives the drop-best
+  lower endpoint.
+- **The inverse separates average-world optimism from a robust requirement.** 2,000 fixed Gaussian
+  worlds share noise across rho; 5,000 whole-session resamples feed a one-sided 95% studentized band
+  simultaneous across the **505** rho×rate grid cells; every world drops its best selected session
+  without refill. Ensemble-mean crossings are nominal rho **.085/.075/.075/.105** at 5/10/20/50%.
+  Requiring the fixed-session fifth percentile across selector worlds to clear too raises them to
+  **.210/.155/.115/.105**. The least demanding world-robust cell is therefore **50% selection,
+  nominal rho `(0.100,.105]`, achieved median Pearson/Spearman +.1385/+.1288**, with drop-best point
+  **+$106.12**, selector-world fifth percentile **+$30.61**, and simultaneous session LCB **+$1.80**.
+  Daily selection never clears by rho .50. These are conditional Gaussian-oracle requirements, not
+  universal signal thresholds.
+- **The requested “OOF gap” cannot be supplied honestly.** At nominal rho .05 the observed
+  calibration-minus-later drop-best gaps run **-$12.71 to -$59.58**, every interval crossing zero.
+  Both partitions use their own outcome inside the score and the seam is source=date, so this is an
+  oracle-era gap, not tail-fitting or generalisation. Genuine OOF gap is **UNKNOWN** until a causal
+  outcome-blind score exists under its own alpha authorization.
+- **Execution boundary.** One 09:35 ATM opportunity/session puts every declared rate individually
+  inside the signed two-ticket/day count cap; the robust 50% benchmark is about 127 tickets/year.
+  Dollar-cap eligibility is **UNKNOWN** because the P&L CSV omits the entry ask. Joint cells were not
+  evaluated. No strategy or feature is proposed.
+- **The harness passed its floor before reading rho > 0.** All **10/10** rho-zero partition×rate
+  checks passed. Focused suite **14 passed**; complete `v5/tests` suite **1,243 passed, 105 warnings**;
+  `check_project.py` and `git diff --check` green.
+- **Immutable evidence PASS.** Attempt
+  `v4/audit/autoresearch/selector_quality_requirement_curve_2026_08_23_attempt001/receipt.json`,
+  self-hash `d616a07e0f05aef609b70c396e371fb822d6d1a8923a76229a5324b5930517bf`.
+  It binds 60 curve rows, 12 correlation rows, five inverse summaries, all 505 inverse cells, every
+  artifact byte/hash/CSV row count, and archived module/wrapper sources. A pre-existing attempt or
+  dangling symlink is untouched and returns nonzero; after directory creation, any failure preserves
+  available source archives, partial artifacts, full traceback `run.log`, and a canonical self-hashed
+  failure receipt. Failed directories are never reused.
+- **Freeze and ownership unchanged.** Post-run semantic anchor
+  `71463cc0eeb4e242e43307e19a926ea4e258fd45a254c389e5a27110923893c4`: **12 sources, zero drift**.
+  Producer hash `ca109c6f…`, economics module `0b223855…`, and the Opus-owned economics/Greeks files
+  remain untouched. No reserved session, vendor/broker contact, purchase, download, spend or order.
+
+Durable records: [finding](../../research/findings/SELECTOR_QUALITY_REQUIREMENT_CURVE_2026_08_23.md),
+[receipt](../../../v4/audit/autoresearch/selector_quality_requirement_curve_2026_08_23_attempt001/receipt.json),
+[curve](../../../v4/audit/autoresearch/selector_quality_requirement_curve_2026_08_23_attempt001/requirement_curve.csv),
+[inverse](../../../v4/audit/autoresearch/selector_quality_requirement_curve_2026_08_23_attempt001/inverse_requirement.csv),
+[analysis](../../research/selector_quality_requirement.py), and
+[wrapper](../../ops/measure_selector_quality_requirement.py).
