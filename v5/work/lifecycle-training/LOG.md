@@ -2983,3 +2983,67 @@ compounding account, dollars-not-percentages, **two tickets per day** — is pre
   near-the-money is favourable **early** — by 15:00 the same strike needs 3.3 points and gets them 46%
   of the time.
 - 1,214 tests green, checker green.
+
+### JOB 48 CONTINUATION: THREE-STATE SPX RACE, CONDITIONAL PATH, AND ATM IV CLOCK. 2026-08-23.
+
+The owner's 2026-08-23 directive explicitly authorized this unconditional extension of Job 48 on
+the same 1,011 clean sessions. It is terrain, not a nearby-grid retry: three outward race states,
+winner-path magnitude, time-to-M, pre-M adverse excursion/stop compatibility, and causal-ladder ATM
+IV by clock. No fit, feature conditioning, signal test, option outcome/P&L, alpha-ledger charge,
+reserved session, order, purchase, or strategy adoption occurred. The receipt's
+`outcome_conditioning=false` applies to entry/window selection and external signal/label/outcome
+reads; the declared post-entry event-conditioned descriptive denominators remain explicit.
+
+- **Population and clock law.** Exactly **1,011 pre-reservation sessions = 768 backfill + 243
+  owned**, with the three known frozen books excluded before either data family was read. Entry is
+  the exact parity snapshot at `t`; paths use `t+1..t+H`, include an exact 16:00 endpoint, and omit
+  cells ending after 16:00. The symmetric M/J grid is `{2,5,10,15,20,30,40,50}` over 16 clocks,
+  eight horizons and both call/put signed paths. The outward states are exactly favourable-first,
+  adverse-first and neither-underlying-barrier-observed; impossible same-snapshot ties remain a
+  zero-valued QC assertion.
+- **The motivating race is now fully partitioned.** At 09:31 over 20 minutes, call +10/-5 is
+  **240/495/276 = 23.7% [21.2%, 26.5%] / 49.0% [45.9%, 52.0%] / 27.3% [24.6%, 30.1%]**. A +20/-10
+  20-minute race is favourable-first only **1.3%–8.7%** across the selected clocks/sides and mostly
+  unresolved. Exact swapped-threshold call/put identities hold across all **38,400** race cells.
+- **Conditional path facts use their own denominators.** For +10-before-5 winners, selected median
+  whole-remaining-horizon overshoot is **3.2–6.7 SPX points**, q90 **10.2–20.7**. An eventual +10
+  touch takes **9–13 minutes median / 17–20 minutes q90**. At 09:31 calls, **282** sessions eventually
+  reach +10 and **240** do so before -5, so strict -5 stop survival is **85.1% [80.5%, 88.8%]** even
+  though -5 arrives first in 495 sessions overall. Overshoot conditions on favourable-first;
+  time-to-M and pre-M adverse excursion condition on eventual M; every figure carries session-unit
+  uncertainty, with unsupported sparse-tail endpoints left open rather than clamped.
+- **The flat 13% IV assumption misses the ATM clock.** Side-balanced ATM10 median IV is **9.96%
+  [9.61%, 10.45%] at 09:35**, **8.86% [8.66%, 9.38%] at 13:30**, **10.64% [10.31%, 11.11%] at
+  15:30**, and **14.27% [13.96%, 14.67%] at 15:55**. Same-strike closest-ATM sensitivity agrees
+  qualitatively. The primary ATM10 filter excludes **41 solver-bound candidate rows across 41
+  session-clocks**, beginning at 13:30. The sensitivity's whole-ladder pairing diagnostic excludes
+  **1,024 candidate rows across 824 session-clocks**, beginning at 09:31. Both retain all 1,011
+  session estimates at all 16 clocks. This is an ATM-level curve only: 40/60-OTM IV is outside the
+  persisted +/-25 ladder, and the -25 boundary is clipped, so the missing wings remain UNKNOWN.
+- **What is and is not learned.** Barrier geometry, available time and adverse room define a
+  plausible underlying race; they do not establish option expectancy. `NEITHER` is not option
+  death. No bid/ask exit path, percentage option stop, contract-specific wing IV/Greeks, win/loss
+  magnitude, reversal-realizable exit, or break-even success rate was measured. Source changes
+  exactly with date, so era stability/drift is also UNKNOWN. **ADOPT NOTHING.** Any historical
+  option-path join, full-chain wing reconstruction, feature-conditioned race, or new-session test
+  requires its own authorization and frozen law.
+- **Evidence is immutable and independently reproduced.** Final receipt:
+  `v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/receipt.json`, self-hash
+  **`12c51f2d7dc3453108fde93ac1c2a5e12ed2d6350be36f0ac36090b20b2cd703`**. Independent verification
+  reproduced all **15** artifact hashes/bytes/CSV row counts, four upstream bindings, every file in
+  the **2,028-row** combined tape/ladder manifest, and all archived source hashes. Failure tests prove
+  overwrite refusal and preservation of archived sources, traceback, log, partial artifacts and a
+  self-hashed failure receipt.
+- **Health and freeze.** Targeted race/IV suite **15 passed**; canonical `v5/tests` suite **1,229
+  passed, 105 warnings**; `check_project.py` and `git diff --check` green. The semantic freeze passed
+  before and after the work at anchor
+  **`71463cc0eeb4e242e43307e19a926ea4e258fd45a254c389e5a27110923893c4`**: **12 pinned files, 0
+  drifted**. Opus-owned contract-economics, higher-order-Greeks and admissible-set modules/tests were
+  neither edited nor staged.
+
+Durable records: [finding](../../research/findings/UNCONDITIONAL_SPX_RACE_AND_IV_CLOCK_2026_08_23.md),
+[receipt](../../../v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/receipt.json),
+[readable tables](../../../v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/readable_tables.md),
+[race CSV](../../../v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/race_surface.csv),
+[conditional quantiles](../../../v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/conditional_quantiles.csv),
+and [IV clock CSV](../../../v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/iv_by_time.csv).
