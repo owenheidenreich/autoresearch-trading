@@ -1,0 +1,310 @@
+{
+  "artifact_type": "JOB50_PROGRAM_CONTRACT_V4",
+  "schema_version": "v5.cmbp-metadata-census-program-contract.v4",
+  "contract_id": "job50-cmbp-metadata-census-v4-audit-supersession",
+  "job_id": 50,
+  "declared_on": "2026-08-24",
+  "state": "LOCAL_BUILD_ONLY",
+  "seal_state": "SEALED_AFTER_INDEPENDENT_AUDIT_PASS",
+  "canonical_status_source": "v5/STATUS.md",
+  "work_packet": "v5/work/cmbp-metadata-census/PLAN.md",
+  "purpose": "Preserve the first local-readiness seal as nonterminal audit evidence after eleven material test-coverage gaps were found, and freeze a side-by-side V2 evidence generation that can pass only after those gaps are independently closed on current code and tests.",
+  "supersession": {
+    "mode": "SEMANTIC_OVERLAY",
+    "base_contract_path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V3.json",
+    "base_contract_semantic_sha256": "a8528c0311d38a2539c7493cd380967beca707b24ef83ac7eae440662c824451",
+    "base_contract_file_sha256": "e739605ea4d4c96a258d651503de073351e12bb6b258c9ab76630d5b7f56a3ef",
+    "v2_contract_path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V2.json",
+    "v2_contract_semantic_sha256": "3a1cdff65beb11439be93dcf0a0dfa0554cf5e665c339b9f4bdd0ff6eb882b48",
+    "v2_contract_file_sha256": "dc6563c0efd2b4281f5907e7f45fbea059abf31937d529965dd0f596ce48679d",
+    "v1_contract_path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V1.json",
+    "v1_contract_semantic_sha256": "0d581abd9edfcc015d3d2f1574da3be15a3fcd62b275e31dd7485f7d279ca75d",
+    "v1_contract_file_sha256": "5ba7fdf54d44e683cfe0a663d6929593eff7c9ea897aeb855734adc139837ae2",
+    "preservation_law": "PROGRAM_CONTRACT_V1.json through PROGRAM_CONTRACT_V3.json and the complete first-generation V1 evidence quartet remain immutable evidence and are never edited, overwritten, moved, deleted, or silently reinterpreted.",
+    "effective_conflict_rule": "After V4 seals, V4 replaces only the effective execution identity, current local-readiness artifact/schema and paths, audit-closure gate, precredential current-receipt requirement, direct V3 identity projection, external execution/receipt-context provenance mechanism, and the narrowly frozen local negative-test capability exception. Every nonconflicting V1/V2/V3 scope, one-use, no-resume, claim, SDK, transport, outcome, spend, acquisition, and authority law remains binding.",
+    "authority_effect": "NONE"
+  },
+  "interim_v1_evidence_disposition": {
+    "classification": "INTERIM_SUPERSEDED_AFTER_INDEPENDENT_AUDIT",
+    "terminal_or_current_readiness": false,
+    "external_precredential_acceptable": false,
+    "reason": "The first 26-green run was sealed before an independent audit identified eleven material gaps in the load-bearing test coverage. Subsequent code/test repair also makes its current-code binding stale.",
+    "preservation_mode": "PRESERVE_IN_PLACE_EXACT_BYTES",
+    "artifacts": {
+      "test_report": {
+        "path": "v5/work/cmbp-metadata-census/TEST_RESULTS_V1.xml",
+        "file_sha256": "7ffac7b8205dd89ffb660489eb91c40c1c1f4d2bc69cb285bb4692dae052a993"
+      },
+      "synthetic_call_journal": {
+        "path": "v5/work/cmbp-metadata-census/SYNTHETIC_CALL_JOURNAL_V1.jsonl",
+        "file_sha256": "b5e0de9e03e52b6e448851cb05a236b9b6deec0e9c3ba8eacc0de2727ea5892d"
+      },
+      "synthetic_response": {
+        "path": "v5/work/cmbp-metadata-census/SYNTHETIC_METADATA_RESPONSES_V1.json",
+        "file_sha256": "6b16fb0c1ed5386eb7e4bd4e5af87de56b9e4077162931d1537d8eb9c534760d"
+      },
+      "local_readiness_receipt": {
+        "path": "v5/work/cmbp-metadata-census/LOCAL_READINESS_RECEIPT_V1.json",
+        "artifact_type": "JOB50_LOCAL_READINESS_RECEIPT_V1",
+        "schema_version": "v5.cmbp-metadata-census-local-readiness-receipt.v1",
+        "receipt_sha256": "cf9fcd8efcfec59dbba76e801b9e9bacc5eb02ae19739ff7c8181c477b3b01cc",
+        "file_sha256": "83715142fce65df685c4e18bba5495101e2b270361edefaae3e8979cb2783e75"
+      }
+    },
+    "verification_law": "V4 and every V2 readiness receipt strictly reread all four paths, compare exact raw hashes, verify the V1 receipt self-hash and its internal quartet bindings, and refuse if any byte or path changed. They do not rebuild that historical receipt against repaired current code or promote its former status.",
+    "no_archive_move_law": "The exact paths are part of the historical evidence. A move is a deletion from the frozen path and is forbidden; side-by-side V2 paths provide recoverability without mutation."
+  },
+  "independent_test_audit_contract": {
+    "path": "v5/work/cmbp-metadata-census/INDEPENDENT_TEST_AUDIT_V1.json",
+    "artifact_type": "JOB50_INDEPENDENT_TEST_AUDIT_V1",
+    "schema_version": "v5.job50-independent-test-audit.v1",
+    "self_hash_field": "audit_sha256",
+    "file_sha256": "34adbc70cb5c57215a94b587eb18ca8d6e87abd8465f3b0d006ad4d53394b656",
+    "semantic_sha256": "12bee42a434af787fcefb837e97f35562f2b4b430696552c2345ba170026a2ff",
+    "status": "SEALED_PASS_CURRENT_BYTES",
+    "finding_count": 11,
+    "finding_identifiers_in_frozen_order": [
+      "POST_KEY_SDK_IDENTITY_REHASH_UNTESTED",
+      "PRODUCTION_CAPABILITY_CORE_AND_PUBLIC_RECEIPT_PATH_UNTESTED",
+      "PARTIAL_CRASH_PREFIX_LAW_UNTESTED",
+      "SYMLINK_TOPOLOGY_REFUSAL_UNTESTED",
+      "RAW_CLIENT_NONEXPOSURE_AND_FAKE_ISOLATION_UNTESTED",
+      "TOTAL_STOP_NORMALIZATION_LAW_UNDERCOVERED",
+      "SYNTHETIC_CREDENTIAL_READ_FIREWALL_UNTESTED",
+      "AUTH_FRESHNESS_AND_MANUAL_ATTESTATION_NEGATIVES_UNTESTED",
+      "EXTERNAL_DIGEST_AND_TOP_LEVEL_DURABILITY_UNTESTED",
+      "SDK_ARGUMENT_EXPECTATION_SELF_REFERENTIAL",
+      "RECEIPT_TEST_SOURCE_AUDIT_TOO_SHALLOW"
+    ],
+    "required_exact_fields": [
+      "artifact_type",
+      "schema_version",
+      "job_id",
+      "audit_id",
+      "audited_at_utc",
+      "audit_trigger",
+      "interim_v1_receipt_sha256",
+      "interim_v1_receipt_file_sha256",
+      "finding_count",
+      "finding_identifiers",
+      "closure_rows",
+      "required_test_names",
+      "test_source_file_sha256",
+      "focused_test_count",
+      "focused_failures",
+      "focused_errors",
+      "focused_skips",
+      "positive_external_pass_executed_locally",
+      "external_provenance_closure",
+      "audit_verdict",
+      "manual_auditor_attestation_boundary",
+      "audit_sha256"
+    ],
+    "closure_row_exact_fields": [
+      "identifier",
+      "initial_disposition",
+      "closure_test_names",
+      "closure_evidence",
+      "closure_status"
+    ],
+    "fixed_record_values": {
+      "audit_id": "job50-independent-test-audit-v1",
+      "audit_trigger": "POST_V1_LOCAL_READINESS_INDEPENDENT_COVERAGE_REVIEW",
+      "interim_v1_receipt_sha256": "cf9fcd8efcfec59dbba76e801b9e9bacc5eb02ae19739ff7c8181c477b3b01cc",
+      "interim_v1_receipt_file_sha256": "83715142fce65df685c4e18bba5495101e2b270361edefaae3e8979cb2783e75",
+      "focused_test_count": 26,
+      "focused_failures": 0,
+      "focused_errors": 0,
+      "focused_skips": 0,
+      "positive_external_pass_executed_locally": false,
+      "audit_verdict": "PASS_CURRENT_BYTES",
+      "manual_auditor_attestation_boundary": "AUDITOR_IDENTITY_AND_REVIEW_AUTHORSHIP_ARE_MANUAL_ATTESTATIONS_NOT_CRYPTOGRAPHICALLY_VERIFIED"
+    },
+    "audited_at_utc_law": "A nonempty RFC3339 UTC timestamp with a terminal Z identifying when the auditor completed the current-byte review; it is evidence metadata, not a trusted-clock proof.",
+    "closure_test_names_law": "Each closure row's closure_test_names exactly equals the ordered test-name list frozen for that identifier in gap_to_strengthened_test_coverage; an arbitrary subset or additional name is refused.",
+    "external_provenance_closure_contract": {
+      "record_field": "external_provenance_closure",
+      "exact_fields": [
+        "caller_selected_source_refused",
+        "private_core_defaults_synthetic",
+        "local_fake_production_capability_or_seal_positive_evidence_emission_refused",
+        "externally_supplied_response_emitted_locally",
+        "nested_structural_parser_receipt_emitted_locally",
+        "top_level_external_pass_emitted_locally",
+        "positive_path_disposition",
+        "closure_status"
+      ],
+      "required_value": {
+        "caller_selected_source_refused": true,
+        "private_core_defaults_synthetic": true,
+        "local_fake_production_capability_or_seal_positive_evidence_emission_refused": true,
+        "externally_supplied_response_emitted_locally": false,
+        "nested_structural_parser_receipt_emitted_locally": false,
+        "top_level_external_pass_emitted_locally": false,
+        "positive_path_disposition": "UNEXECUTED_REQUIRES_LATER_OWNER_AUTHORIZED_VENDOR_ATTEMPT",
+        "closure_status": "CLOSED_ON_AUDITED_BYTES_BY_STATIC_GRAPH_AND_DYNAMIC_REFUSALS_ONLY"
+      }
+    },
+    "pass_law": "The record contains exactly one closure row for each frozen identifier in frozen order; every initial_disposition is MATERIAL_COVERAGE_GAP, every closure_status is CLOSED_ON_AUDITED_BYTES, every closure_test_names list exactly equals its frozen coverage mapping, every fixed_record_values entry matches, focused_test_count equals the effective total with zero failures/errors/skips, positive_external_pass_executed_locally is false, external_provenance_closure exactly equals the frozen value, and audit_verdict is PASS_CURRENT_BYTES.",
+    "self_hash_law": "Set audit_sha256 to null, canonicalize the complete object with compact sorted JSON and allow_nan=false, SHA-256 the UTF-8 bytes, then store the lowercase digest. The raw file is written exclusively, fsynced, strictly reread, self-hash verified, and raw-hashed before V4 can seal.",
+    "epistemic_boundary": "The record cryptographically binds the strengthened test-source bytes/names and closure assertions but does not cryptographically prove the human auditor's identity. It deliberately does not raw-bind runner/CLI/receipt files because those files must receive the not-yet-known V4 identity after V4 binds this record; binding them here would create a V4-to-record-to-runner-to-V4 hash cycle.",
+    "post_seal_bootstrap_law": "After V4 seals, only the mechanical V4 identity/path projection may change in runner/CLI/receipt code. The final V2 readiness receipt and JUnit bind the exact post-seal runner, CLI, receipt-builder, receipt-CLI, and test bytes; an independent re-audit must confirm that delta and native V2 reconstruction before current readiness PASS."
+  },
+  "gap_to_strengthened_test_coverage": {
+    "POST_KEY_SDK_IDENTITY_REHASH_UNTESTED": [
+      "test_external_run_verifies_local_readiness_and_sdk_before_credential_access"
+    ],
+    "PRODUCTION_CAPABILITY_CORE_AND_PUBLIC_RECEIPT_PATH_UNTESTED": [
+      "test_core_external_execution_reverifies_full_authorization_not_bare_hash",
+      "test_external_receipt_wraps_structural_parser_receipt_and_scopes_claims"
+    ],
+    "PARTIAL_CRASH_PREFIX_LAW_UNTESTED": [
+      "test_partial_attempt_classifier_rereads_on_disk_journal_and_never_passes"
+    ],
+    "SYMLINK_TOPOLOGY_REFUSAL_UNTESTED": [
+      "test_external_run_verifies_local_readiness_and_sdk_before_credential_access"
+    ],
+    "RAW_CLIENT_NONEXPOSURE_AND_FAKE_ISOLATION_UNTESTED": [
+      "test_real_client_cannot_use_synthetic_public_entrypoint",
+      "test_external_integrity_and_authorized_client_capability_are_exact"
+    ],
+    "TOTAL_STOP_NORMALIZATION_LAW_UNDERCOVERED": [
+      "test_job49_stop_aliases_are_normalized_at_every_job50_boundary"
+    ],
+    "SYNTHETIC_CREDENTIAL_READ_FIREWALL_UNTESTED": [
+      "test_fake_suite_never_imports_sdk_authenticates_or_opens_socket"
+    ],
+    "AUTH_FRESHNESS_AND_MANUAL_ATTESTATION_NEGATIVES_UNTESTED": [
+      "test_vendor_authorization_is_fresh_attempt_bound_and_consumed_once",
+      "test_external_client_construction_requires_fresh_authorization_credential_and_numeric_cap"
+    ],
+    "EXTERNAL_DIGEST_AND_TOP_LEVEL_DURABILITY_UNTESTED": [
+      "test_external_receipt_binds_auth_raw_normalized_cost_count_and_ceiling",
+      "test_external_receipt_rejects_raw_or_normalized_digest_tamper",
+      "test_owner_attestations_are_explicit_manual_governance_inputs"
+    ],
+    "SDK_ARGUMENT_EXPECTATION_SELF_REFERENTIAL": [
+      "test_fake_census_calls_exact_four_methods_in_frozen_order_and_arguments",
+      "test_symbology_adapter_renames_start_end_only_after_descriptor_hash_validation"
+    ],
+    "RECEIPT_TEST_SOURCE_AUDIT_TOO_SHALLOW": [
+      "test_sdk_transport_source_and_requests_zero_retry_identity_are_bound",
+      "test_urllib3_default_retry_identity_is_bound"
+    ]
+  },
+  "v2_local_evidence_contract": {
+    "generation": 2,
+    "current_paths": {
+      "test_report": "v5/work/cmbp-metadata-census/TEST_RESULTS_V2.xml",
+      "synthetic_call_journal": "v5/work/cmbp-metadata-census/SYNTHETIC_CALL_JOURNAL_V2.jsonl",
+      "synthetic_response": "v5/work/cmbp-metadata-census/SYNTHETIC_METADATA_RESPONSES_V2.json",
+      "local_readiness_receipt": "v5/work/cmbp-metadata-census/LOCAL_READINESS_RECEIPT_V2.json"
+    },
+    "canonical_path_law": "Current build and native verification accept only these exact resolved repository paths, reject every symlink component and path outside the repository, and permit no CLI override. V1 paths remain historical-only.",
+    "content_schema_law": {
+      "test_report": "JUnit XML; generation indicated by path and V2 receipt binding",
+      "synthetic_call_journal": "Existing JOB50_CMBP_CALL_JOURNAL_V1 / v5.cmbp-metadata-call-journal.v1 content schema, but V4 program identity and V2 filename",
+      "synthetic_response": "Existing sealed response/execution-audit content schemas, but V4 program identity and V2 filename",
+      "local_readiness_receipt_artifact_type": "JOB50_LOCAL_READINESS_RECEIPT_V2",
+      "local_readiness_receipt_schema_version": "v5.cmbp-metadata-census-local-readiness-receipt.v2"
+    },
+    "receipt_status": "JOB50_LOCAL_RUNNER_READY_ONLY",
+    "receipt_next_state": "BLOCKED_AWAITING_JOB50_METADATA_VENDOR_CALL_AUTHORIZATION",
+    "required_receipt_bindings": [
+      "V4, V3, V2, and V1 contract semantic and raw-file SHA-256",
+      "the immutable interim V1 quartet exact paths/raw hashes plus V1 receipt semantic hash and superseded disposition",
+      "INDEPENDENT_TEST_AUDIT_V1 semantic and raw-file SHA-256 with all eleven gaps closed",
+      "current PLAN, runner, runner CLI, strengthened tests, receipt builder, receipt CLI, and inherited Job-49 parser exact raw hashes",
+      "current SDK/export/client/endpoint/transport source identities and aggregate SDK identity hash",
+      "V2 JUnit zero failures/errors and every effective required test",
+      "V2 synthetic journal/response exact call accounting and raw/normalized aggregates under V4 identity",
+      "zero real/stored credential, authenticated client, network, vendor, time-series, download, outcome, acquisition, spend, model, broker, and order action"
+    ],
+    "write_law": "Every V2 evidence path is absent before generation, is created exclusively without replacing V1, is fully written/fsynced/strictly reread, and is never overwritten, resumed, or repaired. A failure leaves visible non-pass evidence and requires a later contract generation, not path reuse."
+  },
+  "effective_program_identity_v4": {
+    "value_law": "After V4 seals, every new V2 synthetic journal/response/readiness receipt and every future authorization/consumption/external attempt uses V4 self_hash.value as program_contract_sha256.",
+    "preserved_identity_projection": {
+      "program_contract_sha256": "V4 semantic self-hash",
+      "prior_program_contract_sha256": "V3 semantic self-hash",
+      "prior_program_contract_file_sha256": "V3 raw-file SHA-256",
+      "intermediate_program_contract_sha256": "V2 semantic self-hash",
+      "intermediate_program_contract_file_sha256": "V2 raw-file SHA-256",
+      "base_program_contract_sha256": "V1 semantic self-hash",
+      "base_program_contract_file_sha256": "V1 raw-file SHA-256"
+    },
+    "strict_schema_delta": "Add prior_program_contract_sha256 and prior_program_contract_file_sha256 to the existing exact authorization, consumption-marker, and external-wrapper field sets; do not reinterpret V3's intermediate/base fields.",
+    "v1_readiness_identity_accepted_as_current": false
+  },
+  "external_provenance_v4_law": {
+    "caller_selected_source_allowed": false,
+    "private_execution_default": "SYNTHETIC_ONLY",
+    "private_core_source_parameter_allowed": false,
+    "external_context_mechanism": "LEXICALLY_CLOSURE_CAPTURED_INSIDE_EXACT_PUBLIC_AUTHORIZED_RUNNER",
+    "receipt_context_mechanism": "LEXICALLY_CLOSURE_HIDDEN_AND_CREATED_ONLY_BY_FULL_DISK_RECONSTRUCTION",
+    "context_activation_law": "The exact public run_authorized_external_metadata_census path strictly rereads/revalidates the canonical authorization, one-use consumption marker, V4/V3/V2/V1 contracts, V2 readiness receipt, audit record, declaration, attempt directory, current SDK identity, and AuthorizedExternalClient capability from disk before activating its closure-captured external context. There is no module-global external token, seal, setter, selector, or separately callable external executor.",
+    "receipt_context_activation_law": "External wrapper construction and validation use an exact closure-hidden receipt context created only by full canonical on-disk reconstruction of the authorized attempt. There is no module-global receipt-context token, seal, type, setter, context factory accepting caller mappings, or callable wrapper builder that can bless an arbitrary context.",
+    "external_execution_law": "_execute_metadata_census has no source, provenance, seal, external-context, or equivalent caller argument and always produces synthetic provenance. Externally supplied provenance exists only inside the exact fully revalidating public authorized runner's closure-captured path. A caller source string, keyword forgery, direct private-core call, raw client, duck-typed capability, private fake capability, or monkeypatched factory return cannot select external provenance or emit an external artifact.",
+    "local_positive_external_pass_allowed": false,
+    "capability_test_exception_to_v3": "V3's production law remains unchanged: a production-usable AuthorizedExternalClient is created only by construct_authorized_external_client. V4 permits a private test fixture of the exact capability class solely to enter the public core after its bound on-disk authority has deliberately been mutated, prove refusal before call one, and emit no response or receipt artifact. This fixture is not evidence that the production construction or positive external path executed.",
+    "production_capability_provenance_law": "The production mint is closure-backed, has no module-global capability seal or caller-supplied mint token, imports nothing, and accepts only when type(client) is the already-loaded exact pinned databento.historical.client.Historical class supplied by the production constructor after credential read and SDK-identity verification. SyntheticMetadataClient, duck-typed, replaced-factory, and caller-supplied clients are refused. Direct import or call of a helper with a fake cannot create a production-usable capability.",
+    "negative_fixture_structural_law": "A separate negative-test mint creates the exact public AuthorizedExternalClient class with closure-hidden production_usable=false. The public core intentionally performs full disk revalidation first so deliberately mutated authority fails at its natural gate, then unconditionally refuses this fixture before call one when disk evidence is valid. External receipt build and finalize instead require exact capability type and immediately call _require_production_usable() before reading capability bindings or reconstructing any receipt disk context; therefore nested-receipt, wrapper, and receipt-validation-context construction are unreachable for the fixture. It cannot activate external execution or receipt context or emit fake positive evidence.",
+    "local_test_boundary": "Strengthened local tests may statically inspect the authorized execution/receipt closure graphs and exact external wrapper fields and dynamically prove counterfeit/raw/fake/private/direct-keyword paths refuse. Tests may privately mint an exact-class capability solely to prove mutated on-disk authorization or consumption evidence refuses before call one; that capability may not select external provenance or produce an externally_supplied response, nested structural parser receipt, or top-level external PASS, even under a temporary directory.",
+    "audit_closure_identifiers": [
+      "PRODUCTION_CAPABILITY_CORE_AND_PUBLIC_RECEIPT_PATH_UNTESTED",
+      "RAW_CLIENT_NONEXPOSURE_AND_FAKE_ISOLATION_UNTESTED"
+    ],
+    "audit_closure_law": "Both named audit rows and the exact external_provenance_closure record must establish the capability, execution, and receipt-context boundaries by static production closure-graph inspection plus dynamic refusal tests only. A module-global capability seal, a production mint that imports or accepts anything other than type(client) is the already-loaded exact Historical class, a fake/duck production-usable capability, a negative fixture able to reach call one on valid disk, a receipt build/finalize path that performs any binding read or disk-context reconstruction before the immediate production-usable check, a module-global execution or receipt-context selector/token/seal/type/setter/executor, a callable arbitrary-context wrapper path, a locally emitted externally_supplied response, a nested structural parser receipt, or a top-level external PASS fails the audit rather than serving as positive-path coverage.",
+    "bounded_tamper_boundary": "This law refuses direct imports, calls, accessible module-global execution/receipt-context tokens, seals, types or setters, arbitrary-context wrapper calls, keyword forgery, raw/duck/fake capability positive-evidence substitution, and ordinary monkeypatchable production-factory injection. Hostile inspection or mutation of Python function __closure__, live frames, debugger state, process memory, or coordinated interpreter compromise is outside the claim.",
+    "positive_path_status": "UNEXECUTED_REQUIRES_LATER_OWNER_AUTHORIZED_VENDOR_ATTEMPT",
+    "receipt_claim_law": "The V2 local readiness receipt states positive_external_pass_executed_locally=false and makes no positive external provenance claim."
+  },
+  "precredential_v4_gate": {
+    "required_current_receipt_path": "v5/work/cmbp-metadata-census/LOCAL_READINESS_RECEIPT_V2.json",
+    "required_current_receipt_artifact_type": "JOB50_LOCAL_READINESS_RECEIPT_V2",
+    "required_current_receipt_schema_version": "v5.cmbp-metadata-census-local-readiness-receipt.v2",
+    "required_effective_contract": "sealed PROGRAM_CONTRACT_V4.json semantic and raw identity",
+    "historical_v1_receipt_disposition": "REFUSE_AS_SUPERSEDED_NONTERMINAL_EVIDENCE",
+    "required_order": [
+      "strictly verify sealed V4/V3/V2/V1 contracts and immutable V1 quartet without vendor imports",
+      "strictly verify INDEPENDENT_TEST_AUDIT_V1 and every current V2 readiness binding with require_vendor_authorization_absent=false",
+      "verify the current SDK/client/export/transport aggregate identity from the V2 receipt",
+      "verify the fresh V4-bound authorization including direct V3/V2/V1 fields",
+      "consume authorization and create the exclusive attempt directory",
+      "only then read the credential",
+      "rehash the entire SDK/client/export/transport identity again after credential read but before Historical construction; require exact equality to the V2 readiness SDK identity",
+      "only then construct the exact bound Historical client capability"
+    ],
+    "v1_or_missing_v2_status": "STOP_LOCAL_READINESS_RECEIPT_INVALID",
+    "post_key_identity_drift_status": "STOP_SDK_VERSION_OR_SIGNATURE_DRIFT"
+  },
+  "effective_test_gate": {
+    "required_test_total": 26,
+    "required_names_source": "V1 required_tests plus V2 required_tests_added_to_v1 plus V3 required_tests_added_to_v2",
+    "strengthening_law": "The names remain stable, but the current test bytes must contain substantive independent assertions closing every gap in gap_to_strengthened_test_coverage. Name presence, a pass/ellipsis check, implementation-derived expectations, or a privately minted fake positive external PASS cannot support PASS.",
+    "audit_record_required": true,
+    "zero_failures": true,
+    "zero_errors": true,
+    "zero_skips": true
+  },
+  "terminal_law": {
+    "v1_interim_status_is_terminal": false,
+    "v2_local_pass": "JOB50_LOCAL_RUNNER_READY_ONLY",
+    "state_after_v2_local_pass": "BLOCKED_AWAITING_JOB50_METADATA_VENDOR_CALL_AUTHORIZATION",
+    "external_pass": "JOB50_EXTERNAL_METADATA_PREFLIGHT_PASS_ONLY",
+    "state_after_external_pass": "BLOCKED_AWAITING_SEPARATE_ACQUISITION_DECISION",
+    "external_call_authorized_now": false,
+    "credential_read_authorized_now": false,
+    "data_acquisition_authorized": false,
+    "economic_conclusion_available": false,
+    "model_or_order_authority_available": false
+  },
+  "self_hash": {
+    "algorithm": "sha256",
+    "canonicalization": "json.dumps(object,sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False).encode(\"utf-8\")",
+    "value": "01dbb71e7e58d08adf05114c2e89c74fa8870b653e527a66df083ae5b2408794",
+    "status": "SEALED",
+    "normalized_status_for_hash": "NORMALIZED_FOR_HASH",
+    "procedure": "Parse this file as strict JSON, copy the complete object, set copied self_hash.value to null and copied self_hash.status to NORMALIZED_FOR_HASH, compact-sort canonicalize with allow_nan=false, SHA-256 the UTF-8 bytes, then store the lowercase digest and SEALED status only after the final independent audit record is present and verified."
+  }
+}

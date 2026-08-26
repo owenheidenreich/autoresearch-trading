@@ -1,0 +1,380 @@
+{
+  "artifact_type": "JOB50_PROGRAM_CONTRACT_V1",
+  "schema_version": "v5.cmbp-metadata-census-program-contract.v1",
+  "contract_id": "job50-cmbp-metadata-census-v1",
+  "job_id": 50,
+  "declared_on": "2026-08-24",
+  "state": "LOCAL_BUILD_ONLY",
+  "canonical_status_source": "v5/STATUS.md",
+  "work_packet": "v5/work/cmbp-metadata-census/PLAN.md",
+  "purpose": "Build and locally prove a fail-closed runner for the exact sealed Job 49 CMBP metadata declaration. A later separately authorized run may measure vendor availability, record counts, and quoted acquisition cost; this contract does not authorize that run or any data acquisition.",
+  "bot_goal_relation": "Subminute OPRA data is one remaining way to test whether minute snapshots hide decision-relevant 0DTE path structure. Job 50 only measures whether the exact substrate is available and what it is quoted to cost; it does not test a trading strategy.",
+  "authority": {
+    "source": "Job 50 paragraph and register row in v5/STATUS.md plus the owner's 2026-08-24 instruction to begin under the stated local-build-only boundary.",
+    "tier": 3,
+    "authorized_now": [
+      "registered work packet and sealed program contract",
+      "native-v5 metadata runner, CLI, verifier, and receipt code",
+      "injected fake-client tests that make no external call",
+      "synthetic response and call-journal artifacts",
+      "local no-network JUnit evidence and readiness receipt"
+    ],
+    "forbidden_now": [
+      "reading or using a Databento credential",
+      "constructing an authenticated Databento client",
+      "authentication, vendor contact, API request, DNS, or socket access",
+      "time-series, batch, live, or download access",
+      "data acquisition, subscription, entitlement mutation, or spend",
+      "broker or account contact",
+      "strategy outcome, label, fill, return, hit, P&L, or reserved-session economics",
+      "model fit, calibration, threshold search, policy ranking, or family selection",
+      "simulated, paper, live, or real order submission"
+    ],
+    "alpha_charge": 0,
+    "authority_violation_status": "JOB50_AUTHORITY_VIOLATION"
+  },
+  "sealed_job49_input": {
+    "program_contract_path": "v5/work/human-policy-foundation/PROGRAM_CONTRACT_V2.json",
+    "program_contract_semantic_sha256": "7726845bd62fbcd8e48643872079c18ee5a1a8832c0fe1e13d0c1795c50b7d7e",
+    "program_contract_file_sha256": "b502d9a8a5808da71a447f29b52e96a36e637f6a1e2f8f9c3b5d09f6bb5edfab",
+    "local_foundation_receipt_path": "v5/work/human-policy-foundation/LOCAL_FOUNDATION_RECEIPT_V2.json",
+    "local_foundation_receipt_semantic_sha256": "dc706cb886406d11e6fdc19ebd8454a92b9b74e354e2b7b7813065207a8f5093",
+    "local_foundation_receipt_file_sha256": "e688ade9e4a45f8b0b35e2992c75c171bf56310994137c8a82522e0dda7b050e",
+    "declaration_path": "v5/work/human-policy-foundation/CMBP_CATALOGUE_DECLARATION_V1.json",
+    "declaration_semantic_sha256": "5677e2401677c7ce0be1c82ab009fb00547e8b2a8b4bdbe8895a64df5a59adad",
+    "declaration_file_sha256": "51066b09a0a6add8b2bed407c2a8b585f0689825a1065339abb986831b1b59ba",
+    "scope_manifest_path": "v5/work/human-policy-foundation/CMBP_SCOPE_MANIFEST_V1.json",
+    "scope_manifest_semantic_sha256": "7125c20b91c2bb24b7e23bbe649f760c8e6c64b3afbfabc4e084375229a3be96",
+    "scope_manifest_file_sha256": "8cd7fd1ba322e14b7ea9c2e3ae042a7f0571b84c4b6c6bee8be0282ab63e43b4",
+    "request_manifest_sha256": "17854671eb64a9576d933975749e3d6a301abbbd37b6ce496098a533e1cf288a",
+    "session_manifest_sha256": "883fa056bb31bbf62aca897d4e4ff312f5be223cb480549af2a6cf5bd1991ff9",
+    "symbol_manifest_sha256": "a5191de83d4e23a9df21fecdb1f6d12a0722720c9af7fedf61a2fb1f211d6f1b",
+    "dataset": "OPRA.PILLAR",
+    "schema": "cmbp-1",
+    "stype_in": "raw_symbol",
+    "coverage_start": "2023-03-28",
+    "source_session_count": 1014,
+    "request_session_count": 813,
+    "excluded_known_precoverage_session_count": 201,
+    "session_symbol_membership_count": 42726,
+    "scope_widening_allowed": false,
+    "schema_fallback_allowed": false,
+    "immutability_law": "The runner verifies these semantic and raw-file identities before any attempt. It never rewrites, reserializes, regenerates, narrows, widens, or substitutes the sealed Job 49 inputs."
+  },
+  "exact_call_contract": {
+    "allowed_methods_in_order": [
+      "metadata.get_dataset_range",
+      "symbology.resolve",
+      "metadata.get_cost",
+      "metadata.get_record_count"
+    ],
+    "global_call_count": 1,
+    "per_request_session_call_count": 3,
+    "request_session_count": 813,
+    "total_sdk_invocation_count": 2440,
+    "per_method_counts": {
+      "metadata.get_dataset_range": 1,
+      "symbology.resolve": 813,
+      "metadata.get_cost": 813,
+      "metadata.get_record_count": 813
+    },
+    "ordering": "First the declaration's sole global metadata.get_dataset_range request. Then, for each REQUEST_CANDIDATE session in declaration order, symbology.resolve, metadata.get_cost, and metadata.get_record_count in declaration order.",
+    "descriptor_validation": "Before every invocation, recompute request_sha256 from the frozen method and parameters with request_sha256 omitted and require exact equality. Also require the complete declaration/request-manifest identities before the first invocation.",
+    "one_invocation_per_descriptor": true,
+    "automatic_retry_allowed": false,
+    "runner_retry_allowed": false,
+    "method_family_blocklist": [
+      "timeseries",
+      "download"
+    ],
+    "partial_session_success_allowed": false,
+    "manually_supplied_external_response_can_pass": false,
+    "self_attestation_sufficient": false
+  },
+  "sdk_adapter_contract": {
+    "package": "databento",
+    "exact_version": "0.77.0",
+    "version_check_timing": "before client construction and before any method invocation",
+    "version_or_signature_drift_status": "STOP_SDK_VERSION_OR_SIGNATURE_DRIFT",
+    "inspected_method_signatures": {
+      "metadata.get_dataset_range": "(dataset)",
+      "symbology.resolve": "(dataset, symbols, stype_in, stype_out, start_date, end_date=None)",
+      "metadata.get_cost": "(dataset, start, end=None, mode=Default, symbols=None, schema='trades', stype_in='raw_symbol', limit=None)",
+      "metadata.get_record_count": "(dataset, start, end=None, symbols=None, schema='trades', stype_in='raw_symbol', limit=None)"
+    },
+    "method_argument_law": {
+      "metadata.get_dataset_range": {
+        "pass_unchanged": [
+          "dataset"
+        ],
+        "added_or_omitted_arguments_allowed": false
+      },
+      "symbology.resolve": {
+        "pass_unchanged": [
+          "dataset",
+          "symbols",
+          "stype_in",
+          "stype_out"
+        ],
+        "rename_only": {
+          "start": "start_date",
+          "end": "end_date"
+        },
+        "added_or_omitted_arguments_allowed": false
+      },
+      "metadata.get_cost": {
+        "pass_unchanged": [
+          "dataset",
+          "start",
+          "end",
+          "symbols",
+          "schema",
+          "stype_in"
+        ],
+        "added_or_omitted_arguments_allowed": false
+      },
+      "metadata.get_record_count": {
+        "pass_unchanged": [
+          "dataset",
+          "start",
+          "end",
+          "symbols",
+          "schema",
+          "stype_in"
+        ],
+        "added_or_omitted_arguments_allowed": false
+      }
+    },
+    "symbology_translation_timing": "Verify the original descriptor request_sha256 first, then build a separate ephemeral kwargs object with start_date/end_date. Never modify or rehash the descriptor using SDK keyword names.",
+    "descriptor_hash_unchanged_by_adapter": true,
+    "symbol_law": "Preserve every 21-character raw OSI string, padding, order, and session membership exactly. No parent symbol, ALL_SYMBOLS, None, stripping, sorting, chunking, or substitution is allowed.",
+    "transport_observation": "The inspected 0.77.0 methods each issue one requests transport operation and contain no automatic retry. Any SDK change requires a new contract version and local review."
+  },
+  "schema_range_caveat": {
+    "dataset_range_is_schema_specific": false,
+    "plain_language": "metadata.get_dataset_range reports a dataset/entitlement range. It does not prove that cmbp-1 exists for a session even when the returned dataset range spans that date.",
+    "session_evidence_requirement": "Each declared event-era session requires complete, request-hash-bound symbology, cost, and record-count results and must pass the Job 49 validator.",
+    "forbidden_inferences": [
+      "inferring cmbp-1 availability from dataset range alone",
+      "inferring all sessions between range endpoints are available",
+      "replacing a missing cmbp-1 response with cbbo-1m or another schema",
+      "dropping a missing or failed session and reporting a smaller successful population"
+    ]
+  },
+  "later_vendor_authorization_contract": {
+    "path": "v5/work/cmbp-metadata-census/VENDOR_RUN_AUTHORIZATION_V1.json",
+    "artifact_type": "JOB50_VENDOR_RUN_AUTHORIZATION_V1",
+    "schema_version": "v5.job50-vendor-run-authorization.v1",
+    "present_during_local_build": false,
+    "required_fields": [
+      "artifact_type",
+      "schema_version",
+      "program_contract_sha256",
+      "declaration_sha256",
+      "declaration_file_sha256",
+      "credential_rotation_attested",
+      "credential_attestation_recorded_at_utc",
+      "quoted_acquisition_ceiling_usd",
+      "metadata_only",
+      "authorized_methods",
+      "current_conversation_authorization_sha256",
+      "authorization_effect",
+      "authorization_sha256"
+    ],
+    "exact_requirements": {
+      "credential_rotation_attested": true,
+      "metadata_only": true,
+      "authorized_methods": [
+        "metadata.get_dataset_range",
+        "symbology.resolve",
+        "metadata.get_cost",
+        "metadata.get_record_count"
+      ],
+      "authorization_effect": "METADATA_ONLY_VENDOR_CONTACT; NO_TIMESERIES_DOWNLOAD_ACQUISITION_SPEND_OR_OUTCOMES"
+    },
+    "credential_law": "Before any future client construction, the owner must attest that the previously flagged credential was rotated or was affirmatively established not to be the exposed credential. Store no secret or reversible credential fingerprint in this artifact.",
+    "fresh_authorization_law": "The current-conversation authorization digest must bind a fresh owner instruction that explicitly authorizes only this four-method metadata run. The 2026-08-24 local-build instruction is insufficient.",
+    "ceiling_law": "quoted_acquisition_ceiling_usd is a canonical finite non-negative base-10 decimal string frozen before the first call. It gates the returned quote only and does not authorize purchase, acquisition, download, or spend.",
+    "self_hash_field": "authorization_sha256",
+    "self_hash_procedure": "Remove authorization_sha256, serialize the remaining complete authorization object with the canonical compact JSON law, and SHA-256 hash the UTF-8 bytes.",
+    "missing_or_invalid_status": "STOP_AUTHORIZATION_MISSING_OR_INVALID"
+  },
+  "attempt_contract": {
+    "attempt_id_law": "A cryptographically random lowercase UUID is generated only after every pre-call gate passes and names one exclusive attempt directory.",
+    "directory_template": "v5/work/cmbp-metadata-census/external-attempts/<attempt_id>/",
+    "exclusive_creation": true,
+    "existing_path_status": "STOP_ATTEMPT_PATH_EXISTS",
+    "files": {
+      "call_journal": "CALL_JOURNAL_V1.jsonl",
+      "success_response": "EXTERNAL_METADATA_RESPONSES_V1.json",
+      "success_receipt": "EXTERNAL_METADATA_RECEIPT_V1.json",
+      "stop_diagnostic": "ATTEMPT_STOP_V1.json"
+    },
+    "call_journal": {
+      "artifact_type": "JOB50_CMBP_CALL_JOURNAL_V1",
+      "schema_version": "v5.cmbp-metadata-call-journal.v1",
+      "append_only": true,
+      "hash_chained": true,
+      "file_mode": "0600",
+      "symbolic_link_allowed": false,
+      "record_types": [
+        "ATTEMPT_HEADER",
+        "CALL_START",
+        "CALL_RESULT",
+        "CALL_ERROR",
+        "ATTEMPT_COMPLETE",
+        "ATTEMPT_STOP"
+      ],
+      "call_start_required_fields": [
+        "attempt_id",
+        "call_ordinal",
+        "method",
+        "session",
+        "request_sha256"
+      ],
+      "call_result_required_fields": [
+        "attempt_id",
+        "call_ordinal",
+        "method",
+        "request_sha256",
+        "result_sha256"
+      ],
+      "call_error_required_fields": [
+        "attempt_id",
+        "call_ordinal",
+        "method",
+        "request_sha256",
+        "closed_error_class"
+      ],
+      "durability_law": "Append and fsync CALL_START before invoking the SDK method. Append and fsync exactly one matching CALL_RESULT or CALL_ERROR immediately after return or caught error. Fsync ATTEMPT_COMPLETE or ATTEMPT_STOP before returning.",
+      "secret_redaction_law": "Never record a credential, authorization header, response object repr, traceback text that may contain a secret, or unrestricted exception text.",
+      "pairing_law": "A complete attempt has exactly 2440 CALL_START records and exactly 2440 ordinal/request/method-matched CALL_RESULT records, no CALL_ERROR, no gap, duplicate, reordering, unpaired start, or extra call, followed by one ATTEMPT_COMPLETE.",
+      "accounting_source_law": "The runner-owned call proxy writes the journal around the actual injected method invocation. A caller-supplied method list, response attestation, or reconstructed count cannot satisfy this law."
+    },
+    "success_output_law": "Write no EXTERNAL_METADATA_RESPONSES_V1.json until the complete call journal verifies. The response binds attempt_id, terminal journal head, call-journal raw-file SHA-256, exact method counts, and every frozen request/result digest. Only then may the offline validator build EXTERNAL_METADATA_RECEIPT_V1.json.",
+    "partial_or_crash_law": "Any caught error writes CALL_ERROR and ATTEMPT_STOP, emits no success response or receipt, and stops. A crash or kill may leave an unpaired CALL_START; offline inspection classifies the directory STOP_PARTIAL_OR_CRASHED_ATTEMPT. The directory remains immutable evidence and cannot later gain a pass artifact.",
+    "resume_allowed": false,
+    "in_place_retry_allowed": false,
+    "retry_law": "A retry is a wholly new unique attempt directory and requires a new fresh current-conversation owner authorization. No prior result is copied forward and every declared call is made under the new attempt.",
+    "partial_success_allowed": false,
+    "overwrite_allowed": false
+  },
+  "response_and_claim_contract": {
+    "job49_response_validator_reused": "v5.research.cmbp_catalogue_preflight.build_preflight_receipt and validate_preflight_receipt remain the semantic response law, but Job 50 adds mandatory call-journal provenance before an external pass.",
+    "external_response_artifact": "CMBP_CATALOGUE_METADATA_RESPONSES_V1",
+    "external_receipt_artifact": "CMBP_CATALOGUE_PREFLIGHT_RECEIPT_V1",
+    "external_pass_status": "PREFLIGHT_PASS_ONLY",
+    "zero_cost_law": "A zero-dollar cost is retained only with a positive exact record count. Zero or missing record count stops as STOP_ZERO_RECORDS and is never silently dropped.",
+    "cost_law": "Every per-session finite non-negative cost is retained and summed with decimal arithmetic. No mean, sample, extrapolation, or inferred free boundary is allowed.",
+    "quoted_ceiling_law": "The exact summed quote must be less than or equal to the authorization artifact's quoted_acquisition_ceiling_usd. Above it, emit STOP_OVER_QUOTED_CEILING. Passing does not authorize acquisition.",
+    "allowed_external_claims": [
+      "authenticated-entitlement dataset range exactly as returned",
+      "complete declared sessions whose exact metadata responses passed",
+      "per-session and summed exact record counts",
+      "per-session and summed quoted costs",
+      "whether the summed quote is within the predeclared quoted-acquisition ceiling",
+      "exact runner call-accounting and artifact-integrity facts"
+    ],
+    "forbidden_claims": [
+      "a universal or population zero-price boundary",
+      "population event prevalence",
+      "execution quality or executable fills",
+      "strategy edge, expected P&L, or model readiness",
+      "authority to download, acquire, purchase, fit, paper trade, or trade"
+    ],
+    "outcome_fields_read": [],
+    "time_series_records_read": 0
+  },
+  "local_evidence_gate": {
+    "question": "Can a locally tested runner preserve every sealed descriptor, translate only the required SDK keyword names, account durably for exactly the four-method call population, and refuse authorization, drift, partial attempts, and overclaiming without constructing an external client?",
+    "planned_deliverables": [
+      "v5/work/cmbp-metadata-census/PLAN.md",
+      "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V1.json",
+      "v5/research/cmbp_metadata_census.py",
+      "v5/ops/run_cmbp_metadata_census.py",
+      "v5/tests/test_cmbp_metadata_census.py",
+      "v5/work/cmbp-metadata-census/SYNTHETIC_CALL_JOURNAL_V1.jsonl",
+      "v5/work/cmbp-metadata-census/SYNTHETIC_METADATA_RESPONSES_V1.json",
+      "v5/work/cmbp-metadata-census/TEST_RESULTS_V1.xml",
+      "v5/work/cmbp-metadata-census/LOCAL_READINESS_RECEIPT_V1.json"
+    ],
+    "required_tests": [
+      "test_fake_census_calls_exact_four_methods_in_frozen_order_and_arguments",
+      "test_symbology_adapter_renames_start_end_only_after_descriptor_hash_validation",
+      "test_descriptor_hash_tamper_forbidden_method_and_scope_widening_fail_before_calls",
+      "test_sdk_version_mismatch_fails_before_calls",
+      "test_vendor_exception_leaves_durable_error_journal_and_no_final_artifact",
+      "test_partial_or_malformed_vendor_response_fails_without_silent_drop",
+      "test_zero_cost_with_positive_count_is_retained_and_zero_count_stops",
+      "test_attempt_paths_are_exclusive_and_partial_attempt_cannot_resume_or_overwrite",
+      "test_external_client_construction_requires_fresh_authorization_credential_and_numeric_cap",
+      "test_fake_suite_never_imports_sdk_authenticates_or_opens_socket",
+      "test_every_invocation_has_durable_start_and_result_pair_bound_to_response"
+    ],
+    "fake_test_law": "Tests may call injected in-memory fake methods only. They do not import or construct the Databento authenticated client, read .env or a real key, authenticate, open a socket, or contact a vendor.",
+    "pass_status": "JOB50_LOCAL_RUNNER_READY_ONLY",
+    "pass_meaning": "The runner is locally ready for a separately authorized four-method metadata attempt. No external preflight has occurred.",
+    "authorization_effect": "NONE",
+    "external_preflight_achieved": false,
+    "required_local_receipt_bindings": [
+      "program-contract semantic self-hash and raw-file SHA-256",
+      "PLAN.md raw-file SHA-256",
+      "Job 49 contract, declaration, scope, and receipt semantic and raw-file SHA-256 values",
+      "runner, CLI, validator, and test raw-file SHA-256 values",
+      "synthetic call-journal terminal head and raw-file SHA-256",
+      "synthetic response semantic and raw-file SHA-256",
+      "SDK 0.77.0 version and inspected four method signatures",
+      "exact 2440 total and 1/813/813/813 per-method fake call counts",
+      "JUnit raw-file SHA-256 with zero failures and all required tests",
+      "zero credential reads, zero authenticated client constructions, zero external calls, zero time-series/download calls, zero outcomes, and zero spend"
+    ]
+  },
+  "local_artifact_contract": {
+    "synthetic_call_journal": "v5/work/cmbp-metadata-census/SYNTHETIC_CALL_JOURNAL_V1.jsonl",
+    "synthetic_response": "v5/work/cmbp-metadata-census/SYNTHETIC_METADATA_RESPONSES_V1.json",
+    "test_report": "v5/work/cmbp-metadata-census/TEST_RESULTS_V1.xml",
+    "readiness_receipt": "v5/work/cmbp-metadata-census/LOCAL_READINESS_RECEIPT_V1.json",
+    "receipt_artifact_type": "JOB50_LOCAL_READINESS_RECEIPT_V1",
+    "receipt_schema_version": "v5.cmbp-metadata-census-local-readiness-receipt.v1",
+    "receipt_hash_field": "receipt_sha256",
+    "receipt_hash_procedure": "Remove receipt_sha256, serialize with the canonical compact JSON law, and SHA-256 hash the UTF-8 bytes.",
+    "write_law": "Every sealed evidence artifact is written to a versioned new path and refuses overwrite."
+  },
+  "stop_statuses": [
+    "STOP_CONTRACT_OR_DECLARATION_DRIFT",
+    "STOP_SDK_VERSION_OR_SIGNATURE_DRIFT",
+    "STOP_AUTHORIZATION_MISSING_OR_INVALID",
+    "STOP_CREDENTIAL_ROTATION_UNRESOLVED",
+    "STOP_QUOTED_CEILING_MISSING_OR_INVALID",
+    "STOP_FORBIDDEN_METHOD_OR_SCOPE",
+    "STOP_ATTEMPT_PATH_EXISTS",
+    "STOP_CALL_JOURNAL_INVALID",
+    "STOP_PARTIAL_OR_CRASHED_ATTEMPT",
+    "STOP_VENDOR_AUTH_OR_ENTITLEMENT",
+    "STOP_SCHEMA_UNAVAILABLE",
+    "STOP_SYMBOL_OR_EXPIRY_MISMATCH",
+    "STOP_ZERO_RECORDS",
+    "STOP_NONFINITE_COST",
+    "STOP_MISSING_SESSION_RESPONSE",
+    "STOP_OVER_QUOTED_CEILING",
+    "STOP_RESPONSE_OR_RECEIPT_INVALID",
+    "JOB50_AUTHORITY_VIOLATION"
+  ],
+  "terminal_law": {
+    "local_both_code_and_evidence_pass": "JOB50_LOCAL_RUNNER_READY_ONLY",
+    "state_after_local_pass": "BLOCKED_AWAITING_JOB50_METADATA_VENDOR_CALL_AUTHORIZATION",
+    "state_after_external_pass": "BLOCKED_AWAITING_SEPARATE_ACQUISITION_DECISION",
+    "external_vendor_call_authorized_now": false,
+    "data_acquisition_authorized": false,
+    "economic_conclusion_available": false,
+    "model_or_capture_authority_available": false
+  },
+  "self_hash": {
+    "algorithm": "sha256",
+    "canonicalization": "json.dumps(object,sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False).encode(\"utf-8\")",
+    "value": "0d581abd9edfcc015d3d2f1574da3be15a3fcd62b275e31dd7485f7d279ca75d",
+    "status": "SEALED",
+    "normalized_status_for_hash": "NORMALIZED_FOR_HASH",
+    "procedure": "Parse this file as strict JSON, copy the complete object, set copied self_hash.value to null and copied self_hash.status to NORMALIZED_FOR_HASH, serialize the copy with json.dumps(sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False), hash the UTF-8 bytes with SHA-256, then store the lowercase digest in self_hash.value and set stored self_hash.status to SEALED. Verification repeats the same normalization."
+  }
+}

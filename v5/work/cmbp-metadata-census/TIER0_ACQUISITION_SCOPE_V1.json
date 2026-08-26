@@ -1,0 +1,185 @@
+{
+  "artifact_type": "JOB51_TIER0_ACQUISITION_SCOPE_V1",
+  "dataset": "OPRA.PILLAR",
+  "destination_root": "/Volumes/AR_TRADING_DATA",
+  "quoted_cost_usd": "0",
+  "schema": "cmbp-1",
+  "scope_sha256": "87050c2b3ad248d4d96c5f6945b883241cdd89a53a2f9902d6e70baf5218a099",
+  "selection_rule": "20 evenly spaced indices round(i*(N-1)/19) over the chronologically sorted 228 zero-cost sessions, plus the 2026-07-02 early-close session appended if absent. Outcome-blind: uses only session date and vendor metadata; no P&L, feature, or outcome informed this pick.",
+  "session_count": 21,
+  "sessions": [
+    {
+      "cost_usd": "0",
+      "record_count": 79724697,
+      "rth_close_utc": "2025-08-22T20:00:00Z",
+      "rth_open_utc": "2025-08-22T13:30:00Z",
+      "session": "2025-08-22",
+      "symbol_count": 54
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 48089724,
+      "rth_close_utc": "2025-09-10T20:00:00Z",
+      "rth_open_utc": "2025-09-10T13:30:00Z",
+      "session": "2025-09-10",
+      "symbol_count": 36
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 39171083,
+      "rth_close_utc": "2025-09-29T20:00:00Z",
+      "rth_open_utc": "2025-09-29T13:30:00Z",
+      "session": "2025-09-29",
+      "symbol_count": 34
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 120412014,
+      "rth_close_utc": "2025-10-15T20:00:00Z",
+      "rth_open_utc": "2025-10-15T13:30:00Z",
+      "session": "2025-10-15",
+      "symbol_count": 64
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 69638654,
+      "rth_close_utc": "2025-11-03T21:00:00Z",
+      "rth_open_utc": "2025-11-03T14:30:00Z",
+      "session": "2025-11-03",
+      "symbol_count": 40
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 161323812,
+      "rth_close_utc": "2025-11-19T21:00:00Z",
+      "rth_open_utc": "2025-11-19T14:30:00Z",
+      "session": "2025-11-19",
+      "symbol_count": 52
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 37272051,
+      "rth_close_utc": "2025-12-09T21:00:00Z",
+      "rth_open_utc": "2025-12-09T14:30:00Z",
+      "session": "2025-12-09",
+      "symbol_count": 29
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 21718523,
+      "rth_close_utc": "2025-12-30T21:00:00Z",
+      "rth_open_utc": "2025-12-30T14:30:00Z",
+      "session": "2025-12-30",
+      "symbol_count": 28
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 57605517,
+      "rth_close_utc": "2026-01-16T21:00:00Z",
+      "rth_open_utc": "2026-01-16T14:30:00Z",
+      "session": "2026-01-16",
+      "symbol_count": 36
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 218608233,
+      "rth_close_utc": "2026-02-04T21:00:00Z",
+      "rth_open_utc": "2026-02-04T14:30:00Z",
+      "session": "2026-02-04",
+      "symbol_count": 58
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 144824543,
+      "rth_close_utc": "2026-02-20T21:00:00Z",
+      "rth_open_utc": "2026-02-20T14:30:00Z",
+      "session": "2026-02-20",
+      "symbol_count": 50
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 156288351,
+      "rth_close_utc": "2026-03-10T20:00:00Z",
+      "rth_open_utc": "2026-03-10T13:30:00Z",
+      "session": "2026-03-10",
+      "symbol_count": 52
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 147945952,
+      "rth_close_utc": "2026-03-27T20:00:00Z",
+      "rth_open_utc": "2026-03-27T13:30:00Z",
+      "session": "2026-03-27",
+      "symbol_count": 56
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 54690504,
+      "rth_close_utc": "2026-04-15T20:00:00Z",
+      "rth_open_utc": "2026-04-15T13:30:00Z",
+      "session": "2026-04-15",
+      "symbol_count": 43
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 59588303,
+      "rth_close_utc": "2026-05-01T20:00:00Z",
+      "rth_open_utc": "2026-05-01T13:30:00Z",
+      "session": "2026-05-01",
+      "symbol_count": 37
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 139932522,
+      "rth_close_utc": "2026-05-19T20:00:00Z",
+      "rth_open_utc": "2026-05-19T13:30:00Z",
+      "session": "2026-05-19",
+      "symbol_count": 42
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 191642889,
+      "rth_close_utc": "2026-06-05T20:00:00Z",
+      "rth_open_utc": "2026-06-05T13:30:00Z",
+      "session": "2026-06-05",
+      "symbol_count": 86
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 220510944,
+      "rth_close_utc": "2026-06-25T20:00:00Z",
+      "rth_open_utc": "2026-06-25T13:30:00Z",
+      "session": "2026-06-25",
+      "symbol_count": 52
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 148917880,
+      "rth_close_utc": "2026-07-02T17:00:00Z",
+      "rth_open_utc": "2026-07-02T13:30:00Z",
+      "session": "2026-07-02",
+      "symbol_count": 66
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 115621744,
+      "rth_close_utc": "2026-07-14T20:00:00Z",
+      "rth_open_utc": "2026-07-14T13:30:00Z",
+      "session": "2026-07-14",
+      "symbol_count": 36
+    },
+    {
+      "cost_usd": "0",
+      "record_count": 140349905,
+      "rth_close_utc": "2026-07-30T20:00:00Z",
+      "rth_open_utc": "2026-07-30T13:30:00Z",
+      "session": "2026-07-30",
+      "symbol_count": 50
+    }
+  ],
+  "source_census_receipt_sha256": "319c05bd1ca06edd14f6c4a847debb4a64880dd2f3a5c80450af86fa41dce076",
+  "source_responses_file_sha256": "b759b48641ff529196356ce795eec8f53434452203c8b628cdd73bfa342cef71",
+  "stype_in": "raw_symbol",
+  "total_record_count": 2373877845,
+  "total_session_symbols": 1001
+}

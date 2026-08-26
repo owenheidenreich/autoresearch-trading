@@ -1,0 +1,80 @@
+{
+  "artifact_type": "JOB49_LOCAL_FOUNDATION_RECEIPT_V1",
+  "authority_effect": "NONE",
+  "bindings": {
+    "implementation_file_sha256": {
+      "v5/ops/prepare_cmbp_catalogue_preflight.py": "8c724e996df20053f97dff4746c467afb6d5ce9ac1c80df42a8b0eb420c39a50",
+      "v5/ops/record_human_decision.py": "a230e2891595224c17822f7d6446463d7875cda787df95e57a0595693e610aa7",
+      "v5/ops/record_human_policy_foundation.py": "665dad70e2578af7ba0d593202ead397402d32a28724d5db6c290c90f1ccaa70",
+      "v5/research/cmbp_catalogue_preflight.py": "4b8da7a8994dd51ea3021050a0ae8a8b37b0b1ae1523971a309d2ed099ec9c69",
+      "v5/research/human_decision_log.py": "c695ce25d7642e3d0c40d730c80d5214391061849eea105efc38333e8e937cd5",
+      "v5/research/human_policy_foundation_receipt.py": "32ae8a8335f11e794e4f58eb3e3275adf27da10171d9e4db3d83afa77dfedec3",
+      "v5/tests/test_cmbp_catalogue_preflight.py": "9209040c5b5b9d342cb4c3ffe00684fc45d5625052b28ef0a523484d009ce746",
+      "v5/tests/test_human_decision_log.py": "9142278c2185b40d9bc80c83724fb036d40aad47455d243ffd6515821953ee90",
+      "v5/tests/test_human_policy_foundation_receipt.py": "6656e0a6ea58e594685c98819f1c6d582b5384675f6e3fb73712de7bb8a6c3f1"
+    },
+    "parser_fixture": {
+      "file_sha256": "7bcef12803d4e6486d508855eabcb9ffc16390f68519011dcb066007ad726a3c",
+      "manifest_sha256": "55dd5a92f969c6218ffaada8eddceeff355d4d12407fdffed9a5735592149b69",
+      "rows": 173470783,
+      "session_symbol_pairs": 248,
+      "sessions": 64,
+      "use": "PARSER_ONLY"
+    },
+    "plan_file_sha256": "aef54cdb95da7f857cef493c74103b768717ac255e372769678b5ace8cfea033",
+    "program_contract_file_sha256": "c6130504a9bfce61fcd9c9fffced203f6137490d4b849b041d777a5a383e4cda",
+    "program_contract_semantic_sha256": "01d3e47f5c96b1cff6dbe4df2d7140245bf90f5cb0e810fa421a80ab1aa9a2d7",
+    "test_report": {
+      "errors": 0,
+      "failures": 0,
+      "report_file_sha256": "c534ec61770744643c95383d8b063d63794143e934ea5cd9fc00ac18b6c2343f",
+      "required_tests_present": 23,
+      "tests": 58
+    }
+  },
+  "catalogue_gate": {
+    "declaration_file_sha256": "51066b09a0a6add8b2bed407c2a8b585f0689825a1065339abb986831b1b59ba",
+    "declaration_sha256": "5677e2401677c7ce0be1c82ab009fb00547e8b2a8b4bdbe8895a64df5a59adad",
+    "excluded_precoverage_session_count": 201,
+    "external_preflight_achieved": false,
+    "primary_artifact_status": "CATALOGUE_READY_LOCAL",
+    "request_session_count": 813,
+    "scope_file_sha256": "8cd7fd1ba322e14b7ea9c2e3ae042a7f0571b84c4b6c6bee8be0282ab63e43b4",
+    "scope_manifest_sha256": "7125c20b91c2bb24b7e23bbe649f760c8e6c64b3afbfabc4e084375229a3be96",
+    "session_symbol_membership_count": 42726,
+    "source_session_count": 1014,
+    "status": "CMBP_CATALOGUE_READY_LOCAL"
+  },
+  "human_gate": {
+    "decisions": 4,
+    "explicit_waits": 1,
+    "final_monitoring_state": "OFF",
+    "final_position_state": "FLAT",
+    "journal_file_sha256": "eb0d647d420e498b1072003679fa05376476962788ff9102043122fe73ae40d6",
+    "program_contract_sha256": "01d3e47f5c96b1cff6dbe4df2d7140245bf90f5cb0e810fa421a80ab1aa9a2d7",
+    "risk_contract_sha256": "cf17dddd5bf6379be3c893c891e19c76581b34680999bb2c5d6f5183d989b116",
+    "schema_version": "v5.human-decision-log.v1",
+    "status": "HUMAN_INSTRUMENTATION_READY_LOCAL",
+    "synthetic_only": true,
+    "terminal_head": "c0326528fba1382fcda381c92e3bdbb87451e5cf5fd6049ad8f6aa96bd5c86dc",
+    "terminal_sequence": 8
+  },
+  "integrity": {
+    "broker_calls": 0,
+    "downloads": 0,
+    "models_fit": 0,
+    "network_calls": 0,
+    "orders_submitted": 0,
+    "real_human_decisions_recorded": false,
+    "reserved_economics_read": false,
+    "spend_usd": 0,
+    "strategy_outcomes_read": false,
+    "vendor_calls": 0
+  },
+  "job_id": 49,
+  "next_state": "BLOCKED_AWAITING_JOB50_OWNER_GATE",
+  "receipt_sha256": "918a5e7aabaa23f5f18856acff4fe57b7bc8b47b049e278553dbedf6db37be4a",
+  "schema_version": "v5.human-policy-foundation-receipt.v1",
+  "status": "JOB49_LOCAL_FOUNDATION_PASS_ONLY",
+  "status_meaning": "Both Job 49 interfaces passed local outcome-blind validation only. No external, research-outcome, capture, model, broker, or order authority follows."
+}

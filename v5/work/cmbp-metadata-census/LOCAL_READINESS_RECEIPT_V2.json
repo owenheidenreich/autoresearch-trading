@@ -1,0 +1,556 @@
+{
+  "artifact_type": "JOB50_LOCAL_READINESS_RECEIPT_V2",
+  "authority_effect": "NONE",
+  "bindings": {
+    "base_program_contract": {
+      "file_sha256": "5ba7fdf54d44e683cfe0a663d6929593eff7c9ea897aeb855734adc139837ae2",
+      "path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V1.json",
+      "semantic_sha256": "0d581abd9edfcc015d3d2f1574da3be15a3fcd62b275e31dd7485f7d279ca75d"
+    },
+    "implementation_file_sha256": {
+      "v5/ops/record_cmbp_metadata_census_readiness.py": "49ab22d16f548e437a29b294192c1dca065bd8117f6a278c98c6dcf92c8be163",
+      "v5/ops/record_cmbp_metadata_census_readiness_v2.py": "a30b6f169e69dac260510208353e0fb6e5b00c0b70b6e909befb19bcfc74e34e",
+      "v5/ops/run_cmbp_metadata_census.py": "cfa31cf71eef473da96bdd8ec18b659401b94c557ef8d005f7860375e546584b",
+      "v5/research/cmbp_catalogue_preflight.py": "4b8da7a8994dd51ea3021050a0ae8a8b37b0b1ae1523971a309d2ed099ec9c69",
+      "v5/research/cmbp_metadata_census.py": "e629932234b45faa541114552d23d557aa54a287d1a7688a8a62047ce607f90a",
+      "v5/research/cmbp_metadata_census_receipt.py": "935e0239f1b4aca782bd1246f3856f5294bce9f755fd8cd4d23fbb10aff5dc20",
+      "v5/research/cmbp_metadata_census_receipt_v2.py": "db946533e65c9e42007676c821e8a250f92fcdefe8c35305ba8bdb40468acfe4",
+      "v5/tests/test_cmbp_metadata_census.py": "a9301f6a8aa6e6170e99be64017cfac93bbbb570f1b641fd369b9cda7ed2ca8a"
+    },
+    "independent_test_audit": {
+      "audit_sha256": "12bee42a434af787fcefb837e97f35562f2b4b430696552c2345ba170026a2ff",
+      "audit_verdict": "PASS_CURRENT_BYTES",
+      "external_provenance_closure": {
+        "caller_selected_source_refused": true,
+        "closure_status": "CLOSED_ON_AUDITED_BYTES_BY_STATIC_GRAPH_AND_DYNAMIC_REFUSALS_ONLY",
+        "externally_supplied_response_emitted_locally": false,
+        "local_fake_production_capability_or_seal_positive_evidence_emission_refused": true,
+        "nested_structural_parser_receipt_emitted_locally": false,
+        "positive_path_disposition": "UNEXECUTED_REQUIRES_LATER_OWNER_AUTHORIZED_VENDOR_ATTEMPT",
+        "private_core_defaults_synthetic": true,
+        "top_level_external_pass_emitted_locally": false
+      },
+      "file_sha256": "34adbc70cb5c57215a94b587eb18ca8d6e87abd8465f3b0d006ad4d53394b656",
+      "finding_count": 11,
+      "finding_identifiers": [
+        "POST_KEY_SDK_IDENTITY_REHASH_UNTESTED",
+        "PRODUCTION_CAPABILITY_CORE_AND_PUBLIC_RECEIPT_PATH_UNTESTED",
+        "PARTIAL_CRASH_PREFIX_LAW_UNTESTED",
+        "SYMLINK_TOPOLOGY_REFUSAL_UNTESTED",
+        "RAW_CLIENT_NONEXPOSURE_AND_FAKE_ISOLATION_UNTESTED",
+        "TOTAL_STOP_NORMALIZATION_LAW_UNDERCOVERED",
+        "SYNTHETIC_CREDENTIAL_READ_FIREWALL_UNTESTED",
+        "AUTH_FRESHNESS_AND_MANUAL_ATTESTATION_NEGATIVES_UNTESTED",
+        "EXTERNAL_DIGEST_AND_TOP_LEVEL_DURABILITY_UNTESTED",
+        "SDK_ARGUMENT_EXPECTATION_SELF_REFERENTIAL",
+        "RECEIPT_TEST_SOURCE_AUDIT_TOO_SHALLOW"
+      ],
+      "manual_auditor_attestation_boundary": "AUDITOR_IDENTITY_AND_REVIEW_AUTHORSHIP_ARE_MANUAL_ATTESTATIONS_NOT_CRYPTOGRAPHICALLY_VERIFIED",
+      "path": "v5/work/cmbp-metadata-census/INDEPENDENT_TEST_AUDIT_V1.json",
+      "positive_external_pass_executed_locally": false,
+      "test_source_file_sha256": "a9301f6a8aa6e6170e99be64017cfac93bbbb570f1b641fd369b9cda7ed2ca8a"
+    },
+    "interim_v1_evidence": {
+      "classification": "INTERIM_SUPERSEDED_AFTER_INDEPENDENT_AUDIT",
+      "local_readiness_receipt": {
+        "file_sha256": "83715142fce65df685c4e18bba5495101e2b270361edefaae3e8979cb2783e75",
+        "path": "v5/work/cmbp-metadata-census/LOCAL_READINESS_RECEIPT_V1.json"
+      },
+      "receipt_sha256": "cf9fcd8efcfec59dbba76e801b9e9bacc5eb02ae19739ff7c8181c477b3b01cc",
+      "synthetic_call_journal": {
+        "file_sha256": "b5e0de9e03e52b6e448851cb05a236b9b6deec0e9c3ba8eacc0de2727ea5892d",
+        "path": "v5/work/cmbp-metadata-census/SYNTHETIC_CALL_JOURNAL_V1.jsonl"
+      },
+      "synthetic_response": {
+        "file_sha256": "6b16fb0c1ed5386eb7e4bd4e5af87de56b9e4077162931d1537d8eb9c534760d",
+        "path": "v5/work/cmbp-metadata-census/SYNTHETIC_METADATA_RESPONSES_V1.json"
+      },
+      "terminal_or_current_readiness": false,
+      "test_report": {
+        "file_sha256": "7ffac7b8205dd89ffb660489eb91c40c1c1f4d2bc69cb285bb4692dae052a993",
+        "path": "v5/work/cmbp-metadata-census/TEST_RESULTS_V1.xml"
+      }
+    },
+    "intermediate_program_contract": {
+      "file_sha256": "dc6563c0efd2b4281f5907e7f45fbea059abf31937d529965dd0f596ce48679d",
+      "path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V2.json",
+      "semantic_sha256": "3a1cdff65beb11439be93dcf0a0dfa0554cf5e665c339b9f4bdd0ff6eb882b48"
+    },
+    "plan_file_sha256": "3bd238e27f7064fd3b7e389ccae89eeff7993f7f63650b9e29d6d67749875ba3",
+    "plan_path": "v5/work/cmbp-metadata-census/PLAN.md",
+    "prior_program_contract": {
+      "file_sha256": "e739605ea4d4c96a258d651503de073351e12bb6b258c9ab76630d5b7f56a3ef",
+      "path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V3.json",
+      "semantic_sha256": "a8528c0311d38a2539c7493cd380967beca707b24ef83ac7eae440662c824451"
+    },
+    "program_contract": {
+      "file_sha256": "34bc793896c29e6675e539b7bec9cb3d03cf4e189fc5bc053e4f3f1b524829d1",
+      "path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V4.json",
+      "semantic_sha256": "01dbb71e7e58d08adf05114c2e89c74fa8870b653e527a66df083ae5b2408794"
+    },
+    "receipt_runtime_import_audit": {
+      "audited_files": [
+        "v5/research/cmbp_metadata_census_receipt_v2.py",
+        "v5/ops/record_cmbp_metadata_census_readiness_v2.py"
+      ],
+      "direct_import_roots": {
+        "v5/ops/record_cmbp_metadata_census_readiness_v2.py": [
+          "__future__",
+          "argparse",
+          "json",
+          "os",
+          "pathlib",
+          "sys",
+          "typing",
+          "v5"
+        ],
+        "v5/research/cmbp_metadata_census_receipt_v2.py": [
+          "__future__",
+          "ast",
+          "copy",
+          "datetime",
+          "hashlib",
+          "pathlib",
+          "typing",
+          "v5"
+        ]
+      },
+      "forbidden_import_roots": [
+        "aiohttp",
+        "databento",
+        "httpx",
+        "ib_insync",
+        "ibapi",
+        "requests",
+        "socket",
+        "urllib",
+        "urllib3"
+      ],
+      "forbidden_imports_observed": []
+    },
+    "sdk_source_identity": {
+      "bounded_claims": {
+        "client_construction": "This closes the inspected default local import/constructor source path against same-version drift. It is not proof against a compromised Python import system, monkeypatching after verification, or coordinated rewrite of every retained local anchor.",
+        "transport": "The inspected default Databento 0.77.0 -> requests 2.33.1 -> urllib3 2.6.3 source path configures zero automatic retries. This is a static local source-identity claim, not a guarantee against monkeypatching, vendor duplication, network intermediaries, or coordinated artifact rewrite."
+      },
+      "client_imported": false,
+      "databento": {
+        "client_construction": {
+          "constructor_call_targets": [
+            "BatchHttpAPI",
+            "MetadataHttpAPI",
+            "SymbologyHttpAPI",
+            "TimeseriesHttpAPI",
+            "logger.info",
+            "os.environ.get",
+            "key.isspace",
+            "ValueError",
+            "HistoricalGateway",
+            "isinstance",
+            "validate_gateway",
+            "type",
+            "str"
+          ],
+          "endpoint_constructors": {
+            "BatchHttpAPI": {
+              "arguments": [
+                "key",
+                "gateway"
+              ],
+              "call_targets": [
+                "super().__init__",
+                "super"
+              ],
+              "source_file": "databento/historical/api/batch.py"
+            },
+            "MetadataHttpAPI": {
+              "arguments": [
+                "key",
+                "gateway"
+              ],
+              "call_targets": [
+                "super().__init__",
+                "super"
+              ],
+              "source_file": "databento/historical/api/metadata.py"
+            },
+            "SymbologyHttpAPI": {
+              "arguments": [
+                "key",
+                "gateway"
+              ],
+              "call_targets": [
+                "super().__init__",
+                "super"
+              ],
+              "source_file": "databento/historical/api/symbology.py"
+            },
+            "TimeseriesHttpAPI": {
+              "arguments": [
+                "key",
+                "gateway"
+              ],
+              "call_targets": [
+                "super().__init__",
+                "super"
+              ],
+              "source_file": "databento/historical/api/timeseries.py"
+            }
+          },
+          "exact_class": "databento.historical.client.Historical",
+          "root_export_count": 1,
+          "source_files": {
+            "databento/__init__.py": "294304b655d6cede5c84fd07e2781f3c0a10224d240df4da327c6b299adfd906",
+            "databento/historical/api/batch.py": "126b54eea0674630fd584c17b37956f5e0037a4033b60ae618d974a7add5a339",
+            "databento/historical/api/timeseries.py": "c392df431654306eb50c66cacffacae48690443f182cfe7630848b7173a1bdda",
+            "databento/historical/client.py": "9fe714854b8bab2bc7feaa4c7e4c4f207d4d2ece5aaad68af1c1f5d4c0038248"
+          }
+        },
+        "distribution": "databento",
+        "distribution_metadata": {
+          "file_sha256": "90618880f5e87186e9e9750101d9a7d85c481b5601c5197d1ff414e8bed7626f",
+          "path": "databento-0.77.0.dist-info/METADATA"
+        },
+        "endpoint_source_files": {
+          "databento/historical/api/metadata.py": {
+            "file_sha256": "30cbb59778ed46a872fea8b9eccf7e590a931af8f3b02ffb747bd663011bef60"
+          },
+          "databento/historical/api/symbology.py": {
+            "file_sha256": "92d919e7d62381c00e06adf42215fb95d11a77740eec6d37f202661e43725ef4"
+          }
+        },
+        "transport_source": {
+          "file_sha256": "9762acbcac9bc74368157bb1851525c8e9229ea682ad81edce2d8241db8caf46",
+          "observed_methods": {
+            "_get": {
+              "decorator_count": 0,
+              "loop_count": 0,
+              "requests_call": "requests.get",
+              "requests_call_count": 1,
+              "retry_or_mount_call_count": 0
+            },
+            "_post": {
+              "decorator_count": 0,
+              "loop_count": 0,
+              "requests_call": "requests.post",
+              "requests_call_count": 1,
+              "retry_or_mount_call_count": 0
+            }
+          },
+          "path": "databento/common/http.py"
+        },
+        "version": "0.77.0"
+      },
+      "endpoint_contract_signatures": {
+        "metadata.get_cost": "(dataset, start, end=None, mode=Default, symbols=None, schema='trades', stype_in='raw_symbol', limit=None)",
+        "metadata.get_dataset_range": "(dataset)",
+        "metadata.get_record_count": "(dataset, start, end=None, symbols=None, schema='trades', stype_in='raw_symbol', limit=None)",
+        "symbology.resolve": "(dataset, symbols, stype_in, stype_out, start_date, end_date=None)"
+      },
+      "identity_sha256": "6cb840fe6563a5fdd54079d1a9cae063085ee844fa08ecf29bb987c53083b06d",
+      "observed_endpoint_source_arguments": {
+        "metadata.get_cost": {
+          "arguments": [
+            "dataset",
+            "start",
+            "end",
+            "mode",
+            "symbols",
+            "schema",
+            "stype_in",
+            "limit"
+          ],
+          "class": "MetadataHttpAPI",
+          "defaulted_argument_count": 6,
+          "source_file": "databento/historical/api/metadata.py",
+          "transport_helper": "_post"
+        },
+        "metadata.get_dataset_range": {
+          "arguments": [
+            "dataset"
+          ],
+          "class": "MetadataHttpAPI",
+          "defaulted_argument_count": 0,
+          "source_file": "databento/historical/api/metadata.py",
+          "transport_helper": "_get"
+        },
+        "metadata.get_record_count": {
+          "arguments": [
+            "dataset",
+            "start",
+            "end",
+            "symbols",
+            "schema",
+            "stype_in",
+            "limit"
+          ],
+          "class": "MetadataHttpAPI",
+          "defaulted_argument_count": 5,
+          "source_file": "databento/historical/api/metadata.py",
+          "transport_helper": "_post"
+        },
+        "symbology.resolve": {
+          "arguments": [
+            "dataset",
+            "symbols",
+            "stype_in",
+            "stype_out",
+            "start_date",
+            "end_date"
+          ],
+          "class": "SymbologyHttpAPI",
+          "defaulted_argument_count": 1,
+          "source_file": "databento/historical/api/symbology.py",
+          "transport_helper": "_post"
+        }
+      },
+      "requests": {
+        "default_retries": 0,
+        "distribution": "requests",
+        "distribution_metadata": {
+          "file_sha256": "a984181a5ecc84a63e6f0b60eb575890ffe34426e5351955d342aa2b3147b823",
+          "path": "requests-2.33.1.dist-info/METADATA"
+        },
+        "retry_zero_read_false_call_count": 1,
+        "source_files": {
+          "requests/adapters.py": "f64950f522f0f5a56627b957064093c462dcbd6cf7e33116848238db01b53e61",
+          "requests/api.py": "fd96fd39aeedcd5222cd32b016b3e30c463d7a3b66fce9d2444467003c46b10b",
+          "requests/sessions.py": "81b9a5b0d4a2f7ab088a0d26aed1f3640653fdf388593a1ef989d6eefe69b4a2"
+        },
+        "version": "2.33.1"
+      },
+      "static_verification_only": true,
+      "urllib3": {
+        "distribution": "urllib3",
+        "distribution_metadata": {
+          "file_sha256": "e91390cc9af49b019738f1d739b5cd925130c32e9d3e6acc0863c21c5d9882ef",
+          "path": "urllib3-2.6.3.dist-info/METADATA"
+        },
+        "source_files": {
+          "urllib3/connectionpool.py": "64486e76c6bc048b9b0f63345e8c4106c8f16ec5f0320512707ee843d8be8f56",
+          "urllib3/poolmanager.py": "3583f9be429f69d19d75a05a71493acfabbcad33fdc200851868d5b5fd6691c7",
+          "urllib3/util/retry.py": "58e7081d56b129ff9d55bf3d9546e9bdca5e33bacd605fefb0ab0238ac35d19f"
+        },
+        "version": "2.6.3"
+      }
+    },
+    "sealed_job49": {
+      "catalogue_declaration": {
+        "file_sha256": "51066b09a0a6add8b2bed407c2a8b585f0689825a1065339abb986831b1b59ba",
+        "semantic_sha256": "5677e2401677c7ce0be1c82ab009fb00547e8b2a8b4bdbe8895a64df5a59adad"
+      },
+      "catalogue_parser": {
+        "exact_equality_verified": true,
+        "foundation_receipt_file_sha256": "4b8da7a8994dd51ea3021050a0ae8a8b37b0b1ae1523971a309d2ed099ec9c69",
+        "live_file_sha256": "4b8da7a8994dd51ea3021050a0ae8a8b37b0b1ae1523971a309d2ed099ec9c69",
+        "path": "v5/research/cmbp_catalogue_preflight.py"
+      },
+      "local_foundation_receipt": {
+        "file_sha256": "e688ade9e4a45f8b0b35e2992c75c171bf56310994137c8a82522e0dda7b050e",
+        "semantic_sha256": "dc706cb886406d11e6fdc19ebd8454a92b9b74e354e2b7b7813065207a8f5093"
+      },
+      "program_contract": {
+        "file_sha256": "b502d9a8a5808da71a447f29b52e96a36e637f6a1e2f8f9c3b5d09f6bb5edfab",
+        "semantic_sha256": "7726845bd62fbcd8e48643872079c18ee5a1a8832c0fe1e13d0c1795c50b7d7e"
+      },
+      "scope_manifest": {
+        "file_sha256": "8cd7fd1ba322e14b7ea9c2e3ae042a7f0571b84c4b6c6bee8be0282ab63e43b4",
+        "semantic_sha256": "7125c20b91c2bb24b7e23bbe649f760c8e6c64b3afbfabc4e084375229a3be96"
+      }
+    },
+    "synthetic_evidence_paths": {
+      "journal": "v5/work/cmbp-metadata-census/SYNTHETIC_CALL_JOURNAL_V2.jsonl",
+      "response": "v5/work/cmbp-metadata-census/SYNTHETIC_METADATA_RESPONSES_V2.json"
+    },
+    "test_report": {
+      "errors": 0,
+      "failures": 0,
+      "path": "v5/work/cmbp-metadata-census/TEST_RESULTS_V2.xml",
+      "report_file_sha256": "da5bed84600ed6348c77221616463456f38a5c72c49f73f611ee84807066a40c",
+      "required_test_names": [
+        "test_fake_census_calls_exact_four_methods_in_frozen_order_and_arguments",
+        "test_symbology_adapter_renames_start_end_only_after_descriptor_hash_validation",
+        "test_descriptor_hash_tamper_forbidden_method_and_scope_widening_fail_before_calls",
+        "test_sdk_version_mismatch_fails_before_calls",
+        "test_vendor_exception_leaves_durable_error_journal_and_no_final_artifact",
+        "test_partial_or_malformed_vendor_response_fails_without_silent_drop",
+        "test_zero_cost_with_positive_count_is_retained_and_zero_count_stops",
+        "test_attempt_paths_are_exclusive_and_partial_attempt_cannot_resume_or_overwrite",
+        "test_external_client_construction_requires_fresh_authorization_credential_and_numeric_cap",
+        "test_fake_suite_never_imports_sdk_authenticates_or_opens_socket",
+        "test_every_invocation_has_durable_start_and_result_pair_bound_to_response",
+        "test_external_receipt_wraps_structural_parser_receipt_and_scopes_claims",
+        "test_external_run_verifies_local_readiness_and_sdk_before_credential_access",
+        "test_external_receipt_binds_auth_raw_normalized_cost_count_and_ceiling",
+        "test_vendor_authorization_is_fresh_attempt_bound_and_consumed_once",
+        "test_core_external_execution_reverifies_full_authorization_not_bare_hash",
+        "test_real_client_cannot_use_synthetic_public_entrypoint",
+        "test_sdk_transport_source_and_requests_zero_retry_identity_are_bound",
+        "test_job49_stop_aliases_are_normalized_at_every_job50_boundary",
+        "test_external_receipt_rejects_counterfeit_external_pass",
+        "test_external_receipt_rejects_raw_or_normalized_digest_tamper",
+        "test_partial_attempt_classifier_rereads_on_disk_journal_and_never_passes",
+        "test_nested_parser_receipt_is_attempt_local_durable_and_bound",
+        "test_external_integrity_and_authorized_client_capability_are_exact",
+        "test_owner_attestations_are_explicit_manual_governance_inputs",
+        "test_urllib3_default_retry_identity_is_bound"
+      ],
+      "required_tests_present": 26,
+      "skipped": 0,
+      "tests": 26
+    },
+    "test_source_audit": {
+      "exact_required_test_names": [
+        "test_fake_census_calls_exact_four_methods_in_frozen_order_and_arguments",
+        "test_symbology_adapter_renames_start_end_only_after_descriptor_hash_validation",
+        "test_descriptor_hash_tamper_forbidden_method_and_scope_widening_fail_before_calls",
+        "test_sdk_version_mismatch_fails_before_calls",
+        "test_vendor_exception_leaves_durable_error_journal_and_no_final_artifact",
+        "test_partial_or_malformed_vendor_response_fails_without_silent_drop",
+        "test_zero_cost_with_positive_count_is_retained_and_zero_count_stops",
+        "test_attempt_paths_are_exclusive_and_partial_attempt_cannot_resume_or_overwrite",
+        "test_external_client_construction_requires_fresh_authorization_credential_and_numeric_cap",
+        "test_fake_suite_never_imports_sdk_authenticates_or_opens_socket",
+        "test_every_invocation_has_durable_start_and_result_pair_bound_to_response",
+        "test_external_receipt_wraps_structural_parser_receipt_and_scopes_claims",
+        "test_external_run_verifies_local_readiness_and_sdk_before_credential_access",
+        "test_external_receipt_binds_auth_raw_normalized_cost_count_and_ceiling",
+        "test_vendor_authorization_is_fresh_attempt_bound_and_consumed_once",
+        "test_core_external_execution_reverifies_full_authorization_not_bare_hash",
+        "test_real_client_cannot_use_synthetic_public_entrypoint",
+        "test_sdk_transport_source_and_requests_zero_retry_identity_are_bound",
+        "test_job49_stop_aliases_are_normalized_at_every_job50_boundary",
+        "test_external_receipt_rejects_counterfeit_external_pass",
+        "test_external_receipt_rejects_raw_or_normalized_digest_tamper",
+        "test_partial_attempt_classifier_rereads_on_disk_journal_and_never_passes",
+        "test_nested_parser_receipt_is_attempt_local_durable_and_bound",
+        "test_external_integrity_and_authorized_client_capability_are_exact",
+        "test_owner_attestations_are_explicit_manual_governance_inputs",
+        "test_urllib3_default_retry_identity_is_bound"
+      ],
+      "file_sha256": "a9301f6a8aa6e6170e99be64017cfac93bbbb570f1b641fd369b9cda7ed2ca8a",
+      "non_scaffold_ast_node_counts": {
+        "test_attempt_paths_are_exclusive_and_partial_attempt_cannot_resume_or_overwrite": 245,
+        "test_core_external_execution_reverifies_full_authorization_not_bare_hash": 495,
+        "test_descriptor_hash_tamper_forbidden_method_and_scope_widening_fail_before_calls": 428,
+        "test_every_invocation_has_durable_start_and_result_pair_bound_to_response": 304,
+        "test_external_client_construction_requires_fresh_authorization_credential_and_numeric_cap": 177,
+        "test_external_integrity_and_authorized_client_capability_are_exact": 392,
+        "test_external_receipt_binds_auth_raw_normalized_cost_count_and_ceiling": 277,
+        "test_external_receipt_rejects_counterfeit_external_pass": 260,
+        "test_external_receipt_rejects_raw_or_normalized_digest_tamper": 152,
+        "test_external_receipt_wraps_structural_parser_receipt_and_scopes_claims": 286,
+        "test_external_run_verifies_local_readiness_and_sdk_before_credential_access": 480,
+        "test_fake_census_calls_exact_four_methods_in_frozen_order_and_arguments": 361,
+        "test_fake_suite_never_imports_sdk_authenticates_or_opens_socket": 244,
+        "test_job49_stop_aliases_are_normalized_at_every_job50_boundary": 359,
+        "test_nested_parser_receipt_is_attempt_local_durable_and_bound": 325,
+        "test_owner_attestations_are_explicit_manual_governance_inputs": 292,
+        "test_partial_attempt_classifier_rereads_on_disk_journal_and_never_passes": 358,
+        "test_partial_or_malformed_vendor_response_fails_without_silent_drop": 180,
+        "test_real_client_cannot_use_synthetic_public_entrypoint": 189,
+        "test_sdk_transport_source_and_requests_zero_retry_identity_are_bound": 120,
+        "test_sdk_version_mismatch_fails_before_calls": 84,
+        "test_symbology_adapter_renames_start_end_only_after_descriptor_hash_validation": 157,
+        "test_urllib3_default_retry_identity_is_bound": 109,
+        "test_vendor_authorization_is_fresh_attempt_bound_and_consumed_once": 772,
+        "test_vendor_exception_leaves_durable_error_journal_and_no_final_artifact": 176,
+        "test_zero_cost_with_positive_count_is_retained_and_zero_count_stops": 205
+      },
+      "path": "v5/tests/test_cmbp_metadata_census.py"
+    }
+  },
+  "claim_boundary": {
+    "audit_bootstrap_boundary": "After V4 seals, only the mechanical V4 identity/path projection may change in runner/CLI/receipt code. The final V2 readiness receipt and JUnit bind the exact post-seal runner, CLI, receipt-builder, receipt-CLI, and test bytes; an independent re-audit must confirm that delta and native V2 reconstruction before current readiness PASS.",
+    "data_acquisition_authorized": false,
+    "exact_external_cost": "UNKNOWN",
+    "exact_external_session_count": "UNKNOWN",
+    "external_provenance": {
+      "bounded_tamper_boundary": "This law refuses direct imports, calls, accessible module-global execution/receipt-context tokens, seals, types or setters, arbitrary-context wrapper calls, keyword forgery, raw/duck/fake capability positive-evidence substitution, and ordinary monkeypatchable production-factory injection. Hostile inspection or mutation of Python function __closure__, live frames, debugger state, process memory, or coordinated interpreter compromise is outside the claim.",
+      "caller_selected_source_allowed": false,
+      "capability_test_exception_to_v3": "V3's production law remains unchanged: a production-usable AuthorizedExternalClient is created only by construct_authorized_external_client. V4 permits a private test fixture of the exact capability class solely to enter the public core after its bound on-disk authority has deliberately been mutated, prove refusal before call one, and emit no response or receipt artifact. This fixture is not evidence that the production construction or positive external path executed.",
+      "external_context_mechanism": "LEXICALLY_CLOSURE_CAPTURED_INSIDE_EXACT_PUBLIC_AUTHORIZED_RUNNER",
+      "local_positive_external_pass_allowed": false,
+      "local_test_boundary": "Strengthened local tests may statically inspect the authorized execution/receipt closure graphs and exact external wrapper fields and dynamically prove counterfeit/raw/fake/private/direct-keyword paths refuse. Tests may privately mint an exact-class capability solely to prove mutated on-disk authorization or consumption evidence refuses before call one; that capability may not select external provenance or produce an externally_supplied response, nested structural parser receipt, or top-level external PASS, even under a temporary directory.",
+      "negative_fixture_structural_law": "A separate negative-test mint creates the exact public AuthorizedExternalClient class with closure-hidden production_usable=false. The public core intentionally performs full disk revalidation first so deliberately mutated authority fails at its natural gate, then unconditionally refuses this fixture before call one when disk evidence is valid. External receipt build and finalize instead require exact capability type and immediately call _require_production_usable() before reading capability bindings or reconstructing any receipt disk context; therefore nested-receipt, wrapper, and receipt-validation-context construction are unreachable for the fixture. It cannot activate external execution or receipt context or emit fake positive evidence.",
+      "positive_external_pass_executed_locally": false,
+      "positive_path_status": "UNEXECUTED_REQUIRES_LATER_OWNER_AUTHORIZED_VENDOR_ATTEMPT",
+      "private_execution_default": "SYNTHETIC_ONLY",
+      "production_capability_provenance_law": "The production mint is closure-backed, has no module-global capability seal or caller-supplied mint token, imports nothing, and accepts only when type(client) is the already-loaded exact pinned databento.historical.client.Historical class supplied by the production constructor after credential read and SDK-identity verification. SyntheticMetadataClient, duck-typed, replaced-factory, and caller-supplied clients are refused. Direct import or call of a helper with a fake cannot create a production-usable capability.",
+      "receipt_context_mechanism": "LEXICALLY_CLOSURE_HIDDEN_AND_CREATED_ONLY_BY_FULL_DISK_RECONSTRUCTION"
+    },
+    "interim_v1_disposition": "INTERIM_SUPERSEDED_AFTER_INDEPENDENT_AUDIT",
+    "local_credential_zero_definition": "Local receipt credentials_read=0 means no real or stored vendor secret, .env value, keychain value, or process credential was read. Tests may use an explicitly in-memory fake DATABENTO_API_KEY mapping and a private monkeypatched fake-construction seam; those are identified as synthetic test inputs, never counted as a vendor credential read, and cannot emit externally_supplied response, nested-parser, or external PASS evidence.",
+    "population_event_prevalence": "UNKNOWN",
+    "strategy_economics": "NOT_READ",
+    "tamper_evidence": "Job 50 provides bounded local tamper evidence and one-use enforcement against retained artifacts, not absolute tamper-proofing or a vendor-side exactly-once guarantee.",
+    "vendor_availability": "UNKNOWN",
+    "zero_price_boundary": "UNKNOWN"
+  },
+  "integrity": {
+    "authenticated_clients_constructed": 0,
+    "credentials_read": 0,
+    "download_calls": 0,
+    "downloads": 0,
+    "fills_read": false,
+    "models_fit": 0,
+    "network_calls": 0,
+    "orders_submitted": 0,
+    "pnl_read": false,
+    "reserved_economics_read": false,
+    "returns_read": false,
+    "spend_usd": 0,
+    "strategy_outcomes_read": false,
+    "timeseries_calls": 0,
+    "vendor_calls": 0
+  },
+  "job_id": 50,
+  "local_gate": {
+    "attempt_id": "09e8627a5a254fcea9b2581b99de848f",
+    "call_order_sha256": "8362291158454d5592467523724ec55bc53a95e33d839a6f021b103d008879eb",
+    "completed_call_count": 2440,
+    "dataset": "OPRA.PILLAR",
+    "excluded_known_precoverage_session_count": 201,
+    "expected_call_count": 2440,
+    "external_positive_path_status": "UNEXECUTED_REQUIRES_LATER_OWNER_AUTHORIZED_VENDOR_ATTEMPT",
+    "external_preflight_achieved": false,
+    "generation": 2,
+    "interim_v1_is_current": false,
+    "journal": {
+      "file_mode": "0600",
+      "file_sha256": "0752fa21ce81b8086f29e5e920ed9cc3b11a52be883e42f598929a966c6ab0c0",
+      "path": "v5/work/cmbp-metadata-census/SYNTHETIC_CALL_JOURNAL_V2.jsonl",
+      "response_core_sha256": "ca12fc8581a541afa9a22dbecf51f96a80db3c76438a1ae9015cac6eaf9bf382",
+      "terminal_head": "6df7a40743f13d7751c83f34ed9f34fe0c6cfa650ee3e3d04ab7503d41ea81a7",
+      "terminal_sequence": 4881
+    },
+    "method_counts": {
+      "metadata.get_cost": 813,
+      "metadata.get_dataset_range": 1,
+      "metadata.get_record_count": 813,
+      "symbology.resolve": 813
+    },
+    "normalized_results_sha256": "ec9b2e012a300de5ee768151bc30a6105aa7e6d6c7fb97bbaa9278e8ddfcca15",
+    "positive_external_pass_executed_locally": false,
+    "raw_results_sha256": "67d8c698dc9b853bdca2bc85e50e4df60ab24fdfabc37d2356030fe714a91106",
+    "request_session_count": 813,
+    "response": {
+      "file_sha256": "0eff2a951e9f923adbb4fa4e5c07ced78e388cccd4b93b91621de5c3bf11a61c",
+      "path": "v5/work/cmbp-metadata-census/SYNTHETIC_METADATA_RESPONSES_V2.json",
+      "semantic_sha256": "ebc7555bd560fb3ff205398a4aac2108b59c6d93ec7b22ca5b8a9e5121961f0c"
+    },
+    "schema": "cmbp-1",
+    "sdk_package": "databento",
+    "sdk_version": "0.77.0",
+    "session_symbol_membership_count": 42726,
+    "source_session_count": 1014,
+    "stype_in": "raw_symbol",
+    "synthetic_only": true,
+    "vendor_authorization_artifact_present_at_seal": false
+  },
+  "next_state": "BLOCKED_AWAITING_JOB50_METADATA_VENDOR_CALL_AUTHORIZATION",
+  "receipt_sha256": "f2edc18a20a84ba3ab9a929771eb7132884da6adc73950c5dea66ea0fdd5a1ea",
+  "schema_version": "v5.cmbp-metadata-census-local-readiness-receipt.v2",
+  "status": "JOB50_LOCAL_RUNNER_READY_ONLY",
+  "status_meaning": "Eleven independently audited coverage gaps are closed and the exact V4-bound request population passed a fresh side-by-side V2 synthetic rehearsal. No external preflight or downstream authority follows."
+}

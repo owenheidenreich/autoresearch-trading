@@ -1,0 +1,195 @@
+{
+  "schema_version": "v5.human-policy-foundation-program-contract.v2",
+  "contract_id": "job49-human-policy-foundation-v2-tail-watermark-repair",
+  "job_id": 49,
+  "declared_on": "2026-08-24",
+  "state": "LOCAL_OUTCOME_BLIND_FOUNDATION_ONLY",
+  "canonical_status_source": "v5/STATUS.md",
+  "work_packet": "v5/work/human-policy-foundation/PLAN.md",
+  "purpose": "Repair the sealed Job 49 human journal's valid-prefix gap by requiring a durable per-append terminal watermark and anchor-aware verification. This amendment neither adopts nor evaluates a trading policy.",
+  "supersession": {
+    "mode": "SEMANTIC_OVERLAY",
+    "base_contract_path": "v5/work/human-policy-foundation/PROGRAM_CONTRACT_V1.json",
+    "base_contract_semantic_sha256": "01d3e47f5c96b1cff6dbe4df2d7140245bf90f5cb0e810fa421a80ab1aa9a2d7",
+    "base_contract_file_sha256": "c6130504a9bfce61fcd9c9fffced203f6137490d4b849b041d777a5a383e4cda",
+    "base_receipt_path": "v5/work/human-policy-foundation/LOCAL_FOUNDATION_RECEIPT_V1.json",
+    "base_receipt_semantic_sha256": "918a5e7aabaa23f5f18856acff4fe57b7bc8b47b049e278553dbedf6db37be4a",
+    "base_receipt_file_sha256": "b9bb2c41f7dcd9f19fe360ad9527d1a4eb8c4e15eac71a3be06ed2ab53fe5e15",
+    "base_evidence_preservation_law": "PROGRAM_CONTRACT_V1.json, SYNTHETIC_HUMAN_JOURNAL_V1.jsonl, TEST_RESULTS_V1.xml, and LOCAL_FOUNDATION_RECEIPT_V1.json remain immutable historical evidence and are never overwritten by this repair.",
+    "effective_contract_rule": "Every V1 term remains binding except where this V2 file expressly replaces the V1 human-journal tail-rollback, evidence-gate-H deliverable/test, program-contract-identity, or local-receipt term. On an express conflict, V2 governs.",
+    "unchanged_terms": [
+      "claim and alpha-charge boundary",
+      "local-only authority and every forbidden action",
+      "forward-confirmation reservation",
+      "event, action, missingness, transition, causal-clock, outcome-firewall, and training-projection laws",
+      "risk_contract_v1 and its semantic SHA-256",
+      "offline CMBP catalogue gate and all CMBP V1 artifacts",
+      "Job 49 terminal status and Job 50 through Job 54 ordering and authority gates"
+    ]
+  },
+  "authority_effect": {
+    "effect": "NONE",
+    "reason": "This is a local, outcome-blind integrity repair within Job 49's already-authorized code, test, declaration, and receipt scope.",
+    "newly_authorized_actions": [],
+    "still_forbidden": [
+      "real or live human-decision capture",
+      "vendor, Databento, broker, account, network, or live-feed access",
+      "time-series request, download, spend, or entitlement change",
+      "strategy outcome, fill, return, hit rate, P&L, or reserved-session economics",
+      "model fit, calibration, threshold search, ranking, or family selection",
+      "simulated, paper, live, or real order submission"
+    ],
+    "alpha_charge": 0
+  },
+  "repair_finding": {
+    "defect": "The V1 bare hash chain accepts every syntactically valid prefix because no record can prove that a later record once existed.",
+    "primary_label_risk": "Deleting trailing decisions can make an entry, exit, hold, correction, or explicit wait disappear and can therefore contaminate a future abstention estimand.",
+    "v1_receipt_scope": "The sealed V1 receipt correctly pins the frozen synthetic journal at terminal sequence 8 and head c0326528fba1382fcda381c92e3bdbb87451e5cf5fd6049ad8f6aa96bd5c86dc, but it does not provide a moving anchor for future prospective capture.",
+    "repair_class": "JOB49_LOCAL_INTEGRITY_REPAIR",
+    "economic_or_external_evidence_opened": false
+  },
+  "human_policy_record_contract_v2_amendment": {
+    "program_contract_identity": {
+      "decision_program_contract_sha256": "7726845bd62fbcd8e48643872079c18ee5a1a8832c0fe1e13d0c1795c50b7d7e",
+      "risk_contract_sha256_unchanged": "cf17dddd5bf6379be3c893c891e19c76581b34680999bb2c5d6f5183d989b116",
+      "journal_record_schema_version": "v5.human-decision-log.v2",
+      "journal_record_schema_migration_law": "The V1 synthetic journal remains byte-preserved under v5.human-decision-log.v1. Every V2 journal is newly initialized under v5.human-decision-log.v2; no V1 journal is rewritten in place."
+    },
+    "watermark_artifact": {
+      "artifact_type": "HUMAN_DECISION_LOG_WATERMARK_V1",
+      "schema_version": "v5.human-decision-log-watermark.v1",
+      "path_rule": "For journal <path>.jsonl the canonical sidecar is the same local path with .watermark.json appended, yielding <path>.jsonl.watermark.json.",
+      "exact_fields": [
+        "artifact_type",
+        "schema_version",
+        "log_id",
+        "journal_schema_version",
+        "program_contract_sha256",
+        "terminal_sequence",
+        "terminal_head",
+        "watermark_sha256"
+      ],
+      "file_mode": "0600",
+      "symbolic_link_allowed": false,
+      "canonicalization": "json.dumps(object,sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False).encode(\"utf-8\")",
+      "self_hash_field": "watermark_sha256",
+      "self_hash_procedure": "Remove watermark_sha256, canonicalize the remaining object, and SHA-256 hash the bytes.",
+      "terminal_sequence_definition": "The header is sequence 0; each appended event increments terminal_sequence by exactly one.",
+      "terminal_head_definition": "The record_hash of the record at terminal_sequence, including the header at sequence 0."
+    },
+    "initialization_law": {
+      "journal_and_watermark_created_together": true,
+      "initial_terminal_sequence": 0,
+      "initial_terminal_head": "the verified journal-header record_hash",
+      "existing_journal_or_watermark_is_refused": true,
+      "durability": "The journal, watermark, and containing directory are fsynced before initialization reports success.",
+      "partial_initialization": "An orphan journal or watermark is a fail-closed error; V2 does not authorize silent deletion, overwrite, or reconstruction."
+    },
+    "append_commit_law": {
+      "lock_scope": "Hold the journal's exclusive lock from pre-append verification until both journal and watermark durability steps complete.",
+      "precondition": "Before constructing an event, fully verify the journal and require its log_id, terminal sequence, and terminal head to equal the canonical watermark. Missing, malformed, stale, future, or mismatched watermark state refuses the append.",
+      "commit_order": [
+        "validate the prospective event against the verified current journal state",
+        "append the canonical event bytes to the journal and fsync the journal",
+        "write the next watermark to a same-directory private temporary file and fsync it",
+        "atomically replace the canonical watermark with the temporary file",
+        "fsync the containing directory",
+        "only then report append success"
+      ],
+      "watermark_update_frequency": "initialization and every successful append, including synthetic and private deterministic-test appends",
+      "crash_mismatch_law": "A crash after journal durability but before watermark durability leaves a detectable mismatch. Every later append, status, training read, receipt, and anchored verification fails closed; no automatic rollback or silent watermark advance is authorized.",
+      "rollback_overwrite_allowed": false
+    },
+    "verification_law": {
+      "default_managed_log_law": "Public verification, status, append, and training-read APIs for a V2-managed journal require and validate its canonical watermark by default.",
+      "expected_head_parameter": "An optional expected_head is a lowercase SHA-256 and requires exact equality with the journal's current terminal head; a stale or different head fails closed.",
+      "expected_min_sequence_parameter": "An optional expected_min_sequence is a non-negative integer and requires the journal's current terminal sequence to be greater than or equal to it; regression below the bound fails closed.",
+      "combined_expectations": "When both optional expectations are supplied, both are conjunctive and neither disables canonical-watermark verification.",
+      "watermark_equality": "The watermark log_id, journal schema, V2 program-contract hash, terminal sequence, and terminal head must equal the verified journal state and contract constants exactly.",
+      "missing_watermark": "A missing canonical watermark fails closed for every V2 managed-log pass, append, status, training projection, and receipt.",
+      "chain_only_use": "A private or explicitly named forensic/legacy chain-only reader may explain the bytes that remain, but it cannot emit an anchored PASS, feed training, authorize capture, or satisfy a V2 receipt.",
+      "finalized_session_anchor": "Every finalized real session must still bind terminal sequence and head in an independently retained receipt or anchor outside the journal-sidecar mutable fault domain."
+    },
+    "threat_boundary": {
+      "detects": [
+        "journal-only tail rollback while the recorded sidecar is retained",
+        "journal truncation below a caller-supplied expected minimum sequence",
+        "a current terminal head different from a caller-supplied expected head",
+        "missing, malformed, edited-without-valid-self-hash, stale, future, or mismatched local watermark",
+        "attempted append after journal/watermark divergence"
+      ],
+      "does_not_detect": "A coordinated rollback, replacement, or deletion of both the journal and its same-machine mutable sidecar by an actor able to rewrite both artifacts can still recreate an internally consistent older pair.",
+      "required_plain_language_claim": "V2 is journal-tail rollback detection against a retained local watermark, not absolute tamper-proofing.",
+      "stronger_protection_requirement": "Protection against coordinated rollback requires an independently retained terminal receipt or monotonic anchor outside the journal-sidecar mutable fault domain; this local repair does not create or authorize a remote, broker, vendor, live, or unattended service."
+    }
+  },
+  "evidence_gate_H_v2_delta": {
+    "question": "Can every initialized and appended local human-decision journal state be bound to a durable sidecar watermark so a retained watermark refuses a valid-prefix rollback, while preserving every V1 causal and outcome-blind law?",
+    "planned_deliverables": [
+      "v5/work/human-policy-foundation/PROGRAM_CONTRACT_V2.json",
+      "v5/research/human_decision_log.py",
+      "v5/ops/record_human_decision.py",
+      "v5/tests/test_human_decision_log.py",
+      "v5/work/human-policy-foundation/SYNTHETIC_HUMAN_JOURNAL_V2.jsonl",
+      "v5/work/human-policy-foundation/SYNTHETIC_HUMAN_JOURNAL_V2.jsonl.watermark.json",
+      "v5/work/human-policy-foundation/TEST_RESULTS_V2.xml",
+      "v5/work/human-policy-foundation/LOCAL_FOUNDATION_RECEIPT_V2.json"
+    ],
+    "required_tests_added_to_all_v1_gate_H_tests": [
+      "test_tail_truncation_is_refused_against_a_recorded_watermark",
+      "test_watermark_is_required_and_advances_on_every_successful_append",
+      "test_watermark_tamper_and_regression_fail_closed",
+      "test_writer_refuses_to_extend_or_launder_a_truncated_prefix",
+      "test_expected_terminal_assertions_are_additional_external_anchors",
+      "test_expected_terminal_anchor_rejects_coordinated_prefix_rollback"
+    ],
+    "pass_status": "HUMAN_INSTRUMENTATION_READY_LOCAL_V2",
+    "stop_statuses": [
+      "STOP_APPEND_ONLY_INTEGRITY_INVALID",
+      "STOP_WATERMARK_MISSING_OR_INVALID",
+      "STOP_WATERMARK_JOURNAL_DIVERGENCE",
+      "STOP_LOCAL_RECEIPT_INVALID"
+    ],
+    "pass_does_not_authorize_real_capture": true
+  },
+  "local_integration_receipt_contract_v2": {
+    "artifact_type": "JOB49_LOCAL_FOUNDATION_RECEIPT_V2",
+    "path": "v5/work/human-policy-foundation/LOCAL_FOUNDATION_RECEIPT_V2.json",
+    "prior_receipt_preserved": "v5/work/human-policy-foundation/LOCAL_FOUNDATION_RECEIPT_V1.json",
+    "test_report": "v5/work/human-policy-foundation/TEST_RESULTS_V2.xml",
+    "required_bindings": [
+      "V2 program-contract semantic self-hash and raw file SHA-256",
+      "V1 base program-contract semantic self-hash and raw file SHA-256",
+      "V1 prior receipt semantic self-hash and raw file SHA-256",
+      "current PLAN.md raw file SHA-256",
+      "current implementation, CLI, receipt writer/validator, and test file SHA-256 values",
+      "reused CMBP V1 scope-manifest and declaration semantic and raw file SHA-256 values",
+      "selected 64-session parser-fixture identity",
+      "V2 synthetic journal raw SHA-256, log_id, terminal sequence, and terminal head",
+      "V2 watermark semantic self-hash, raw SHA-256, log_id, terminal sequence, and terminal head",
+      "exact equality of journal, watermark, and receipt log_id, terminal sequence, terminal head, journal schema, and V2 program-contract hash",
+      "V2 hashed test-report identity, zero-failure result, every inherited V1 required test, and every V2 added required test",
+      "zero-external-action and zero-outcome attestations"
+    ],
+    "receipt_hash_field": "receipt_sha256",
+    "receipt_hash_procedure": "Remove receipt_sha256, canonicalize with the V1 compact JSON law, and SHA-256 hash the bytes.",
+    "immutability_law": "Write V2 artifacts to new paths and refuse overwrite; never mutate or replace V1 evidence.",
+    "failure_law": "Refuse the V2 pass receipt and emit a named STOP diagnostic; never repair journal/watermark divergence silently."
+  },
+  "job49_terminal_law_v2": {
+    "both_effective_evidence_gates_pass": "JOB49_LOCAL_FOUNDATION_PASS_ONLY_V2",
+    "state_after_local_pass": "BLOCKED_AWAITING_JOB50_OWNER_GATE",
+    "economic_conclusion_available": false,
+    "capture_authority_available": false,
+    "v1_status": "PRESERVED_AS_PRE_REPAIR_LOCAL_EVIDENCE",
+    "authority_violation": "JOB49_AUTHORITY_VIOLATION"
+  },
+  "self_hash": {
+    "algorithm": "sha256",
+    "canonicalization": "json.dumps(object,sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False).encode(\"utf-8\")",
+    "value": "7726845bd62fbcd8e48643872079c18ee5a1a8832c0fe1e13d0c1795c50b7d7e",
+    "status": "SEALED",
+    "normalized_status_for_hash": "NORMALIZED_FOR_HASH",
+    "procedure": "Parse this file as strict JSON, copy the complete object, replace human_policy_record_contract_v2_amendment.program_contract_identity.decision_program_contract_sha256 with THIS_V2_SELF_HASH, set copied self_hash.value to null and copied self_hash.status to NORMALIZED_FOR_HASH, serialize the copy with json.dumps(sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False), hash the UTF-8 bytes with SHA-256, then store the lowercase digest in both self_hash.value and human_policy_record_contract_v2_amendment.program_contract_identity.decision_program_contract_sha256 while leaving stored self_hash.status SEALED. Verification repeats the same normalization."
+  }
+}

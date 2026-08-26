@@ -1,0 +1,135 @@
+{
+  "artifact_type": "JOB51_PROGRAM_CONTRACT_V1",
+  "authority": {
+    "acquisition_cost_ceiling_usd": "0",
+    "acquisition_scope": "EXACT_21_FROZEN_SESSIONS_ONLY",
+    "broker_contact": false,
+    "live_subscription": false,
+    "model_or_threshold_work": false,
+    "owner_authorized_in_current_conversation": true,
+    "paid_request": false
+  },
+  "call_law": {
+    "allowed_method_order_per_time_series_attempt": [
+      "metadata.get_cost",
+      "timeseries.get_range"
+    ],
+    "application_retries": false,
+    "batch_api": false,
+    "cost_gate": "FINITE_DECIMAL_EXACTLY_ZERO",
+    "cost_quote_must_immediately_precede_identical_time_series_request": true,
+    "parent_or_all_symbols": false,
+    "retry_after_transport_or_decode_failure": "NEW_ATTEMPT_AND_NEW_EXACT_ZERO_QUOTE_REQUIRED",
+    "scope_widening": false
+  },
+  "contract_sha256": "98a5273aad45f98133f16e2fd45158caea1eb46a76571c8a40a009708fd90e15",
+  "decoder_law": {
+    "causal_clock": "ts_recv",
+    "global_ts_recv_regression": "FATAL",
+    "historical_and_live_state_machine": "SHARED_ACCEPT_RECORD",
+    "live_reconnect_or_gap": "CLEAR_ALL_PRIOR_BOOK_STATE",
+    "pandas_full_session_load": false,
+    "prior_touch": "IMMEDIATELY_PRIOR_SAME_INSTRUMENT_RECORD",
+    "receive_time_ties": "COUNT_AND_EXCLUDE",
+    "strict_causal_inequality": "prior.ts_recv < trade.ts_recv",
+    "ts_event_regression": "DIAGNOSTIC_ONLY"
+  },
+  "destination": {
+    "attempts_relative": "cmbp-tier0/job51/attempts",
+    "atomic_publication_unit": "SESSION_DIRECTORY_BUNDLE",
+    "expected_filesystem": "apfs",
+    "expected_volume_uuid": "8CBA2FD2-1446-4439-866C-3BEA6C297E30",
+    "final_sessions_relative": "cmbp-tier0/job51/sessions",
+    "free_space_guard": "MAX_100GB_OR_32_BYTES_PER_UNPUBLISHED_CENSUS_RECORD",
+    "nonblocking_exclusive_run_lock": true,
+    "must_already_be_mounted_and_writable": true,
+    "never_create_mountpoint": true,
+    "refuse_symlinks_for_all_job_paths": true,
+    "root": "/Volumes/AR_TRADING_DATA"
+  },
+  "forbidden": [
+    "PAID_COST_QUOTE_OR_REQUEST",
+    "OUT_OF_SCOPE_SESSION_OR_SYMBOL",
+    "ALTERNATE_DATASET_SCHEMA_OR_STYPE",
+    "BATCH_DOWNLOAD",
+    "LIVE_VENDOR_CONNECTION",
+    "FULL_SESSION_PANDAS_LOAD",
+    "MODEL_FIT_OR_THRESHOLD_SEARCH",
+    "STRATEGY_OUTCOME_OR_PNL_READ",
+    "BROKER_CONTACT_OR_ORDER",
+    "SECRET_LOGGING_OR_HASHING",
+    "OVERWRITE_DELETE_OR_MOVE_EXISTING_DATA"
+  ],
+  "journal_law": {
+    "append_fsync_each_record": true,
+    "exclusive_per_vendor_call_markers": true,
+    "independent_self_hashed_watermark_updated_each_append": true,
+    "valid_prefix_truncation_must_be_detected": true
+  },
+  "job_id": 51,
+  "precall_seal": {
+    "artifact_type": "JOB51_LOCAL_READINESS_RECEIPT_V1",
+    "credential_read_while_sealing": false,
+    "external_calls_while_sealing": 0,
+    "path": "v5/work/cmbp-tier0-acquisition/LOCAL_READINESS_RECEIPT_V1.json",
+    "revalidate_before_each_vendor_pair": true,
+    "status": "JOB51_LOCAL_READY_ONLY"
+  },
+  "qc_pass": {
+    "aggregate_expected_records": 2373877845,
+    "aggregate_expected_session_symbol_memberships": 1001,
+    "expected_sessions": 21,
+    "explicit_connection_telemetry": "REPORT_OR_UNKNOWN",
+    "mapping": "EXACT_ONE_TO_ONE_FROZEN_RAW_SYMBOL_TO_INSTRUMENT_ID",
+    "nonzero_quote_in_any_source_attempt": "TERMINAL_NO_PASS",
+    "per_session_record_count": "EXACT_JOB50_CENSUS_RECONCILIATION",
+    "published_session_bundles": 21,
+    "receipt_binds_all_frozen_scope_attempt_journals_across_seals": true
+  },
+  "required_bound_files": [
+    "v5/work/cmbp-tier0-acquisition/PLAN.md",
+    "v5/work/cmbp-tier0-acquisition/PROGRAM_CONTRACT_V1.json",
+    "v5/work/cmbp-metadata-census/TIER0_ACQUISITION_SCOPE_V1.json",
+    "v5/work/cmbp-metadata-census/external-attempts/ac3249b5-b593-4114-958d-e8fad67aa47f/EXTERNAL_METADATA_RECEIPT_V1.json",
+    "v5/work/cmbp-metadata-census/external-attempts/ac3249b5-b593-4114-958d-e8fad67aa47f/EXTERNAL_METADATA_RESPONSES_V1.json",
+    "v5/work/human-policy-foundation/CMBP_CATALOGUE_DECLARATION_V1.json",
+    "v5/research/cmbp_stream.py",
+    "v5/research/cmbp_tier0.py",
+    "v5/ops/acquire_cmbp_tier0.py",
+    "v5/ops/seal_cmbp_tier0_readiness.py",
+    "v5/tests/test_cmbp_stream.py",
+    "v5/tests/test_cmbp_tier0.py"
+  ],
+  "schema_version": "v5.job51-program-contract.v1",
+  "scope": {
+    "dataset": "OPRA.PILLAR",
+    "destination_root": "/Volumes/AR_TRADING_DATA",
+    "path": "v5/work/cmbp-metadata-census/TIER0_ACQUISITION_SCOPE_V1.json",
+    "quoted_cost_usd": "0",
+    "raw_file_sha256": "1760ec585c23f5213a70a46c5eb6a76400f8cad27569fb1e4ef64abfe41b2463",
+    "schema": "cmbp-1",
+    "semantic_sha256": "87050c2b3ad248d4d96c5f6945b883241cdd89a53a2f9902d6e70baf5218a099",
+    "session_count": 21,
+    "stype_in": "raw_symbol",
+    "total_record_count": 2373877845,
+    "total_session_symbols": 1001
+  },
+  "sdk": {
+    "dbn_package": "databento-dbn",
+    "dbn_version": "0.56.0",
+    "package": "databento",
+    "stype_out": "instrument_id",
+    "version": "0.77.0"
+  },
+  "source_evidence": {
+    "job49_declaration_raw_file_sha256": "51066b09a0a6add8b2bed407c2a8b585f0689825a1065339abb986831b1b59ba",
+    "job50_receipt_raw_file_sha256": "319c05bd1ca06edd14f6c4a847debb4a64880dd2f3a5c80450af86fa41dce076",
+    "job50_response_raw_file_sha256": "b759b48641ff529196356ce795eec8f53434452203c8b628cdd73bfa342cef71"
+  },
+  "vendor_cost_claim": {
+    "actual_invoice_cost_usd": "UNKNOWN",
+    "acquisition_initiated": true,
+    "fresh_quote_required_usd": "0",
+    "zero_quote_is_atomic_invoice_lock": false
+  }
+}

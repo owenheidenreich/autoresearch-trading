@@ -1,6 +1,6 @@
 # V5 Project Status — the one page
 
-**Last updated: 2026-08-23.** This is the only current-state, job-register, and gate-chain document.
+**Last updated: 2026-08-25.** This is the only current-state, job-register, and gate-chain document.
 If another file disagrees, this page wins and the conflict must be reported.
 
 > **G1 remains blocked, but not for the reason this page gave until 2026-08-14.** The first campaign
@@ -42,6 +42,54 @@ If another file disagrees, this page wins and the conflict must be reported.
 > 2022-06-01 through 2025-07-31, but only if the vendor preflight is at or below the $75 hard cap. No
 > orders, broker contact, live subscriptions, unattended jobs, real money, or post-2026-08-05 sessions
 > are in scope. The charter and job packet name the stricter controls that bind this run.
+>
+> **2026-08-24: the owner authorized Job 49's local, outcome-blind foundation only.** This permits
+> registration, planning, native-v5 decision-instrumentation and metadata-preflight code, declarations,
+> synthetic/already-owned parser fixtures, tests, and local receipts. It does **not** reopen option
+> economics or authorize a vendor/API call, time-series request, download, spend, model fit, threshold
+> search, live feed, broker contact, paper/live order, unattended job, or reserved-session economics.
+> Every external or outcome-bearing phase in the Job 49 programme remains a separate owner gate.
+>
+> **2026-08-24: the owner authorized Job 50's local build only.** This permits registration, a frozen
+> work packet and contract, native-v5 metadata-runner and receipt code, fake-client tests, synthetic
+> response artifacts, and local readiness receipts. It does **not** authorize Databento authentication
+> or vendor contact, any API request, time-series or batch access, download, acquisition, spend, live
+> feed, broker contact, outcome access, model fit, threshold search, order, or reserved-session economics.
+> A later vendor run requires credential-rotation resolution, a numeric quoted-acquisition ceiling, and
+> a fresh current-conversation owner authorization limited to the four frozen metadata methods.
+>
+> **2026-08-24: the owner authorized Job 51's exact zero-cost Tier-0 acquisition.** Runtime Job 50
+> evidence now resolves the earlier credential gate: the completed authenticated metadata attempt was
+> authorized with `credential_rotation_attested: true`. Job 51 may contact Databento only for the 21
+> sessions frozen in `TIER0_ACQUISITION_SCOPE_V1.json`, using `OPRA.PILLAR`, `cmbp-1`, and
+> `stype_in=raw_symbol`, and may write the resulting raw DBN streams and hash-bound QC evidence only
+> under `/Volumes/AR_TRADING_DATA`. Before every time-series request it must freshly quote that exact
+> session-symbol request and stop if the decimal cost is anything other than exactly zero. This grants
+> no batch widening, paid request, live subscription, outcome/model work, broker contact, or order.
+>
+> **2026-08-24: after Job 51 stopped at its first nonzero quote, the owner authorized Job 52 as a
+> paid-resume overlay for that exact frozen acquisition only.** A fresh quote may authorize one identical
+> Job-51 time-series request only when it is finite and unsigned. Before that request starts, the sum of
+> every quote ever committed to a Job-52 start for that same session — including failed/retried starts —
+> plus the fresh quote must be at or below **$1.50**; the equivalent total across all sessions must be at
+> or below **$32.00**. The earlier
+> `$0.950392448902` quote remains permanent evidence but consumes none of this budget because no
+> time-series request followed it. Either cap stops the run before the corresponding time-series call.
+> The quote sum is a conservative request-commitment ledger, not an invoice; actual vendor invoice cost
+> remains `UNKNOWN`. Scope, dataset, schema, raw symbols, destination, decoder/QC law, and every other
+> Job-51 prohibition remain unchanged. The Job-51 V1 contract, readiness seal, and stop receipt are
+> immutable inputs to a separate Job-52 build/readiness seal.
+> Job 49's sealed future-job table used 50–54 as non-authorizing sequencing forecasts, not reserved job
+> identifiers. This canonical register supersedes those labels; the forecast economic candidate once
+> labelled 52 remains unopened and must be renumbered if separately authorized later.
+>
+> **2026-08-25: after Job 52 stopped on its $1.50 lifetime session cap, the owner authorized one
+> versioned retry overlay with an exact $2.00 lifetime quote-commitment cap per session.** The existing
+> `$0.950392448902` Job-52 time-series start remains committed and counts toward the new cap; the total
+> acquisition cap remains `$32.00`. This authorizes only fresh-quoted retries of the same exact frozen
+> Job-51 requests and does not authorize batch/split requests, deletion or reinterpretation of prior
+> attempts, a different dataset/schema/symbol/date, live access, research outcomes, models, brokers, or
+> orders. Job 55 is used to avoid every forecast identifier in Job 49's old non-authorizing 50–54 table.
 
 ## 0. Job register
 
@@ -51,6 +99,11 @@ A committed work packet must appear here. No row means no job.
 |---|---|---|---|---|---|
 | 47 | V6 program design and repository-health gate | infrastructure/G1/G8 | **SAFE LOCAL PHASE-0 PACKET BUILT 08-23 — the rough draft was reviewed but not adopted unchanged. `v6` is a programme label inside v5 governance; no research, outcome exposure, fit, paper order, broker/vendor action, spend, branch publication, credential rotation, cleanup, or reserved-session economics was opened. A locked, non-fitting CI guard lane and repository hygiene are staged locally; the three inherited guards were verified and their integration limits recorded.** | Owner rulings on branch publication, credential rotation, synthetic-fit CI, the Phase-1 game and economic bar, the ticket-cap conflict, and any live capture or research exposure | [work packet](work/v6-program/PLAN.md) |
 | 48 | Unconditional SPX move-terrain census for 0DTE long-option feasibility | infrastructure/G1 | **COMPLETE 08-23; OWNER-AUTHORIZED UNCONDITIONAL CONTINUATION COMPLETE — 1,011 clean pre-reservation sessions. The original excursion/necessary-condition result stands. The continuation adds 38,400 explicit three-state race cells, conditional winner overshoot/time, strict underlying-stop compatibility, and a fully covered causal-ladder ATM10 IV clock. At 09:31/20m, call +10/-5 is 23.7% favourable / 49.0% adverse / 27.3% neither, while 85.1% of eventual +10 paths survive -5 because the denominators differ. ATM10 median IV is U-shaped: 9.96% at 09:35, 8.86% at 13:30, 10.64% at 15:30 and 14.27% at 15:55. Necessary terrain only: no option expected P&L, percentage stop, signal, fit, alpha charge, reserved session, vendor/broker action, spend, order, strategy, or adoption. Forty/sixty-OTM IV and stability remain UNKNOWN.** | Owner only if a separately authorized historical option-path join, full-chain OTM-IV reconstruction, or conditional signal test is desired | [terrain finding](research/findings/UNCONDITIONAL_SPX_MOVE_TERRAIN_2026_08_23.md), [race/IV finding](research/findings/UNCONDITIONAL_SPX_RACE_AND_IV_CLOCK_2026_08_23.md), [race/IV receipt](../v4/audit/autoresearch/unconditional_spx_race_2026_08_23_attempt001/receipt.json) |
+| 49 | Human-policy and subminute-data foundation for the SPXW 0DTE bot | infrastructure/G3/G4/G6/G8 | **COMPLETE 08-24 AS `JOB49_LOCAL_FOUNDATION_PASS_ONLY_V2` — the valid-prefix defect found by independent attack review is repaired before real capture. Every V2 journal now has a private, self-hashed watermark updated on initialization and every append; verify, status, append, training-read, and receipt paths fail closed on a missing, stale, future, or mismatched watermark. Every complete truncated prefix, including header-only, is refused against the retained watermark; optional expected-head/minimum-sequence anchors also refuse terminal regression and coordinated journal+sidecar rollback against an independently retained terminal identity. The bounded claim is explicit: this detects journal-only rollback, not an attacker who can rewrite both mutable local files without an outside anchor. V1 evidence remains byte-preserved; the sealed V2 overlay and receipt bind both contracts, the V1 receipt, current code/tests, the V2 synthetic journal+watermark, reused CMBP artifacts, and 64/64 focused passing tests. The offline catalogue result is unchanged: 1,014 source sessions, 813 event-era request candidates, and 42,726 exact session-symbol memberships, reading only filenames plus `raw_symbol`. No vendor/broker call, download, spend, strategy outcome, fit, real decision, fill, P&L, order, or reserved-session economics was opened.** | Owner choice among a separately authorized Job 50 metadata-only vendor census, prospective human capture, or structured broker-export intake; all external/outcome-bearing authority remains blocked | [work packet](work/human-policy-foundation/PLAN.md), [V2 receipt](work/human-policy-foundation/LOCAL_FOUNDATION_RECEIPT_V2.json) |
+| 50 | Exact CMBP metadata census runner and external-response gate | infrastructure/G3/G4/G6/G8 | **COMPLETE 08-24 AS `JOB50_EXTERNAL_METADATA_PREFLIGHT_PASS_ONLY` — after the sealed local runner passed, an owner-authorized authenticated attempt completed exactly 2,440 metadata calls (dataset range 1; resolve/cost/count 813 each), with credential rotation attested and no time-series/download call. It measured 43,511,560,125 records and $245.174779653549 over all 813 exact candidate requests. This is availability-and-price evidence only, not acquisition or economics authority. The outcome-blind Tier-0 scope derived from it freezes 21 sessions, 1,001 session-symbol memberships, 2,373,877,845 quoted records, and $0 quoted cost.** | — | [work packet](work/cmbp-metadata-census/PLAN.md), [external receipt](work/cmbp-metadata-census/external-attempts/ac3249b5-b593-4114-958d-e8fad67aa47f/EXTERNAL_METADATA_RECEIPT_V1.json), [Tier-0 scope](work/cmbp-metadata-census/TIER0_ACQUISITION_SCOPE_V1.json) |
+| 51 | Tier-0 CMBP acquisition and shared historical/live streaming decoder | infrastructure/G3/G4/G6/G8 | **STOPPED 08-24 AS `JOB51_STOP_NONZERO_COST_BEFORE_TIMESERIES` — the shared bounded historical/live decoder and fail-closed acquisition runner passed the exact 78-case sterile seal. The first fresh quote, for the exact 2025-08-22 request, was `$0.950392448902`, not zero. The runner stopped immediately and durably: 1 cost call, 0 time-series calls, 0 downloaded bytes, 0 published sessions, and 0 decoded records. No retry is permitted under the current authority; actual vendor invoice cost remains `UNKNOWN`.** | A new hash-bound owner decision only if any retry or paid request is desired | [stop receipt](work/cmbp-tier0-acquisition/JOB51_ZERO_COST_GATE_STOP_RECEIPT_V1.json), [readiness seal](work/cmbp-tier0-acquisition/LOCAL_READINESS_RECEIPT_V1.json), [work packet](work/cmbp-tier0-acquisition/PLAN.md), [frozen scope](work/cmbp-metadata-census/TIER0_ACQUISITION_SCOPE_V1.json) |
+| 52 | Capped paid-resume overlay for Job 51 Tier-0 acquisition | infrastructure/G3/G4/G6/G8 | **STOPPED 08-25 AS `STOP_PAID_SESSION_CAP` AFTER A TRANSPORT FAILURE — the immutable 208-case paid seal and both independent reviews passed. Attempt 1 freshly quoted `$0.950392448902`, durably committed it, and started the exact 2025-08-22 request, but the SDK stream ended with `BentoError` after 89,745 valid-but-truncated compressed bytes and no successful result/publication. Attempt 2 freshly re-quoted the same `$0.950392448902`; projected lifetime exposure for that session was `$1.900784897804`, above the owner's `$1.50` cap, so it stopped before a second time-series request. Reconstructed totals: 2 paid cost calls, 1 time-series start, 0 successful results, 0 published sessions, committed quote exposure `$0.950392448902`, actual invoice `UNKNOWN`. The cap/malformed-stop law is now terminal under this authority.** | New owner authority is required to change the per-session lifetime cap or authorize a different request/transport method; do not delete or overwrite either attempt | [readiness seal](work/cmbp-tier0-paid-resume/LOCAL_READINESS_RECEIPT_V1.json), [work packet](work/cmbp-tier0-paid-resume/PLAN.md), [Job-51 stop receipt](work/cmbp-tier0-acquisition/JOB51_ZERO_COST_GATE_STOP_RECEIPT_V1.json), [frozen scope](work/cmbp-metadata-census/TIER0_ACQUISITION_SCOPE_V1.json) |
+| 55 | Exact-$2.00 lifetime-cap retry overlay for the stopped Tier-0 acquisition | infrastructure/G3/G4/G6/G8 | **COMPLETE 08-25 AS `JOB55_CMBP_TIER0_CAP_AMENDMENT_ACQUISITION_QC_PASS` — the immutable 373-case seal and two independent post-run reconstructions pass. All 21 exact `OPRA.PILLAR`/`cmbp-1` sessions were streamed and atomically published: 2,373,877,845/2,373,877,845 records, 1,001/1,001 mappings, 46,099,994,975 compressed bytes, and 0 out-of-scope calls. Aggregate accounting is 25 cost starts and 23 time-series starts across Jobs 51/52/55; Job 55 contributed 22 fresh quotes, 22 starts, 21 successful results, and one preserved zero-dollar `BentoError` attempt before a successful fresh-process retry. Combined committed quote exposure is `$1.900784897804`, below the `$2.00` per-session and `$32.00` total caps; actual vendor invoice cost remains `UNKNOWN`. Receipt semantic SHA-256 `3dfe502a6b28f51dc2666d38e6eae03d8bd8afe1614ba2d0eec4919668a6b6f2`. The aggregate seal and receipt are terminal: no further vendor call is permitted.** | — | [external aggregate receipt](/Volumes/AR_TRADING_DATA/cmbp-tier0/job55/receipts/JOB55_CMBP_TIER0_CAP_AMENDMENT_ACQUISITION_QC_RECEIPT_V1.json), [readiness seal](work/cmbp-tier0-cap-amendment/LOCAL_READINESS_RECEIPT_V1.json), [work packet](work/cmbp-tier0-cap-amendment/PLAN.md), [frozen scope](work/cmbp-metadata-census/TIER0_ACQUISITION_SCOPE_V1.json) |
 | 1 | Build the clean v5 project boundary | infrastructure | **DONE 08-05** | — | this page and [v5 front door](README.md) |
 | 2 | Independent review: is the project measurable? | G1/G4/G5/G8 | **DONE 08-05 — verdict B: only a large edge is detectable; limits verified from raw data and slightly conservative at lag 1** | — | [finding](research/findings/MEASUREMENT_REVIEW_2026_08_05.md), packet [`v5/history/jobs/measurement-review/`](history/jobs/measurement-review/) |
 | 3 | ES direction screen: opening range and overnight gap | G1 | **CLOSED 08-09 — `UNDERPOWERED`. The known-answer campaign passed both nulls and failed recovery; the gate needs 8-16 net points/session (22-88x the cost bar). Real economics were never computed.** | — | [finding](research/findings/G1_KNOWN_ANSWER_CAMPAIGN_2026_08_09.md), [`v5/history/jobs/g1-direction/`](history/jobs/g1-direction/), [ledger row](research/history/DO_NOT_RETEST.md) |

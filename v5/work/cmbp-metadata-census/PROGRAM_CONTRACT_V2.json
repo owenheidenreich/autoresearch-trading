@@ -1,0 +1,403 @@
+{
+  "artifact_type": "JOB50_PROGRAM_CONTRACT_V2",
+  "schema_version": "v5.cmbp-metadata-census-program-contract.v2",
+  "contract_id": "job50-cmbp-metadata-census-v2-external-receipt-repair",
+  "job_id": 50,
+  "declared_on": "2026-08-24",
+  "state": "LOCAL_BUILD_ONLY",
+  "canonical_status_source": "v5/STATUS.md",
+  "work_packet": "v5/work/cmbp-metadata-census/PLAN.md",
+  "purpose": "Repair the sealed V1 external-receipt classification without changing scope or authority: preserve the Job-49 parser receipt as a nested structural check and freeze a distinct Job-50 external wrapper with declaration-scoped claims and full execution provenance.",
+  "supersession": {
+    "mode": "SEMANTIC_OVERLAY",
+    "base_contract_path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V1.json",
+    "base_contract_semantic_sha256": "0d581abd9edfcc015d3d2f1574da3be15a3fcd62b275e31dd7485f7d279ca75d",
+    "base_contract_file_sha256": "5ba7fdf54d44e683cfe0a663d6929593eff7c9ea897aeb855734adc139837ae2",
+    "base_preservation_law": "PROGRAM_CONTRACT_V1.json remains immutable evidence and is never overwritten or reinterpreted silently.",
+    "effective_contract_rule": "Every V1 term remains binding except where this V2 file expressly replaces the current execution-contract identity, external-receipt classification/schema, external authorization bindings, pre-credential gate order, quoted-ceiling stop mapping, local-receipt contract bindings, or added-test set. On an express conflict, V2 governs.",
+    "unchanged_terms": [
+      "local-build-only authority and every forbidden action",
+      "sealed Job-49 declaration, scope, counts, symbols, dates, and hashes",
+      "exact SDK 0.77.0 adapter and start/end to start_date/end_date translation",
+      "exact 2440-call population, method allowlist, order, and no-retry law",
+      "durable call-journal, raw-result, normalized-result, partial-attempt, and no-resume laws",
+      "schema-range caveat and no-fallback law",
+      "credential-rotation, fresh-owner-authorization, and numeric-ceiling prerequisites",
+      "outcome, time-series, download, acquisition, spend, broker, fit, and order prohibitions",
+      "local readiness pass meaning and every V1 stop not expressly mapped here"
+    ]
+  },
+  "authority_effect": {
+    "effect": "NONE",
+    "reason": "This is a local evidence-schema repair discovered before any vendor authorization, credential read, client construction, or API call.",
+    "newly_authorized_actions": [],
+    "still_forbidden": [
+      "reading or using a Databento credential under current authority",
+      "constructing an authenticated client or contacting a vendor",
+      "metadata, time-series, batch, live, or download API access",
+      "data acquisition, subscription, entitlement mutation, or spend",
+      "strategy outcome, fill, return, hit rate, P&L, or reserved-session economics",
+      "model fit, threshold search, policy ranking, broker contact, or any order"
+    ],
+    "alpha_charge": 0
+  },
+  "effective_program_contract_identity": {
+    "runner_constant": "PROGRAM_CONTRACT_SHA256",
+    "value_law": "The runner constant, every new synthetic or external call-journal contract_sha256, every V2 vendor authorization program_contract_sha256, and the local readiness receipt's effective-program-contract semantic binding equal this V2 object's sealed self_hash.value.",
+    "base_identity_remains_bound": "Every local or external Job-50 receipt also binds the preserved V1 semantic and raw-file SHA-256 values from supersession.",
+    "v1_journal_migration_law": "No sealed Job-50 V1 journal or receipt exists at overlay time. New synthetic and future external attempts use the V2 identity; no earlier Job-49 artifact is rewritten."
+  },
+  "conflict_finding": {
+    "v1_named_external_artifact": "CMBP_CATALOGUE_PREFLIGHT_RECEIPT_V1",
+    "inherited_parser_flags": {
+      "job49_integration_disposition": "VALIDATOR_REHEARSAL_ONLY",
+      "external_preflight_achieved_by_job49": false,
+      "claims.actual_vendor_availability": false
+    },
+    "finding": "Those flags are correct for the Job-49 offline parser receipt and incompatible with treating that same artifact as Job 50's final authenticated external evidence.",
+    "repair": "Preserve the inherited receipt unchanged as nested structural-parser evidence and emit a separate top-level Job-50 wrapper only after every V2 external gate passes.",
+    "external_or_economic_evidence_opened": false
+  },
+  "precredential_readiness_gate": {
+    "local_readiness_receipt_path": "v5/work/cmbp-metadata-census/LOCAL_READINESS_RECEIPT_V1.json",
+    "required_order_before_any_external_attempt": [
+      "strictly load and verify the V2 and preserved V1 program contracts plus the sealed Job-49 declaration without importing the vendor client",
+      "strictly load the sealed local readiness receipt and natively reconstruct every bound local artifact with require_vendor_authorization_absent=false",
+      "thereby verify current runner, CLI, receipt-writer, and test hashes plus the installed SDK distribution metadata, source-file hashes, and inspected method signatures against the receipt",
+      "verify the fresh V2 vendor authorization, credential-rotation attestation, exact four-method allowlist, declaration hashes, both contract hashes, local-receipt hashes, and numeric quoted-acquisition ceiling",
+      "exclusively write and fsync the canonical authorization-consumption marker, then exclusively create the authorization-bound attempt directory and fsync its parent before any credential access",
+      "only then read DATABENTO_API_KEY",
+      "only then dynamically import and construct the pinned external client"
+    ],
+    "local_receipt_missing_invalid_or_stale_status": "STOP_LOCAL_READINESS_RECEIPT_INVALID",
+    "sdk_identity_mismatch_status": "STOP_SDK_VERSION_OR_SIGNATURE_DRIFT",
+    "credential_read_before_gate": "JOB50_AUTHORITY_VIOLATION",
+    "client_import_or_construction_before_gate": "JOB50_AUTHORITY_VIOLATION",
+    "self_attestation_sufficient": false
+  },
+  "vendor_authorization_v2_delta": {
+    "artifact_path_template": "v5/work/cmbp-metadata-census/authorizations/<attempt_id>/VENDOR_RUN_AUTHORIZATION_V2.json",
+    "canonical_path_required": true,
+    "artifact_type": "JOB50_VENDOR_RUN_AUTHORIZATION_V2",
+    "schema_version": "v5.job50-vendor-run-authorization.v2",
+    "required_exact_fields": [
+      "artifact_type",
+      "schema_version",
+      "authorization_id",
+      "attempt_id",
+      "issued_at_utc",
+      "expires_at_utc",
+      "program_contract_sha256",
+      "base_program_contract_sha256",
+      "base_program_contract_file_sha256",
+      "local_readiness_receipt_sha256",
+      "local_readiness_receipt_file_sha256",
+      "declaration_sha256",
+      "declaration_file_sha256",
+      "credential_rotation_attested",
+      "credential_attestation_recorded_at_utc",
+      "quoted_acquisition_ceiling_usd",
+      "metadata_only",
+      "authorized_methods",
+      "current_conversation_authorization_sha256",
+      "authorization_effect",
+      "one_attempt_only",
+      "authorization_sha256"
+    ],
+    "strict_load_law": "The authorization is read only from its exact canonical path with no CLI path override, rejects duplicate keys and NaN/Infinity, requires exactly required_exact_fields with no unknown or omitted field, verifies canonical scalar/date/UUID/decimal encodings, and verifies authorization_sha256 after removing only that self-hash field.",
+    "attempt_identity": {
+      "authorization_id": "a cryptographically random lowercase canonical UUIDv4 generated before owner authorization",
+      "attempt_id": "a separate cryptographically random lowercase canonical UUIDv4 generated before owner authorization",
+      "identity_distinctness": "authorization_id and attempt_id must differ",
+      "authorization_path": "the exact canonical artifact_path_template with the same attempt_id",
+      "exclusive_attempt_directory": "v5/work/cmbp-metadata-census/external-attempts/<attempt_id>/",
+      "cross_binding": "The authorization, call-journal header, response, wrapper receipt, authorization path, and exclusive attempt directory all carry the same attempt_id."
+    },
+    "freshness_fields": [
+      "issued_at_utc",
+      "expires_at_utc"
+    ],
+    "freshness_law": "Both timestamps are canonical UTC. expires_at_utc is later than issued_at_utc and no more than 24 hours later; external-run starts at or after issuance and strictly before expiry. Expired authorization stops before attempt consumption or credential read.",
+    "required_contract_bindings": {
+      "program_contract_sha256": "effective V2 self_hash.value",
+      "base_program_contract_sha256": "0d581abd9edfcc015d3d2f1574da3be15a3fcd62b275e31dd7485f7d279ca75d",
+      "base_program_contract_file_sha256": "5ba7fdf54d44e683cfe0a663d6929593eff7c9ea897aeb855734adc139837ae2"
+    },
+    "required_local_readiness_bindings": [
+      "local_readiness_receipt_sha256",
+      "local_readiness_receipt_file_sha256"
+    ],
+    "unchanged_requirements": [
+      "fresh current-conversation owner authorization digest",
+      "credential_rotation_attested=true and its UTC timestamp",
+      "metadata_only=true",
+      "exact ordered four-method allowlist",
+      "canonical finite non-negative quoted_acquisition_ceiling_usd",
+      "no time-series, download, acquisition, spend, or outcome authority",
+      "authorization_sha256 canonical self-hash"
+    ],
+    "one_attempt_only": true,
+    "one_attempt_one_use_law": "After every readiness and authorization gate passes, but before credential read, external-run exclusively creates the canonical consumption marker and fsyncs it and its directory. Any existing marker refuses replay. It then exclusively creates external-attempts/<attempt_id>/ and fsyncs its parent. Any existing attempt path means the authorization/attempt is already consumed or collided and stops. Once either artifact is created, authority is spent and neither is removed, reused, resumed, or converted into another attempt, even if the process crashes before its first SDK call.",
+    "durable_consumption_record": {
+      "path_template": "v5/work/cmbp-metadata-census/authorization-consumptions/<authorization_sha256>.json",
+      "artifact_type": "JOB50_VENDOR_AUTHORIZATION_CONSUMPTION_V1",
+      "schema_version": "v5.job50-vendor-authorization-consumption.v1",
+      "exclusive_mode": "0600",
+      "required_fields": [
+        "artifact_type",
+        "schema_version",
+        "authorization_id",
+        "authorization_sha256",
+        "authorization_file_sha256",
+        "attempt_id",
+        "attempt_directory",
+        "program_contract_sha256",
+        "base_program_contract_sha256",
+        "local_readiness_receipt_sha256",
+        "declaration_sha256",
+        "issued_at_utc",
+        "expires_at_utc",
+        "consumed_at_utc"
+      ],
+      "durability": "Create with O_EXCL and O_NOFOLLOW where available, mode 0600; write canonical JSON; fsync file; fsync containing directory; only then proceed toward credential read.",
+      "existing_marker_status": "STOP_AUTHORIZATION_MISSING_OR_INVALID",
+      "deletion_law": "Deletion, replacement, or coordinated rewrite of the consumption marker is outside the honest-runner claim and prohibited; the receipt reports this bounded tamper-evidence boundary rather than claiming absolute replay-proofing."
+    },
+    "replay_resume_or_retry_law": "Authorization replay and in-place resume are forbidden. Any retry requires a newly generated attempt_id, a newly issued owner authorization at its canonical path, and a wholly new exclusive attempt directory.",
+    "failure_status": "STOP_AUTHORIZATION_MISSING_OR_INVALID"
+  },
+  "core_execution_gate": {
+    "public_external_entrypoint": "run_authorized_external_metadata_census",
+    "public_synthetic_entrypoint": "run_synthetic_metadata_census",
+    "private_injected_test_entrypoint": "_run_metadata_census_with_injected_synthetic_client",
+    "external_entrypoint_law": "The core external execution entrypoint receives the complete V2 authorization object and its canonical path, both V1/V2 contracts, the exact declaration path/hash, the sealed local-readiness receipt and evidence paths, the authorization-bound attempt_id/directory, the durable consumption record, and the already gated client. Immediately before the first SDK invocation it re-reads the authorization from disk and re-verifies every exact field, self-hash, raw-file hash, freshness, canonical-path, attempt, contract, receipt, declaration, and consumption binding. A bare authorization_sha256 is never sufficient.",
+    "external_bare_hash_allowed": false,
+    "external_core_failure_before_first_call": "STOP_AUTHORIZATION_MISSING_OR_INVALID",
+    "synthetic_entrypoint_law": "The public synthetic entrypoint internally constructs the exact local SyntheticMetadataClient and has no client parameter. The generic injected-client loop is private test infrastructure, requires a synthetic-only capability unavailable from the external path, and cannot select source=externally_supplied or emit an external response/receipt.",
+    "real_client_through_synthetic_path_allowed": false,
+    "source_string_is_not_authority": "Neither source='synthetic' nor source='externally_supplied' is an authority token. Capability-specific entrypoints and their full gates determine the legal path."
+  },
+  "sdk_transport_identity_v2": {
+    "databento_distribution": {
+      "name": "databento",
+      "version": "0.77.0",
+      "distribution_metadata_file_sha256": "90618880f5e87186e9e9750101d9a7d85c481b5601c5197d1ff414e8bed7626f",
+      "transport_source_path": "databento/common/http.py",
+      "transport_source_file_sha256": "9762acbcac9bc74368157bb1851525c8e9229ea682ad81edce2d8241db8caf46"
+    },
+    "requests_distribution": {
+      "name": "requests",
+      "version": "2.33.1",
+      "distribution_metadata_file_sha256": "a984181a5ecc84a63e6f0b60eb575890ffe34426e5351955d342aa2b3147b823",
+      "source_file_sha256": {
+        "requests/api.py": "fd96fd39aeedcd5222cd32b016b3e30c463d7a3b66fce9d2444467003c46b10b",
+        "requests/sessions.py": "81b9a5b0d4a2f7ab088a0d26aed1f3640653fdf388593a1ef989d6eefe69b4a2",
+        "requests/adapters.py": "f64950f522f0f5a56627b957064093c462dcbd6cf7e33116848238db01b53e61"
+      }
+    },
+    "static_transport_checks": [
+      "BentoHttpAPI._get contains exactly one requests.get call and no loop, retry decorator, Session mounting, or retry construction",
+      "BentoHttpAPI._post contains exactly one requests.post call and no loop, retry decorator, Session mounting, or retry construction",
+      "the four frozen SDK methods each invoke exactly one of BentoHttpAPI._get or BentoHttpAPI._post",
+      "requests' bound default API/session/adapter sources preserve the default zero-retry adapter path"
+    ],
+    "receipt_binding_law": "The local readiness receipt binds and re-verifies these distribution versions, metadata hashes, source hashes, and static transport checks without importing or constructing the Databento client. Any drift stops before credential read.",
+    "claim_boundary": "This proves the inspected default source path contains no automatic retry wrapper; it does not prove a remote endpoint never duplicated work or that arbitrary monkeypatching cannot change transport behavior."
+  },
+  "nested_structural_parser_receipt": {
+    "artifact_type": "CMBP_CATALOGUE_PREFLIGHT_RECEIPT_V1",
+    "builder": "v5.research.cmbp_catalogue_preflight.build_preflight_receipt",
+    "validator": "v5.research.cmbp_catalogue_preflight.validate_preflight_receipt",
+    "required_status_for_top_level_pass": "PREFLIGHT_PASS_ONLY",
+    "classification": "NESTED_JOB49_STRUCTURAL_VALIDATION_ONLY",
+    "preserve_exact_fields": true,
+    "required_preserved_flags": {
+      "job49_integration_disposition": "VALIDATOR_REHEARSAL_ONLY",
+      "external_preflight_achieved_by_job49": false,
+      "claims.actual_vendor_availability": false
+    },
+    "interpretation": "These inherited false flags describe Job 49's authority and the parser receipt's own claim boundary. They do not negate the separately proven, declaration-scoped Job-50 wrapper claim and are never edited, removed, or presented as the top-level external receipt.",
+    "binding_law": "The top-level wrapper binds the nested receipt's semantic self-hash and exact raw-file SHA-256 and separately binds the exact external response that the nested receipt validates."
+  },
+  "job50_external_metadata_receipt_v1": {
+    "artifact_type": "JOB50_EXTERNAL_METADATA_RECEIPT_V1",
+    "schema_version": "v5.job50-external-metadata-receipt.v1",
+    "path_template": "v5/work/cmbp-metadata-census/external-attempts/<attempt_id>/EXTERNAL_METADATA_RECEIPT_V1.json",
+    "pass_status": "JOB50_EXTERNAL_METADATA_PREFLIGHT_PASS_ONLY",
+    "next_state": "BLOCKED_AWAITING_SEPARATE_ACQUISITION_DECISION",
+    "required_top_level_fields": [
+      "artifact_type",
+      "schema_version",
+      "job_id",
+      "status",
+      "status_meaning",
+      "next_state",
+      "attempt_id",
+      "program_contract_sha256",
+      "base_program_contract_sha256",
+      "base_program_contract_file_sha256",
+      "local_readiness_receipt_sha256",
+      "local_readiness_receipt_file_sha256",
+      "authorization_sha256",
+      "authorization_file_sha256",
+      "authorization_consumption",
+      "declaration_sha256",
+      "declaration_file_sha256",
+      "request_manifest_sha256",
+      "response",
+      "call_journal",
+      "sdk_identity",
+      "dataset_range",
+      "request_session_count",
+      "exact_total_record_count",
+      "exact_total_cost_usd",
+      "quoted_acquisition_ceiling_usd",
+      "within_quoted_acquisition_ceiling",
+      "method_counts",
+      "nested_structural_parser_receipt",
+      "claims",
+      "integrity",
+      "authorization_effect",
+      "receipt_sha256"
+    ],
+    "required_bindings": {
+      "program_contract": "effective V2 semantic self-hash plus preserved V1 semantic and raw-file SHA-256",
+      "local_readiness": "semantic self-hash plus raw-file SHA-256; native verification already passed before credential read",
+      "authorization": "V2 authorization_sha256 and exact quoted-acquisition ceiling",
+      "authorization_consumption": "canonical marker raw-file SHA-256, authorization/attempt identities, and pre-credential consumed_at_utc",
+      "declaration": "semantic self-hash, raw-file SHA-256, and request-manifest SHA-256",
+      "response": "artifact type, exact semantic SHA-256, exact raw-file SHA-256, source externally_supplied, execution-audit attempt identity, and the dataset-range raw-result SHA-256",
+      "call_journal": "artifact/schema, exact raw-file SHA-256, terminal sequence, terminal head, completed 2440 calls, exact 1/813/813/813 method counts, call-order SHA-256, raw-results SHA-256, and normalized-results SHA-256",
+      "sdk_identity": "package 0.77.0 plus the local readiness receipt's verified distribution metadata/source identities",
+      "economics_free_metadata": "exact per-session record counts and quoted costs, exact summed record count and cost, predeclared ceiling, and exact boolean total_cost<=ceiling",
+      "nested_parser": "untouched CMBP_CATALOGUE_PREFLIGHT_RECEIPT_V1 semantic self-hash and raw-file SHA-256 with PREFLIGHT_PASS_ONLY"
+    },
+    "pass_preconditions": [
+      "precredential_readiness_gate completed before credential read",
+      "V2 vendor authorization fully verified",
+      "external response and journal pass the V2 runner validator including raw and normalized result bindings",
+      "all 813 request sessions have complete positive record-count metadata and no unresolved symbol",
+      "nested structural parser receipt is PREFLIGHT_PASS_ONLY",
+      "exact total quoted cost is finite, non-negative, and no greater than the predeclared ceiling",
+      "no time-series, download, acquisition, spend, outcome, broker, fit, or order action occurred"
+    ],
+    "claim_scope": {
+      "actual_vendor_availability": "TRUE only for the 813 exact declaration sessions/symbol sets whose complete authenticated metadata responses are bound in this attempt",
+      "dataset_range": "the normalized UTC calendar-date projection of the authenticated entitlement's OPRA.PILLAR dataset range, plus the bound raw-result SHA-256; it is explicitly not a schema-specific range and not a claim that discarded raw timestamp/JSON values are reproduced exactly",
+      "exact_vendor_cost": "the exact summed quote for this declaration and attempt, not a universal free-data boundary",
+      "record_count": "the exact summed returned count for this declaration and attempt",
+      "within_ceiling": "a comparison only; it grants no acquisition or spend authority"
+    },
+    "required_false_claims": {
+      "universal_or_population_availability": false,
+      "schema_specific_availability_inferred_from_dataset_range": false,
+      "zero_price_boundary": false,
+      "population_event_prevalence": false,
+      "strategy_economics": false,
+      "execution_quality": false,
+      "acquisition_authorized": false,
+      "download_authorized": false,
+      "model_or_trading_authority": false
+    },
+    "receipt_hash_field": "receipt_sha256",
+    "receipt_hash_procedure": "Remove receipt_sha256, canonicalize with json.dumps(sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False), and SHA-256 hash the UTF-8 bytes.",
+    "write_law": "Write exclusively after every pass precondition; fsync the new file and directory; never overwrite, append, resume, or emit a pass wrapper for a partial/STOP attempt."
+  },
+  "tamper_evidence_boundary": {
+    "detects": [
+      "uncoordinated edit, truncation, deletion, duplication, reordering, or mismatch among the authorization, consumption marker, call journal, response, nested parser receipt, wrapper receipt, contracts, and readiness receipt",
+      "raw-result or normalized-result digest tampering that is not accompanied by a coordinated rewrite of every bound hash layer",
+      "authorization replay while its canonical consumption marker or attempt directory is retained",
+      "counterfeit external PASS assembled without a fully verified external response, journal, authorization, readiness receipt, and nested parser receipt"
+    ],
+    "does_not_detect": "An actor able to delete or coherently rewrite every mutable local artifact and all retained anchors can manufacture another internally consistent local history. Vendor-side duplication or behavior outside the inspected default transport source is also outside the claim.",
+    "required_plain_language_claim": "Job 50 provides bounded local tamper evidence and one-use enforcement against retained artifacts, not absolute tamper-proofing or a vendor-side exactly-once guarantee."
+  },
+  "durable_write_verification_law": {
+    "applies_to": [
+      "CALL_JOURNAL_V1.jsonl records",
+      "SYNTHETIC_METADATA_RESPONSES_V1.json and EXTERNAL_METADATA_RESPONSES_V1.json",
+      "JOB50_VENDOR_AUTHORIZATION_CONSUMPTION_V1",
+      "nested structural parser receipt",
+      "JOB50_EXTERNAL_METADATA_RECEIPT_V1",
+      "JOB50_LOCAL_READINESS_RECEIPT_V1"
+    ],
+    "complete_write": "Every low-level write loops until the exact intended byte count is persisted or fails closed; a short write is never treated as success.",
+    "durability": "Fsync the completed file and its containing directory before advancing to a dependent gate or reporting success.",
+    "strict_reread": "After close/fsync, strictly reread from the canonical on-disk path, reject duplicate/nonfinite/noncanonical JSON or JSONL, verify exact raw-file SHA-256 plus semantic/object self-hash and cross-bindings, and use the reread object—not the pre-write in-memory object—for every later PASS decision.",
+    "partial_artifact_law": "An incomplete, unparsable, hash-mismatched, unpaired, or short-written artifact is STOP_PARTIAL_OR_CRASHED_ATTEMPT or STOP_RESPONSE_OR_RECEIPT_INVALID as applicable and is never overwritten, resumed, or promoted to PASS."
+  },
+  "quoted_ceiling_status_mapping": {
+    "nested_parser_status": "STOP_OVER_HARD_CAP",
+    "top_level_job50_status": "STOP_OVER_QUOTED_CEILING",
+    "mapping_law": "The Job-50 wrapper and CLI translate only this inherited parser name, preserve the exact total-cost and ceiling detail, emit no pass wrapper, and never alter the nested STOP receipt. Every other nested STOP remains fail-closed under the most specific V1/V2 status.",
+    "passing_comparison": "exact_total_cost_usd <= quoted_acquisition_ceiling_usd"
+  },
+  "job49_to_job50_stop_normalization": {
+    "STOP_SCOPE_OR_CODE_DRIFT": "STOP_CONTRACT_OR_DECLARATION_DRIFT",
+    "STOP_MISSING_KEY_OR_ENTITLEMENT": "STOP_VENDOR_AUTH_OR_ENTITLEMENT",
+    "STOP_OVER_HARD_CAP": "STOP_OVER_QUOTED_CEILING",
+    "STOP_SYMBOL_OR_EXPIRY_MISMATCH": "STOP_SYMBOL_OR_EXPIRY_MISMATCH",
+    "STOP_SCHEMA_UNAVAILABLE": "STOP_SCHEMA_UNAVAILABLE",
+    "STOP_ZERO_RECORDS": "STOP_ZERO_RECORDS",
+    "STOP_NONFINITE_COST": "STOP_NONFINITE_COST",
+    "STOP_MISSING_SESSION_RESPONSE": "STOP_MISSING_SESSION_RESPONSE",
+    "STOP_LOCAL_READINESS_RECEIPT_INVALID": "STOP_LOCAL_READINESS_RECEIPT_INVALID",
+    "STOP_SDK_VERSION_OR_SIGNATURE_DRIFT": "STOP_SDK_VERSION_OR_SIGNATURE_DRIFT",
+    "STOP_AUTHORIZATION_MISSING_OR_INVALID": "STOP_AUTHORIZATION_MISSING_OR_INVALID",
+    "STOP_CREDENTIAL_ROTATION_UNRESOLVED": "STOP_CREDENTIAL_ROTATION_UNRESOLVED",
+    "STOP_QUOTED_CEILING_MISSING_OR_INVALID": "STOP_QUOTED_CEILING_MISSING_OR_INVALID",
+    "STOP_FORBIDDEN_METHOD_OR_SCOPE": "STOP_FORBIDDEN_METHOD_OR_SCOPE",
+    "STOP_ATTEMPT_PATH_EXISTS": "STOP_ATTEMPT_PATH_EXISTS",
+    "STOP_CALL_JOURNAL_INVALID": "STOP_CALL_JOURNAL_INVALID",
+    "STOP_PARTIAL_OR_CRASHED_ATTEMPT": "STOP_PARTIAL_OR_CRASHED_ATTEMPT",
+    "STOP_RESPONSE_OR_RECEIPT_INVALID": "STOP_RESPONSE_OR_RECEIPT_INVALID",
+    "normalization_boundary": "Every Job-50 public API, call journal, stop diagnostic, CLI result, and top-level receipt emits only the normalized Job-50 status. The untouched nested Job-49 parser receipt retains its original status for historical/schema integrity."
+  },
+  "local_readiness_receipt_v2_delta": {
+    "artifact_type_unchanged": "JOB50_LOCAL_READINESS_RECEIPT_V1",
+    "schema_version_unchanged": "v5.cmbp-metadata-census-local-readiness-receipt.v1",
+    "pass_status_unchanged": "JOB50_LOCAL_RUNNER_READY_ONLY",
+    "next_state_unchanged": "BLOCKED_AWAITING_JOB50_METADATA_VENDOR_CALL_AUTHORIZATION",
+    "required_contract_bindings": [
+      "preserved V1 program-contract semantic self-hash and raw-file SHA-256",
+      "effective V2 program-contract semantic self-hash and raw-file SHA-256"
+    ],
+    "execution_binding_law": "The synthetic response and call journal bind the effective V2 self_hash.value and both raw-results and normalized-results aggregate hashes.",
+    "canonical_evidence_path_law": "Build and native verification accept only v5/work/cmbp-metadata-census/TEST_RESULTS_V1.xml, SYNTHETIC_CALL_JOURNAL_V1.jsonl, and SYNTHETIC_METADATA_RESPONSES_V1.json at their exact resolved repository paths. CLI path overrides cannot substitute other evidence. The receipt records those repository-relative paths with their hashes.",
+    "required_tests_added_to_v1": [
+      "test_external_receipt_wraps_structural_parser_receipt_and_scopes_claims",
+      "test_external_run_verifies_local_readiness_and_sdk_before_credential_access",
+      "test_external_receipt_binds_auth_raw_normalized_cost_count_and_ceiling",
+      "test_vendor_authorization_is_fresh_attempt_bound_and_consumed_once",
+      "test_core_external_execution_reverifies_full_authorization_not_bare_hash",
+      "test_real_client_cannot_use_synthetic_public_entrypoint",
+      "test_sdk_transport_source_and_requests_zero_retry_identity_are_bound",
+      "test_job49_stop_aliases_are_normalized_at_every_job50_boundary",
+      "test_external_receipt_rejects_counterfeit_external_pass",
+      "test_external_receipt_rejects_raw_or_normalized_digest_tamper",
+      "test_partial_attempt_classifier_rereads_on_disk_journal_and_never_passes"
+    ],
+    "required_test_total": 22,
+    "external_preflight_achieved": false,
+    "authorization_effect": "NONE"
+  },
+  "terminal_law": {
+    "local_pass": "JOB50_LOCAL_RUNNER_READY_ONLY",
+    "state_after_local_pass": "BLOCKED_AWAITING_JOB50_METADATA_VENDOR_CALL_AUTHORIZATION",
+    "external_pass": "JOB50_EXTERNAL_METADATA_PREFLIGHT_PASS_ONLY",
+    "state_after_external_pass": "BLOCKED_AWAITING_SEPARATE_ACQUISITION_DECISION",
+    "vendor_call_authorized_now": false,
+    "data_acquisition_authorized": false,
+    "economic_conclusion_available": false,
+    "model_capture_or_order_authority_available": false
+  },
+  "self_hash": {
+    "algorithm": "sha256",
+    "canonicalization": "json.dumps(object,sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False).encode(\"utf-8\")",
+    "value": "3a1cdff65beb11439be93dcf0a0dfa0554cf5e665c339b9f4bdd0ff6eb882b48",
+    "status": "SEALED",
+    "normalized_status_for_hash": "NORMALIZED_FOR_HASH",
+    "procedure": "Parse this file as strict JSON, copy the complete object, set copied self_hash.value to null and copied self_hash.status to NORMALIZED_FOR_HASH, serialize the copy with json.dumps(sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False), hash the UTF-8 bytes with SHA-256, then store the lowercase digest in self_hash.value and set stored self_hash.status to SEALED. Verification repeats the same normalization."
+  }
+}

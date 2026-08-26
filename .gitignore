@@ -166,3 +166,8 @@ market_events.jsonl
 !/v4/audit/autoresearch/lean_entry_autoresearch_2026_08_02/**
 !/v4/audit/autoresearch/lean_entry_autoresearch_s4_s5_2026_08_02/
 !/v4/audit/autoresearch/lean_entry_autoresearch_s4_s5_2026_08_02/**
+
+# iCloud sync conflict duplicates: "name 2.py", "name 3.json".
+# Byte-identical copies of files already in the tree. Left on disk, never committed.
+# Files already tracked are unaffected; .gitignore does not untrack.
+* [0-9].*

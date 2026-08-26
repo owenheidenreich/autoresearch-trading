@@ -1,0 +1,179 @@
+{
+  "artifact_type": "JOB50_INDEPENDENT_TEST_AUDIT_V1",
+  "schema_version": "v5.job50-independent-test-audit.v1",
+  "job_id": 50,
+  "audit_id": "job50-independent-test-audit-v1",
+  "audited_at_utc": "2026-08-24T20:07:11Z",
+  "audit_trigger": "POST_V1_LOCAL_READINESS_INDEPENDENT_COVERAGE_REVIEW",
+  "interim_v1_receipt_sha256": "cf9fcd8efcfec59dbba76e801b9e9bacc5eb02ae19739ff7c8181c477b3b01cc",
+  "interim_v1_receipt_file_sha256": "83715142fce65df685c4e18bba5495101e2b270361edefaae3e8979cb2783e75",
+  "finding_count": 11,
+  "finding_identifiers": [
+    "POST_KEY_SDK_IDENTITY_REHASH_UNTESTED",
+    "PRODUCTION_CAPABILITY_CORE_AND_PUBLIC_RECEIPT_PATH_UNTESTED",
+    "PARTIAL_CRASH_PREFIX_LAW_UNTESTED",
+    "SYMLINK_TOPOLOGY_REFUSAL_UNTESTED",
+    "RAW_CLIENT_NONEXPOSURE_AND_FAKE_ISOLATION_UNTESTED",
+    "TOTAL_STOP_NORMALIZATION_LAW_UNDERCOVERED",
+    "SYNTHETIC_CREDENTIAL_READ_FIREWALL_UNTESTED",
+    "AUTH_FRESHNESS_AND_MANUAL_ATTESTATION_NEGATIVES_UNTESTED",
+    "EXTERNAL_DIGEST_AND_TOP_LEVEL_DURABILITY_UNTESTED",
+    "SDK_ARGUMENT_EXPECTATION_SELF_REFERENTIAL",
+    "RECEIPT_TEST_SOURCE_AUDIT_TOO_SHALLOW"
+  ],
+  "closure_rows": [
+    {
+      "identifier": "POST_KEY_SDK_IDENTITY_REHASH_UNTESTED",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_external_run_verifies_local_readiness_and_sdk_before_credential_access"
+      ],
+      "closure_evidence": "PASS: the production constructor is traversed after credential read through the real _verify_post_key_sdk_identity; a controlled full-identity mismatch invokes _sdk_source_identity, returns STOP_SDK_VERSION_OR_SIGNATURE_DRIFT, and prevents Historical construction.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "PRODUCTION_CAPABILITY_CORE_AND_PUBLIC_RECEIPT_PATH_UNTESTED",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_core_external_execution_reverifies_full_authorization_not_bare_hash",
+        "test_external_receipt_wraps_structural_parser_receipt_and_scopes_claims"
+      ],
+      "closure_evidence": "PASS: exact-class nonproduction capabilities enter the public core on valid and deliberately mutated disk and refuse before call one or artifacts; external execution and receipt builders are closure-captured after full reconstruction, with the positive vendor path explicitly unexecuted.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "PARTIAL_CRASH_PREFIX_LAW_UNTESTED",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_partial_attempt_classifier_rereads_on_disk_journal_and_never_passes"
+      ],
+      "closure_evidence": "PASS: a valid on-disk ATTEMPT_HEADER plus CALL_START-only prefix is reread and classified STOP_PARTIAL_OR_CRASHED_ATTEMPT with complete=false and success_response_valid=false; corrupt journal bytes separately stop as STOP_CALL_JOURNAL_INVALID.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "SYMLINK_TOPOLOGY_REFUSAL_UNTESTED",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_external_run_verifies_local_readiness_and_sdk_before_credential_access"
+      ],
+      "closure_evidence": "PASS: both authorization-consumptions-parent and external-attempts-parent symlink topologies stop as STOP_ATTEMPT_PATH_EXISTS before any credential read.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "RAW_CLIENT_NONEXPOSURE_AND_FAKE_ISOLATION_UNTESTED",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_real_client_cannot_use_synthetic_public_entrypoint",
+        "test_external_integrity_and_authorized_client_capability_are_exact"
+      ],
+      "closure_evidence": "PASS: the public synthetic API accepts no client injection; the private fake capability remains synthetic and is refused by external core/receipt paths; production minting imports nothing, rejects SyntheticMetadataClient, and accepts only already-loaded exact Historical endpoint/method provenance, while closure-marked refusal fixtures are never production-usable.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "TOTAL_STOP_NORMALIZATION_LAW_UNDERCOVERED",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_job49_stop_aliases_are_normalized_at_every_job50_boundary"
+      ],
+      "closure_evidence": "PASS: the test independently loads V3's exact mapping, requires implementation vocabulary equality, verifies every source/target and every Job-50 status idempotently, checks total unknown-input fallback, and exercises the journal, classifier, exception, and CLI diagnostic boundaries.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "SYNTHETIC_CREDENTIAL_READ_FIREWALL_UNTESTED",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_fake_suite_never_imports_sdk_authenticates_or_opens_socket"
+      ],
+      "closure_evidence": "PASS: socket creation, connection, Databento import, and the credential-read seam are all made fatal while the public synthetic path completes exactly 2,440 calls with synthetic provenance.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "AUTH_FRESHNESS_AND_MANUAL_ATTESTATION_NEGATIVES_UNTESTED",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_vendor_authorization_is_fresh_attempt_bound_and_consumed_once",
+        "test_external_client_construction_requires_fresh_authorization_credential_and_numeric_cap"
+      ],
+      "closure_evidence": "PASS: expired and not-yet-valid authorization, false rotation attestation, malformed conversation digest, wrong attempt, nonfinite ceiling, missing credential, and one-use replay are refused with no caller clock bypass and with consumption occurring before credential access.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "EXTERNAL_DIGEST_AND_TOP_LEVEL_DURABILITY_UNTESTED",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_external_receipt_binds_auth_raw_normalized_cost_count_and_ceiling",
+        "test_external_receipt_rejects_raw_or_normalized_digest_tamper",
+        "test_owner_attestations_are_explicit_manual_governance_inputs"
+      ],
+      "closure_evidence": "PASS: raw and normalized response tampering is dynamically refused; wrapper source is checked for authorization, digest, count, cost, and ceiling bindings; finalization is statically ordered build then exclusive durable reread then public validation; and the exact manual-attestation disclosure equality is AST-audited without emitting positive external evidence.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "SDK_ARGUMENT_EXPECTATION_SELF_REFERENTIAL",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_fake_census_calls_exact_four_methods_in_frozen_order_and_arguments",
+        "test_symbology_adapter_renames_start_end_only_after_descriptor_hash_validation"
+      ],
+      "closure_evidence": "PASS: expected SDK kwargs are constructed independently from the frozen declaration and compared against all 2,440 observed calls, while the symbology start/end rename and descriptor-hash-before-adaptation behavior are independently asserted.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    },
+    {
+      "identifier": "RECEIPT_TEST_SOURCE_AUDIT_TOO_SHALLOW",
+      "initial_disposition": "MATERIAL_COVERAGE_GAP",
+      "closure_test_names": [
+        "test_sdk_transport_source_and_requests_zero_retry_identity_are_bound",
+        "test_urllib3_default_retry_identity_is_bound"
+      ],
+      "closure_evidence": "PASS: the tests reconstruct the installed SDK/source identity and independently assert exact Databento transport call structure, Requests zero-retry AST identity, urllib3 version/source/distribution hashes, aggregate identity binding, and no Databento client import.",
+      "closure_status": "CLOSED_ON_AUDITED_BYTES"
+    }
+  ],
+  "required_test_names": [
+    "test_fake_census_calls_exact_four_methods_in_frozen_order_and_arguments",
+    "test_symbology_adapter_renames_start_end_only_after_descriptor_hash_validation",
+    "test_descriptor_hash_tamper_forbidden_method_and_scope_widening_fail_before_calls",
+    "test_sdk_version_mismatch_fails_before_calls",
+    "test_vendor_exception_leaves_durable_error_journal_and_no_final_artifact",
+    "test_partial_or_malformed_vendor_response_fails_without_silent_drop",
+    "test_zero_cost_with_positive_count_is_retained_and_zero_count_stops",
+    "test_attempt_paths_are_exclusive_and_partial_attempt_cannot_resume_or_overwrite",
+    "test_external_client_construction_requires_fresh_authorization_credential_and_numeric_cap",
+    "test_fake_suite_never_imports_sdk_authenticates_or_opens_socket",
+    "test_every_invocation_has_durable_start_and_result_pair_bound_to_response",
+    "test_external_receipt_wraps_structural_parser_receipt_and_scopes_claims",
+    "test_external_run_verifies_local_readiness_and_sdk_before_credential_access",
+    "test_external_receipt_binds_auth_raw_normalized_cost_count_and_ceiling",
+    "test_vendor_authorization_is_fresh_attempt_bound_and_consumed_once",
+    "test_core_external_execution_reverifies_full_authorization_not_bare_hash",
+    "test_real_client_cannot_use_synthetic_public_entrypoint",
+    "test_sdk_transport_source_and_requests_zero_retry_identity_are_bound",
+    "test_job49_stop_aliases_are_normalized_at_every_job50_boundary",
+    "test_external_receipt_rejects_counterfeit_external_pass",
+    "test_external_receipt_rejects_raw_or_normalized_digest_tamper",
+    "test_partial_attempt_classifier_rereads_on_disk_journal_and_never_passes",
+    "test_nested_parser_receipt_is_attempt_local_durable_and_bound",
+    "test_external_integrity_and_authorized_client_capability_are_exact",
+    "test_owner_attestations_are_explicit_manual_governance_inputs",
+    "test_urllib3_default_retry_identity_is_bound"
+  ],
+  "test_source_file_sha256": "a9301f6a8aa6e6170e99be64017cfac93bbbb570f1b641fd369b9cda7ed2ca8a",
+  "focused_test_count": 26,
+  "focused_failures": 0,
+  "focused_errors": 0,
+  "focused_skips": 0,
+  "positive_external_pass_executed_locally": false,
+  "external_provenance_closure": {
+    "caller_selected_source_refused": true,
+    "private_core_defaults_synthetic": true,
+    "local_fake_production_capability_or_seal_positive_evidence_emission_refused": true,
+    "externally_supplied_response_emitted_locally": false,
+    "nested_structural_parser_receipt_emitted_locally": false,
+    "top_level_external_pass_emitted_locally": false,
+    "positive_path_disposition": "UNEXECUTED_REQUIRES_LATER_OWNER_AUTHORIZED_VENDOR_ATTEMPT",
+    "closure_status": "CLOSED_ON_AUDITED_BYTES_BY_STATIC_GRAPH_AND_DYNAMIC_REFUSALS_ONLY"
+  },
+  "audit_verdict": "PASS_CURRENT_BYTES",
+  "manual_auditor_attestation_boundary": "AUDITOR_IDENTITY_AND_REVIEW_AUTHORSHIP_ARE_MANUAL_ATTESTATIONS_NOT_CRYPTOGRAPHICALLY_VERIFIED",
+  "audit_sha256": "12bee42a434af787fcefb837e97f35562f2b4b430696552c2345ba170026a2ff"
+}

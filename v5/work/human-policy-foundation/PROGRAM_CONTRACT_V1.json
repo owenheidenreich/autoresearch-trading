@@ -1,0 +1,531 @@
+{
+  "schema_version": "v5.human-policy-foundation-program-contract.v1",
+  "contract_id": "job49-human-policy-foundation-v1",
+  "job_id": 49,
+  "declared_on": "2026-08-24",
+  "state": "LOCAL_OUTCOME_BLIND_FOUNDATION_ONLY",
+  "canonical_status_source": "v5/STATUS.md",
+  "work_packet": "v5/work/human-policy-foundation/PLAN.md",
+  "purpose": "Freeze the local interfaces and governance boundary for prospective owner-decision instrumentation and an exact offline OPRA CMBP catalogue preflight. This contract does not adopt or evaluate a trading policy.",
+  "claim_boundary": {
+    "job49_may_claim": [
+      "append-only human-decision instrumentation is locally ready when its synthetic gate passes",
+      "an exact CMBP catalogue request and response contract is locally ready when its offline gate passes",
+      "the completed selected-symbol CMBP fixture is reusable as parser-semantic evidence only"
+    ],
+    "job49_must_not_claim": [
+      "Databento availability, entitlement, coverage, exact free boundary, exact eligible-session count, or total cost",
+      "unbiased event prevalence or population representativeness from the selected 64-session fixture",
+      "human predictability, signal efficacy, model skill, causal lead, fillability, expected return, or P&L",
+      "shadow, paper, live, or real-money readiness",
+      "that Job 49 proves strategy economics"
+    ],
+    "alpha_charge": 0,
+    "reason_alpha_is_zero": "The authorized work reads no strategy outcome and performs no fit, threshold choice, policy selection, fill replay, or economic evaluation."
+  },
+  "authority": {
+    "source": "Job 49 paragraph and register row in v5/STATUS.md dated 2026-08-24",
+    "allowed": [
+      "local planning and versioned contracts",
+      "native-v5 human-decision instrumentation code",
+      "offline metadata-preflight code and declarations",
+      "synthetic human-decision fixtures",
+      "synthetic metadata responses",
+      "already-owned outcome-blind parser fixtures",
+      "deterministic tests and local immutable receipts"
+    ],
+    "forbidden": [
+      "vendor or Databento call of any kind",
+      "dataset-range, symbology, cost, or record-count API invocation",
+      "time-series request or download",
+      "spend, entitlement change, or subscription",
+      "real or live human-decision capture",
+      "live feed or unattended capture",
+      "broker contact or account access",
+      "model fit, calibration, threshold search, ranking, or family selection",
+      "strategy outcome, fill, return, hit-rate, P&L, or reserved-session economics",
+      "simulated, paper, live, or real order submission"
+    ],
+    "forbidden_action_status": "JOB49_AUTHORITY_VIOLATION",
+    "forward_reservation": {
+      "source": "v5/governance/FORWARD_CONFIRMATION_RESERVATION_2026_08_06.md",
+      "first_reserved_session": "2026-08-06",
+      "job49_opens_reserve": false
+    }
+  },
+  "immutability": {
+    "semantic_change_rule": "V1 may be repaired until self_hash.status is SEALED. After sealing, any change to authority, actions, risk, gate logic, statuses, scope, or future-job ordering requires PROGRAM_CONTRACT_V2.json or later.",
+    "pending_self_hash_is_not_authority": "A temporarily null self_hash means the local integration writer has not sealed the contract yet. It is not a waiver of versioning, receipt, or hash checks.",
+    "receipt_binding_required": "LOCAL_FOUNDATION_RECEIPT_V1.json must include the verified program contract self-hash, the raw-byte plan SHA-256, and hashes of the exact implementation, tests, fixture identities, and scope manifest it exercised."
+  },
+  "human_policy_record_contract_v1": {
+    "domain": {
+      "underlying": "SPX",
+      "product": "SPXW",
+      "days_to_expiry": 0,
+      "position_type": "long single-leg option",
+      "rights": [
+        "C",
+        "P"
+      ]
+    },
+    "event_kinds": [
+      "MONITORING_ON",
+      "MONITORING_OFF",
+      "PROMPT",
+      "DECISION",
+      "CORRECTION"
+    ],
+    "actions": [
+      "WAIT",
+      "OPEN_CALL",
+      "OPEN_PUT",
+      "HOLD",
+      "EXIT"
+    ],
+    "missingness_semantics": {
+      "MONITORING_OFF": "The owner is outside the monitored decision risk set; this is not WAIT.",
+      "unanswered_prompt": "A prompt without a linked DECISION is missing, not WAIT.",
+      "missing_event": "Silence or a capture gap is never converted into WAIT."
+    },
+    "required_event_fields": [
+      "record_type",
+      "schema_version",
+      "sequence",
+      "event_id",
+      "kind",
+      "session",
+      "occurred_at",
+      "appended_at",
+      "local_monotonic_ns",
+      "monitoring_state",
+      "position_before",
+      "position_after",
+      "previous_hash",
+      "record_hash"
+    ],
+    "clock_law": {
+      "appended_at_source": "The production CLI generates appended_at from its current UTC clock; deterministic test injection is test-only.",
+      "occurred_must_not_follow_append": true,
+      "decision_max_append_lag_seconds": 30,
+      "prompt_response_window_seconds": 30,
+      "wall_clock_regression_allowed": false,
+      "monotonic_clock_must_strictly_advance": true,
+      "session_must_match_america_new_york_calendar_date": true
+    },
+    "conditional_prompt_fields": [
+      "market_state_sha256",
+      "universe_sha256"
+    ],
+    "conditional_decision_fields": [
+      "decision_id",
+      "action",
+      "prompt_event_id",
+      "spontaneous",
+      "position_before",
+      "position_after",
+      "market_state_sha256",
+      "universe_sha256",
+      "information_sources",
+      "confidence",
+      "reason_codes",
+      "program_contract_sha256",
+      "risk_contract_sha256"
+    ],
+    "conditional_entry_fields": [
+      "contract_osi",
+      "expiry",
+      "right",
+      "strike",
+      "quantity",
+      "intended_order_type",
+      "intended_limit_price",
+      "estimated_entry_debit_usd",
+      "declared_stop_fraction",
+      "owner_intent"
+    ],
+    "conditional_exit_fields": [
+      "contract_osi",
+      "owner_intent"
+    ],
+    "correction_fields": [
+      "corrects_event_id",
+      "note"
+    ],
+    "correction_semantics": "A correction is an annotation-only backward link. It never changes the original decision, action count, position state, or training label.",
+    "legal_transition_law": {
+      "FLAT": [
+        "WAIT",
+        "OPEN_CALL",
+        "OPEN_PUT"
+      ],
+      "OPEN": [
+        "HOLD",
+        "EXIT"
+      ],
+      "monitoring_off_while_open_allowed": false,
+      "maximum_concurrent_positions": 1
+    },
+    "negative_label_law": {
+      "wait_is_explicit": true,
+      "silence_becomes_wait": false,
+      "monitoring_off_becomes_wait": false,
+      "unanswered_prompt_becomes_wait": false,
+      "future_real_capture_requirement": "Freeze an exogenous prompt schedule or other risk-set law before the first real record."
+    },
+    "append_only_law": {
+      "record_is_sealed_on_append": true,
+      "overwrite_allowed": false,
+      "delete_allowed": false,
+      "correction_mechanism": "Append a CORRECTION event whose corrects_event_id links to the sealed superseded event.",
+      "duplicate_event_or_decision_id_allowed": false,
+      "clock_regression_allowed": false,
+      "hash_chain_required": true,
+      "record_hash_procedure": "Remove record_hash, serialize with json.dumps(sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False), hash the UTF-8 bytes with SHA-256, then store the lowercase hexadecimal digest. The next event carries that digest as previous_hash.",
+      "unanchored_tail_rollback_detectable": false,
+      "tail_rollback_law": "A finalized journal terminal sequence and head must be independently bound in a receipt; rollback is detected by comparison with that anchor. The bare chain alone proves only the records still present."
+    },
+    "forbidden_record_content": [
+      "realized outcome",
+      "future path",
+      "fill result",
+      "return",
+      "hit label",
+      "profit or loss",
+      "post-outcome annotation disguised as contemporaneous intent"
+    ],
+    "scope_limits": {
+      "records_exit_intent": true,
+      "authorizes_exit_model": false,
+      "chooses_entry_signal_or_threshold": false,
+      "chooses_contract_ranker": false,
+      "chooses_profit_target_or_horizon": false
+    }
+  },
+  "risk_contract_v1": {
+    "sources": [
+      "v5/governance/TICKET_CAP_AMENDMENT_2026_08_23.md",
+      "v5/governance/CHARTER_AMENDMENT_TICKET_AND_BREAKER_2026_08_16.md",
+      "v5/governance/ADDENDUM_STOP_LEVEL_AND_UNDERPOWER_2026_08_16.md"
+    ],
+    "entry_ticket": {
+      "quantity_contracts": 1,
+      "max_total_debit_usd": 2500.0,
+      "debit_definition": "option premium times 100 plus fees",
+      "dollar_cap_does_not_scale_with_equity": true
+    },
+    "position_cap": 1,
+    "max_executed_entry_tickets_per_session": 2,
+    "rejected_or_unfilled_intent_counts_as_executed_ticket": false,
+    "daily_breaker": {
+      "loss_fraction_of_session_start_equity": 0.2,
+      "new_entry_after_breaker_allowed": false,
+      "session_start_equity_is_carried_serial_equity": true
+    },
+    "declared_stop": {
+      "fraction_operator": "less_than_or_equal",
+      "maximum_numeric_value": -0.4,
+      "plain_language": "The stop must be -40% or wider, meaning -40% or a more negative fraction; a tighter stop is invalid.",
+      "later_simulator_enforcement_required": true,
+      "next_available_bid_gap_and_slippage_retained": true,
+      "stop_is_not_a_loss_guarantee": true
+    },
+    "serial_account": {
+      "starting_equity_usd": 10000.0,
+      "resets_each_session": false,
+      "compounds_chronologically": true,
+      "survival_floor_fraction_of_initial_equity": 0.5,
+      "initial_survival_floor_usd": 5000.0,
+      "fail_closed_at_or_below_floor": true
+    },
+    "additional_controls": {
+      "long_premium_only": true,
+      "short_options_allowed": false,
+      "spreads_allowed": false,
+      "martingale_allowed": false,
+      "simultaneous_positions_allowed": false,
+      "overnight_hold_allowed": false,
+      "moneyness_band_independently_required": true,
+      "deep_itm_bar_preserved": true,
+      "tier0_spy_floor_preserved": true,
+      "win_rate_is_diagnostic_not_objective": true
+    },
+    "ticket_cap_review": {
+      "review_at_account_equity_usd": 25000.0,
+      "change_requires_owner_amendment": true
+    },
+    "ticket_cap_reversion": {
+      "revert_to_usd": 1000.0,
+      "on_realized_worst_loss_exceeding_declared_maximum": true,
+      "on_first_powered_negative_evaluation": true,
+      "underpowered_result_triggers_reversion": false,
+      "two_consecutive_underpowered_evaluations_require_fresh_owner_decision": true
+    },
+    "logger_behavior": "The Job 49 logger freezes and validates the presence/identity of this risk metadata. It does not simulate tickets, serial equity, breaker firing, stops, survival, fills, or economics.",
+    "job49_economic_simulation_authorized": false
+  },
+  "evidence_gates": {
+    "H_human_instrumentation": {
+      "question": "Can a local logger record prospective owner-intent events under the exact event/action vocabulary as an append-only, causally timestamped chain while freezing v1 risk metadata and containing no outcome field or external dependency?",
+      "inputs_allowed": [
+        "synthetic decision records",
+        "synthetic clocks and contract identities"
+      ],
+      "planned_deliverables": [
+        "v5/research/human_decision_log.py",
+        "v5/ops/record_human_decision.py",
+        "v5/tests/test_human_decision_log.py",
+        "v5/work/human-policy-foundation/SYNTHETIC_HUMAN_JOURNAL_V1.jsonl",
+        "v5/work/human-policy-foundation/LOCAL_FOUNDATION_RECEIPT_V1.json"
+      ],
+      "required_tests": [
+        "test_event_kind_vocabulary_is_exact",
+        "test_action_vocabulary_is_exact",
+        "test_monitoring_off_unanswered_prompt_and_missing_are_not_wait",
+        "test_decision_origin_and_prompt_link_are_explicit",
+        "test_open_requires_exact_same_day_spxw_osi_and_owner_intent",
+        "test_risk_metadata_matches_frozen_contract_without_simulation",
+        "test_append_chain_rejects_mutation_deletion_duplicate_and_backdated_sequence",
+        "test_correction_is_a_new_linked_event_not_an_overwrite",
+        "test_outcome_fill_return_and_pnl_fields_are_refused",
+        "test_synthetic_fixture_round_trips_and_verifies_offline",
+        "test_logger_has_no_network_broker_or_market_data_dependency"
+      ],
+      "pass_status": "HUMAN_INSTRUMENTATION_READY_LOCAL",
+      "stop_statuses": [
+        "STOP_HUMAN_SCHEMA_INVALID",
+        "STOP_HUMAN_EVENT_OR_RISK_METADATA_INVALID",
+        "STOP_APPEND_ONLY_INTEGRITY_INVALID",
+        "STOP_OUTCOME_BOUNDARY_INVALID",
+        "STOP_LOCAL_RECEIPT_INVALID"
+      ],
+      "pass_does_not_authorize_real_capture": true
+    },
+    "C_offline_cmbp_catalogue": {
+      "question": "Can an exact, deterministic per-session OPRA CMBP catalogue request law and offline response-artifact validator be frozen and tested with no vendor-client construction or call path?",
+      "frozen_request_semantics": {
+        "dataset": "OPRA.PILLAR",
+        "schema": "cmbp-1",
+        "stype_in": "raw_symbol",
+        "symbol_scope": "unique sorted 21-character raw SPXW OSI symbols from each existing plus-or-minus-25-point same-day-expiry band",
+        "parent_symbol_forbidden": "SPXW.OPT",
+        "source_ladder_root": "/Volumes/AR_TRADING_DATA/lifecycle_corpus_spx_tape_2022-06-01_2026-07-31/ladder",
+        "source_session_count": 1014,
+        "scope_manifest": "v5/work/human-policy-foundation/CMBP_SCOPE_MANIFEST_V1.json",
+        "catalogue_declaration": "v5/work/human-policy-foundation/CMBP_CATALOGUE_DECLARATION_V1.json",
+        "time_bounds": "exact exchange RTH half-open interval",
+        "allowlisted_future_methods": [
+          "metadata.get_dataset_range",
+          "symbology.resolve",
+          "metadata.get_cost",
+          "metadata.get_record_count"
+        ],
+        "job49_invokes_allowlisted_methods": false,
+        "method_shapes": {
+          "metadata.get_dataset_range": "One dataset-level OPRA.PILLAR range request.",
+          "symbology.resolve": "One session, exact raw-symbol list, stype_in raw_symbol, and exact session date bounds.",
+          "metadata.get_cost": "One session, OPRA.PILLAR, cmbp-1, exact raw-symbol list, and exact half-open RTH bounds.",
+          "metadata.get_record_count": "Same session/schema/symbol/time shape as cost."
+        },
+        "known_schema_start": "2023-03-28",
+        "precoverage_disposition": "EXCLUDED_KNOWN_PRE_COVERAGE",
+        "schema_fallback_allowed": false,
+        "zero_cost_requires_positive_record_count": true,
+        "session_drop_allowed": false,
+        "cost_total_law": "Sum finite per-session vendor values; never extrapolate a sample mean."
+      },
+      "selected_semantic_fixture": {
+        "manifest": "v5/work/lifecycle-training/CMBP_SEMANTIC_GATE_MANIFEST_2026_08_23.json",
+        "finding": "v5/research/findings/SIGNED_ORDER_FLOW_BOT_DECISION_2026_08_23.md",
+        "sessions": 64,
+        "session_symbols": 248,
+        "status": "COMPLETED_AND_REUSED_NOT_RERUN",
+        "permitted_inference": "parser and strict-prior-touch semantic possibility only",
+        "population_or_economic_inference_forbidden": true
+      },
+      "unknown_until_authorized_external_receipt": [
+        "exact free boundary",
+        "exact available-session count",
+        "positive per-session record counts",
+        "exact total cost",
+        "key and entitlement sufficiency",
+        "broad-band population prevalence"
+      ],
+      "inputs_allowed": [
+        "frozen local session and contract manifests",
+        "synthetic metadata responses",
+        "identity of the completed selected parser fixture"
+      ],
+      "planned_deliverables": [
+        "v5/research/cmbp_catalogue_preflight.py",
+        "v5/ops/prepare_cmbp_catalogue_preflight.py",
+        "v5/tests/test_cmbp_catalogue_preflight.py",
+        "v5/work/human-policy-foundation/CMBP_SCOPE_MANIFEST_V1.json",
+        "v5/work/human-policy-foundation/CMBP_CATALOGUE_DECLARATION_V1.json",
+        "v5/work/human-policy-foundation/LOCAL_FOUNDATION_RECEIPT_V1.json"
+      ],
+      "required_tests": [
+        "test_scope_uses_exact_raw_osi_band_and_never_parent_symbol",
+        "test_root_expiry_right_strike_uniqueness_and_sorted_order_are_required",
+        "test_request_is_one_session_rth_half_open_and_cmbp_only",
+        "test_only_dataset_range_symbology_cost_and_count_are_allowlisted",
+        "test_precoverage_date_is_excluded_without_schema_fallback",
+        "test_zero_cost_requires_positive_record_count",
+        "test_nonfinite_cost_missing_count_and_session_drop_fail_closed",
+        "test_actual_per_session_values_are_summed_not_extrapolated",
+        "test_request_manifest_is_deterministic_and_hash_bound",
+        "test_job49_validator_accepts_offline_artifacts_and_has_no_vendor_client",
+        "test_selected_64_session_fixture_is_marked_parser_only",
+        "test_no_availability_cost_free_boundary_or_population_claim_is_emitted"
+      ],
+      "pass_status": "CMBP_CATALOGUE_READY_LOCAL",
+      "stop_statuses": [
+        "STOP_LOCAL_SCOPE_INVALID",
+        "STOP_LOCAL_SYMBOL_OR_EXPIRY_INVALID",
+        "STOP_LOCAL_REQUEST_LAW_INVALID",
+        "STOP_LOCAL_OFFLINE_BOUNDARY_INVALID",
+        "STOP_LOCAL_RECEIPT_INVALID"
+      ],
+      "pass_does_not_authorize_vendor_call_or_download": true
+    }
+  },
+  "local_integration_receipt_contract_v1": {
+    "artifact_type": "JOB49_LOCAL_FOUNDATION_RECEIPT_V1",
+    "path": "v5/work/human-policy-foundation/LOCAL_FOUNDATION_RECEIPT_V1.json",
+    "writer": "v5/ops/record_human_policy_foundation.py",
+    "validator": "v5/research/human_policy_foundation_receipt.py",
+    "test_file": "v5/tests/test_human_policy_foundation_receipt.py",
+    "required_bindings": [
+      "program contract semantic self-hash and raw file SHA-256",
+      "PLAN.md raw file SHA-256",
+      "current implementation, CLI, and test file SHA-256 values",
+      "CMBP scope-manifest and declaration self-hashes and raw file SHA-256 values",
+      "selected 64-session parser-fixture manifest identity",
+      "synthetic human journal raw SHA-256, terminal sequence, and terminal head",
+      "hashed test-report identity and zero-failure result"
+    ],
+    "canonicalization": "json.dumps(object,sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False).encode(\"utf-8\")",
+    "receipt_hash_field": "receipt_sha256",
+    "receipt_hash_procedure": "Remove receipt_sha256, canonicalize, and SHA-256 hash the bytes.",
+    "integrity_fields_that_must_remain_zero_or_false": [
+      "network_calls",
+      "vendor_calls",
+      "broker_calls",
+      "downloads",
+      "spend_usd",
+      "strategy_outcomes_read",
+      "reserved_economics_read",
+      "real_human_decisions_recorded",
+      "models_fit",
+      "orders_submitted"
+    ],
+    "failure_law": "Refuse the pass receipt and emit a named STOP_LOCAL_RECEIPT_INVALID diagnostic; never repair, widen, or retry external work."
+  },
+  "job49_terminal_law": {
+    "both_evidence_gates_pass": "JOB49_LOCAL_FOUNDATION_PASS_ONLY",
+    "state_after_local_pass": "BLOCKED_AWAITING_JOB50_OWNER_GATE",
+    "any_evidence_gate_stop": "Preserve the named STOP receipt and end Job 49 without widening scope or silently retrying.",
+    "authority_violation": "JOB49_AUTHORITY_VIOLATION",
+    "economic_conclusion_available": false
+  },
+  "later_owner_gated_jobs": [
+    {
+      "job_id": 50,
+      "name": "Historical/live CMBP twin and separately authorized capture start",
+      "owner_authority_required": [
+        "metadata.get_dataset_range, symbology.resolve, metadata.get_cost, and metadata.get_record_count under an exact allowlist",
+        "signed hard quoted-cost ceiling",
+        "a second owner gate for any time-series download, spend, destination, or live-feed capture",
+        "a separately frozen role/privacy/retention gate before real human capture begins"
+      ],
+      "evidence_roles": [
+        "exact metadata receipt first",
+        "broad historical same-schema substrate only after its own acquisition gate",
+        "same-schema live identity/completeness/latency capture only after its own live gate",
+        "prospective human capture may begin in parallel only after separate capture authority"
+      ],
+      "minimum_human_protocol_pilot_sessions_after_capture_authority": 20,
+      "still_forbidden": [
+        "model fit",
+        "strategy economics",
+        "paper or live order"
+      ],
+      "maximum_pass_claim": "HISTORICAL_LIVE_TWIN_READY_ONLY"
+    },
+    {
+      "job_id": 51,
+      "name": "Prospective owner-behavior model",
+      "owner_authority_required": [
+        "explicit G1/training-precondition exception or reopening for option-layer behavior fitting",
+        "model-fit authority",
+        "frozen prospective capture cohort and risk set",
+        "contiguous train, calibration, and sealed behavior-test roles",
+        "proper-score estimand, baselines, family, nulls, and session-clustered power law"
+      ],
+      "still_forbidden": [
+        "strategy outcome or P&L",
+        "economic claim",
+        "shadow, paper, or live order"
+      ],
+      "minimum_known_answer_recovery": 0.8,
+      "maximum_pass_claim": "BEHAVIOR_MODEL_PASS_ONLY"
+    },
+    {
+      "job_id": 52,
+      "name": "Value and economic candidate with abstention/veto first",
+      "owner_authority_required": [
+        "separate outcome-opening authority",
+        "explicit reopening of the current options STOP and every applicable DO_NOT_RETEST closure",
+        "pre-reservation development population and chronological roles",
+        "minimum retained coverage and absolute positive expectancy so WAIT_ALWAYS cannot pass",
+        "one candidate family, fixed fill, fixed exit, risk law, baselines, multiplicity, session-clustered power, and a declared G5 validation route"
+      ],
+      "learned_exit_authorized": false,
+      "still_forbidden": [
+        "reserved-session economics unless separately preregistered",
+        "live shadow",
+        "paper or live order"
+      ],
+      "maximum_pass_claim": "CANDIDATE_ONLY"
+    },
+    {
+      "job_id": 53,
+      "name": "Sealed-candidate no-order live shadow",
+      "owner_authority_required": [
+        "live-feed and attended no-order shadow authority",
+        "G5-validated Job 52 candidate and completed G6 runtime parity",
+        "same-schema causal clocks, parity, freshness, gap, fail-closed, and replay law"
+      ],
+      "minimum_consecutive_eligible_sessions": 20,
+      "order_path_present": false,
+      "maximum_pass_claim": "SHADOW_PASS_ONLY"
+    },
+    {
+      "job_id": 54,
+      "name": "Hierarchical guarded paper evaluation",
+      "owner_authority_required": [
+        "one frozen candidate and fresh-cohort reserve-opening preregistration",
+        "design-specific known-answer power receipt, fixed session count, and stopping law",
+        "broker/paper authority",
+        "identical human and bot execution adapter and v1 risk law"
+      ],
+      "preapproved_session_count": null,
+      "inference_unit": "session",
+      "primary_estimand": "absolute bot net expectancy above zero over all eligible sessions",
+      "secondary_estimand": "paired bot-minus-owner superiority on co-observed owner-available sessions",
+      "availability_estimand": "reported separately; missing owner counterfactual is never imputed as zero",
+      "optional_noninferiority_law": "Allowed only with an independently justified harm margin and its own power receipt.",
+      "early_stop_for_success_allowed": false,
+      "maximum_pass_claim": "PAPER_RESEARCH_PASS_ONLY",
+      "real_money_authorized": false
+    }
+  ],
+  "self_hash": {
+    "algorithm": "sha256",
+    "canonicalization": "json.dumps(object,sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False).encode(\"utf-8\")",
+    "value": "01d3e47f5c96b1cff6dbe4df2d7140245bf90f5cb0e810fa421a80ab1aa9a2d7",
+    "status": "SEALED",
+    "normalized_status_for_hash": "NORMALIZED_FOR_HASH",
+    "procedure": "Parse this file as strict JSON, copy the complete object, set copied self_hash.value to null and copied self_hash.status to NORMALIZED_FOR_HASH, serialize the copy with json.dumps(sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False), hash the UTF-8 bytes with SHA-256, then store the lowercase digest and set stored self_hash.status to SEALED. Verification repeats the same normalization, so changing the stored status from UNSEALED to SEALED cannot change the semantic digest."
+  }
+}

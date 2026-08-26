@@ -1,0 +1,62 @@
+{
+  "artifact_type": "JOB51_ZERO_COST_GATE_STOP_RECEIPT_V1",
+  "attempt": {
+    "attempt_id": "a5bd7111-0ac5-4992-8308-32fdded55134",
+    "cost_result_journal_sequence": 3,
+    "cost_result_record_hash": "3a032792a5476ef38a4196ff9746408e7cbd08c7f492e61b53afabb955868947",
+    "first_session": "2025-08-22",
+    "market_request_sha256": "c6d4505d192860963ea0121bf0939cd1a8915f69cd636aead54e2a93493e7daf",
+    "terminal_journal_head": "aeff15bb4a08ac345f695e30fd6a996e577a53ab641fe40a6a0b127da26775ca",
+    "terminal_journal_sequence": 4
+  },
+  "authority_effect": "TERMINAL_UNDER_CURRENT_JOB51_AUTHORITY; A NEW HASH_BOUND_OWNER DECISION IS REQUIRED FOR ANY RETRY_OR_PAID_REQUEST",
+  "call_accounting": {
+    "decoded_cmbp1_records": 0,
+    "downloaded_bytes": 0,
+    "metadata_cost_call_results": 1,
+    "metadata_cost_call_starts": 1,
+    "published_session_bundles": 0,
+    "time_series_call_results": 0,
+    "time_series_call_starts": 0
+  },
+  "claims": {
+    "broker_calls": 0,
+    "full_session_pandas_loads": 0,
+    "live_vendor_subscriptions": 0,
+    "models_fit": 0,
+    "orders_submitted": 0,
+    "paid_time_series_request_made": false,
+    "scope_widened": false
+  },
+  "cost_boundary": {
+    "actual_vendor_invoice_cost_usd": "UNKNOWN",
+    "observed_sdk_quote_usd": "0.950392448902",
+    "required_quote_usd": "0",
+    "retry_permitted_under_current_authority": false,
+    "time_series_acquisition_initiated": false,
+    "zero_gate_pass": false
+  },
+  "external_evidence": {
+    "attempt_relative": "attempts/a5bd7111-0ac5-4992-8308-32fdded55134",
+    "attempt_stop_file_sha256": "84130b53e529f54842e4e66da31a8ebd39aa79d864af135d7d2d4762c851da4e",
+    "attempt_stop_sha256": "5ea02eabea62a8224aed15c5aa799547aec7b5b57285e5a85bbc650c9775750b",
+    "call_marker_file_sha256": {
+      "000002-cost_call_start.json": "b26aa89aedfe713c59d4d9b0092581a0f88a4984ca917a71e4e61c694d77cfdb",
+      "000003-cost_call_result.json": "7a17293027c5dfc31a9401b1ce2b5db492d0ce085abcf55cd296e4c0a6901181"
+    },
+    "job_root": "/Volumes/AR_TRADING_DATA/cmbp-tier0/job51",
+    "journal_file_sha256": "7cd361001bce0614c68f4d5226928c60ed4453e89c968667bdc4445a25a8d0cf",
+    "watermark_file_sha256": "02e3eabe0fd1dd54aae537ab3738b85dab77dff5a2a75dac1862765757490749"
+  },
+  "job_id": 51,
+  "program_contract_file_sha256": "5d170653c08f45e2035667cb5ee1e8fb34d3fc113146ec75311ae9a0e596cd1f",
+  "program_contract_sha256": "98a5273aad45f98133f16e2fd45158caea1eb46a76571c8a40a009708fd90e15",
+  "readiness_receipt_file_sha256": "9e308c7f4d3cd6da97c46df54c1a61104e5cbfad0d365b3661ab2e8e93f166aa",
+  "readiness_receipt_sha256": "851ae1de70308a19fad4160bf33464a3e0a2c79bba15085bde80aea5ea99ff03",
+  "receipt_sha256": "b886c418e5661f3589abf68475f09ccbe5dcffd89de1e8210711e990ffa673e3",
+  "schema_version": "v5.job51-zero-cost-gate-stop.v1",
+  "scope_file_sha256": "1760ec585c23f5213a70a46c5eb6a76400f8cad27569fb1e4ef64abfe41b2463",
+  "scope_sha256": "87050c2b3ad248d4d96c5f6945b883241cdd89a53a2f9902d6e70baf5218a099",
+  "status": "JOB51_STOP_NONZERO_COST_BEFORE_TIMESERIES",
+  "status_meaning": "THE_FIRST_FRESH_COST_QUOTE_EXCEEDED_ZERO; NO_TIME_SERIES_REQUEST_OR_ACQUISITION_OCCURRED"
+}

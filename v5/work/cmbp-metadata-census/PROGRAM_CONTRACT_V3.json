@@ -1,0 +1,251 @@
+{
+  "artifact_type": "JOB50_PROGRAM_CONTRACT_V3",
+  "schema_version": "v5.cmbp-metadata-census-program-contract.v3",
+  "contract_id": "job50-cmbp-metadata-census-v3-external-boundary-closure",
+  "job_id": 50,
+  "declared_on": "2026-08-24",
+  "state": "LOCAL_BUILD_ONLY",
+  "canonical_status_source": "v5/STATUS.md",
+  "work_packet": "v5/work/cmbp-metadata-census/PLAN.md",
+  "purpose": "Close the remaining local external-evidence interface gaps found after V2 sealing: materialize the nested parser receipt, freeze exact external integrity/provenance, make the authorized-client boundary capability-specific, totalize stop normalization, disclose manual-attestation limits, and bind the default transport through urllib3.",
+  "supersession": {
+    "mode": "SEMANTIC_OVERLAY",
+    "base_contract_path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V2.json",
+    "base_contract_semantic_sha256": "3a1cdff65beb11439be93dcf0a0dfa0554cf5e665c339b9f4bdd0ff6eb882b48",
+    "base_contract_file_sha256": "dc6563c0efd2b4281f5907e7f45fbea059abf31937d529965dd0f596ce48679d",
+    "v1_contract_path": "v5/work/cmbp-metadata-census/PROGRAM_CONTRACT_V1.json",
+    "v1_contract_semantic_sha256": "0d581abd9edfcc015d3d2f1574da3be15a3fcd62b275e31dd7485f7d279ca75d",
+    "v1_contract_file_sha256": "5ba7fdf54d44e683cfe0a663d6929593eff7c9ea897aeb855734adc139837ae2",
+    "preservation_law": "PROGRAM_CONTRACT_V1.json and PROGRAM_CONTRACT_V2.json remain immutable evidence and are never edited or overwritten.",
+    "effective_contract_rule": "Every V1/V2 term remains binding except where V3 expressly replaces the effective execution identity, nested parser receipt file law, top-level external integrity/authorization-effect law, authorized-client provenance, stop-normalization closure, owner-attestation epistemic claim, transport-source closure, or local-receipt/test bindings. V3 governs an express conflict.",
+    "unchanged_terms": [
+      "local-build-only authority and every external/outcome/spend prohibition",
+      "sealed Job-49 declaration and exact 2440-call scope",
+      "V2 canonical one-use authorization, freshness, consumption-marker, and no-resume laws",
+      "V2 raw and normalized result bindings and durable reread law",
+      "V2 top-level Job-50 wrapper and nested Job-49 structural-parser classification",
+      "V2 declaration-scoped claims and bounded local tamper-evidence boundary",
+      "V2 dataset-range normalized-calendar-date claim boundary",
+      "V2 precredential local-readiness and SDK-identity gate"
+    ]
+  },
+  "authority_effect": {
+    "effect": "NONE",
+    "newly_authorized_actions": [],
+    "reason": "All V3 work is local contract, code, fake-client test, synthetic artifact, and receipt repair before any credential, client, vendor, network, outcome, acquisition, or order action.",
+    "alpha_charge": 0
+  },
+  "effective_program_contract_identity": {
+    "runner_constant": "PROGRAM_CONTRACT_SHA256",
+    "value_law": "Every new synthetic/external journal, response, authorization, consumption marker, local readiness receipt, and external wrapper uses this V3 object's sealed self_hash.value as the effective program contract identity.",
+    "preserved_contract_bindings": "Every local/external receipt additionally binds V2 and V1 semantic and raw-file SHA-256 values."
+  },
+  "nested_structural_parser_file_law": {
+    "path_template": "v5/work/cmbp-metadata-census/external-attempts/<attempt_id>/NESTED_STRUCTURAL_PARSER_RECEIPT_V1.json",
+    "artifact_type": "CMBP_CATALOGUE_PREFLIGHT_RECEIPT_V1",
+    "required_status": "PREFLIGHT_PASS_ONLY",
+    "classification": "NESTED_JOB49_STRUCTURAL_VALIDATION_ONLY",
+    "write_law": "After external response/journal verification, build the untouched Job-49 parser receipt, exclusively write the complete bytes at this exact attempt-local path, fsync file and directory, strictly reread canonical JSON, validate its self-hash/object against the declaration, and compare exact raw-file SHA-256 before the top-level wrapper is built.",
+    "immutability_law": "Never edit its Job49 rehearsal flags, never overwrite it, and never present it as the top-level Job-50 external receipt.",
+    "top_level_binding": "JOB50_EXTERNAL_METADATA_RECEIPT_V1 binds this exact repository-relative path, semantic receipt_sha256, and raw-file SHA-256."
+  },
+  "external_pass_integrity_law": {
+    "exact_integrity_object": {
+      "credential_read": true,
+      "authenticated_client_constructed": true,
+      "sdk_metadata_method_invocations": 2440,
+      "low_level_network_request_count": "UNOBSERVED",
+      "timeseries_calls": 0,
+      "download_calls": 0,
+      "data_downloaded": false,
+      "data_acquired": false,
+      "purchase_or_acquisition_spend_initiated_usd": 0,
+      "strategy_outcomes_read": false,
+      "reserved_economics_read": false,
+      "broker_calls": 0,
+      "models_fit": 0,
+      "orders_submitted": 0
+    },
+    "exact_authorization_effect": "METADATA_PREFLIGHT_EVIDENCE_ONLY; NO_DOWNLOAD_ACQUISITION_SPEND_OUTCOME_MODEL_BROKER_OR_ORDER_AUTHORITY",
+    "interpretation": "A true credential/client flag and 2440 runner-observed SDK metadata method invocations are required external provenance, not an authority expansion. Low-level HTTP transactions and vendor/account overhead are not observed; HTTP transactions may differ because redirects are a transport behavior even with zero configured retries. The zero spend field proves only that this runner initiated no purchase or acquisition transaction. Every prohibited runner action remains zero or false.",
+    "wrapper_law": "The top-level external wrapper requires exact equality to this integrity object and authorization-effect text; local-readiness receipts continue to use their separate all-zero local integrity object."
+  },
+  "authorized_external_client_capability": {
+    "type_name": "AuthorizedExternalClient",
+    "construction_entrypoint": "construct_authorized_external_client",
+    "accepted_by_external_core_only": "run_authorized_external_metadata_census",
+    "construction_preconditions": [
+      "native local-readiness receipt/current SDK verification",
+      "strict V3 authorization reread, self-hash, raw-file, freshness, owner-attestation field, declaration, V1/V2/V3 contract, and attempt binding",
+      "exclusive durable authorization-consumption marker",
+      "exclusive authorization-bound attempt directory",
+      "credential read after every prior gate",
+      "dynamic pinned-client import/construction after credential read"
+    ],
+    "bound_fields": [
+      "private client handle",
+      "authorization_id",
+      "authorization_sha256",
+      "authorization_file_sha256",
+      "attempt_id",
+      "canonical attempt directory",
+      "consumption-marker SHA-256",
+      "local-readiness receipt semantic/raw SHA-256",
+      "V1/V2/V3 contract semantic SHA-256 values",
+      "declaration semantic/raw SHA-256",
+      "SDK distribution/source identity SHA-256",
+      "quoted acquisition ceiling"
+    ],
+    "provenance_law": "The capability is created only by construction_entrypoint, is not JSON/deserializable, and is revalidated by exact type plus every bound identity immediately before the first SDK call. A raw client, duck-typed client, caller-created dataclass lookalike, bare authorization hash, or public client/client_factory injection is refused.",
+    "test_boundary": "Fake authorized-external exercises use a separate private test-only capability/entrypoint that cannot emit an externally_supplied response, nested parser receipt, or top-level external PASS."
+  },
+  "total_job50_stop_normalization": {
+    "mapping": {
+      "STOP_SCOPE_OR_CODE_DRIFT": "STOP_CONTRACT_OR_DECLARATION_DRIFT",
+      "STOP_CONTRACT_OR_DECLARATION_DRIFT": "STOP_CONTRACT_OR_DECLARATION_DRIFT",
+      "STOP_MISSING_KEY_OR_ENTITLEMENT": "STOP_VENDOR_AUTH_OR_ENTITLEMENT",
+      "STOP_VENDOR_AUTH_OR_ENTITLEMENT": "STOP_VENDOR_AUTH_OR_ENTITLEMENT",
+      "STOP_OVER_HARD_CAP": "STOP_OVER_QUOTED_CEILING",
+      "STOP_OVER_QUOTED_CEILING": "STOP_OVER_QUOTED_CEILING",
+      "STOP_SYMBOL_OR_EXPIRY_MISMATCH": "STOP_SYMBOL_OR_EXPIRY_MISMATCH",
+      "STOP_SCHEMA_UNAVAILABLE": "STOP_SCHEMA_UNAVAILABLE",
+      "STOP_ZERO_RECORDS": "STOP_ZERO_RECORDS",
+      "STOP_NONFINITE_COST": "STOP_NONFINITE_COST",
+      "STOP_MISSING_SESSION_RESPONSE": "STOP_MISSING_SESSION_RESPONSE",
+      "STOP_LOCAL_READINESS_RECEIPT_INVALID": "STOP_LOCAL_READINESS_RECEIPT_INVALID",
+      "STOP_SDK_VERSION_OR_SIGNATURE_DRIFT": "STOP_SDK_VERSION_OR_SIGNATURE_DRIFT",
+      "STOP_AUTHORIZATION_MISSING_OR_INVALID": "STOP_AUTHORIZATION_MISSING_OR_INVALID",
+      "STOP_CREDENTIAL_ROTATION_UNRESOLVED": "STOP_CREDENTIAL_ROTATION_UNRESOLVED",
+      "STOP_QUOTED_CEILING_MISSING_OR_INVALID": "STOP_QUOTED_CEILING_MISSING_OR_INVALID",
+      "STOP_FORBIDDEN_METHOD_OR_SCOPE": "STOP_FORBIDDEN_METHOD_OR_SCOPE",
+      "STOP_ATTEMPT_PATH_EXISTS": "STOP_ATTEMPT_PATH_EXISTS",
+      "STOP_CALL_JOURNAL_INVALID": "STOP_CALL_JOURNAL_INVALID",
+      "STOP_PARTIAL_OR_CRASHED_ATTEMPT": "STOP_PARTIAL_OR_CRASHED_ATTEMPT",
+      "STOP_RESPONSE_OR_RECEIPT_INVALID": "STOP_RESPONSE_OR_RECEIPT_INVALID",
+      "JOB50_AUTHORITY_VIOLATION": "JOB50_AUTHORITY_VIOLATION"
+    },
+    "idempotence": "Applying the normalizer to any mapped value twice returns the same Job-50 value.",
+    "unknown_status_law": "An unknown status is never propagated as PASS; it normalizes to STOP_CONTRACT_OR_DECLARATION_DRIFT with the unknown token retained only in bounded diagnostic detail.",
+    "boundary": "Every Job-50 public API, journal STOP, on-disk classifier, CLI diagnostic, and top-level receipt uses this normalizer. The untouched nested Job-49 receipt retains its original token."
+  },
+  "owner_attestation_epistemic_boundary": {
+    "manual_governance_inputs": [
+      "credential_rotation_attested and credential_attestation_recorded_at_utc",
+      "current_conversation_authorization_sha256",
+      "the claim that the authorization was authored/approved by the owner"
+    ],
+    "machine_verifiable": "Code verifies exact canonical fields, formats, dates, internal hashes, contract/declaration/readiness links, attempt identity, freshness, one-use marker, and raw-file identity.",
+    "not_machine_verifiable": "Local code cannot cryptographically prove who authored a chat message, that a digest corresponds to the current Codex conversation, or that a vendor credential was actually revoked/rotated. Those are trusted owner attestations under repository governance.",
+    "required_receipt_disclosure": "OWNER_ATTESTED_NOT_CRYPTOGRAPHICALLY_VERIFIED",
+    "required_receipt_field_path": "claims.owner_attestation_verification",
+    "required_receipt_equality_law": "Every top-level JOB50_EXTERNAL_METADATA_RECEIPT_V1 requires claims.owner_attestation_verification to equal OWNER_ATTESTED_NOT_CRYPTOGRAPHICALLY_VERIFIED exactly. Missing, renamed, differently valued, or nested-parser-only disclosure refuses PASS.",
+    "self_attestation_sufficiency_clarification": "Self-attestation is insufficient for call accounting, response integrity, or scope. Owner attestation is explicitly the governing input for authorship and credential-rotation facts that local code cannot independently establish.",
+    "fabrication_boundary": "Fabrication or coordinated rewrite of the owner attestation and every retained local binding is outside the honest-runner/tamper-evidence claim and does not become cryptographic proof merely because hashes recompute."
+  },
+  "v3_contract_identity_projection": {
+    "authorization_exact_fields_added_to_v2": [
+      "intermediate_program_contract_sha256",
+      "intermediate_program_contract_file_sha256"
+    ],
+    "authorization_mapping": {
+      "program_contract_sha256": "V3 self_hash.value",
+      "intermediate_program_contract_sha256": "3a1cdff65beb11439be93dcf0a0dfa0554cf5e665c339b9f4bdd0ff6eb882b48",
+      "intermediate_program_contract_file_sha256": "dc6563c0efd2b4281f5907e7f45fbea059abf31937d529965dd0f596ce48679d",
+      "base_program_contract_sha256": "0d581abd9edfcc015d3d2f1574da3be15a3fcd62b275e31dd7485f7d279ca75d",
+      "base_program_contract_file_sha256": "5ba7fdf54d44e683cfe0a663d6929593eff7c9ea897aeb855734adc139837ae2"
+    },
+    "authorization_strict_schema_law": "The two intermediate fields are added to V2 required_exact_fields. All other V2 fields remain required and unknown fields remain forbidden. The authorization self-hash and raw-file hash bind all V3/V2/V1 identities.",
+    "consumption_record_exact_fields_added_to_v2": [
+      "intermediate_program_contract_sha256",
+      "intermediate_program_contract_file_sha256",
+      "base_program_contract_file_sha256"
+    ],
+    "consumption_record_mapping": "The consumption marker carries the same exact V3/V2/V1 semantic/raw projection as the authorization and is included in its strict on-disk reread before credential access.",
+    "external_wrapper_top_level_fields_added_to_v2": [
+      "intermediate_program_contract_sha256",
+      "intermediate_program_contract_file_sha256"
+    ],
+    "external_wrapper_mapping": {
+      "program_contract_sha256": "V3 self_hash.value",
+      "intermediate_program_contract_sha256": "V2 semantic self-hash",
+      "intermediate_program_contract_file_sha256": "V2 exact raw-file SHA-256",
+      "base_program_contract_sha256": "V1 semantic self-hash",
+      "base_program_contract_file_sha256": "V1 exact raw-file SHA-256"
+    },
+    "wrapper_claim_field_added": "claims.owner_attestation_verification",
+    "transitive_binding_not_sufficient": "A local-readiness-receipt link alone is not a substitute for the direct V3/V2/V1 fields in the authorization, consumption marker, or external wrapper.",
+    "all_other_artifacts": "Every V3 journal and response keeps its V2 schema and carries V3 as program_contract_sha256. Its local-readiness and authorization bindings lead to the direct preserved V2/V1 identities without inventing alternate base-field meanings."
+  },
+  "databento_client_construction_identity": {
+    "distribution": "databento",
+    "version": "0.77.0",
+    "exact_class": "databento.historical.client.Historical",
+    "source_file_sha256": {
+      "databento/historical/client.py": "9fe714854b8bab2bc7feaa4c7e4c4f207d4d2ece5aaad68af1c1f5d4c0038248",
+      "databento/__init__.py": "294304b655d6cede5c84fd07e2781f3c0a10224d240df4da327c6b299adfd906",
+      "databento/historical/api/batch.py": "126b54eea0674630fd584c17b37956f5e0037a4033b60ae618d974a7add5a339",
+      "databento/historical/api/timeseries.py": "c392df431654306eb50c66cacffacae48690443f182cfe7630848b7173a1bdda"
+    },
+    "already_bound_constructor_dependencies": [
+      "databento/common/http.py",
+      "databento/historical/api/metadata.py",
+      "databento/historical/api/symbology.py"
+    ],
+    "import_export_law": "The readiness validator verifies the exact databento/__init__.py bytes and its AST export `from databento.historical.client import Historical`, then verifies the exact client.py bytes. The production factory dynamically resolves the exact databento.historical.client.Historical class after every precredential gate; it does not trust a caller-supplied or replaced top-level alias.",
+    "constructor_static_law": "The readiness validator verifies Historical.__init__(self,key=None,gateway=HistoricalGateway.BO1) has the inspected local structure: credential/gateway validation, assignments, and construction of BatchHttpAPI, MetadataHttpAPI, SymbologyHttpAPI, and TimeseriesHttpAPI only. It rejects request/socket/aiohttp calls or any other constructor call target. It also binds batch.py, timeseries.py, metadata.py, symbology.py, and common/http.py source bytes and verifies their inherited constructors perform assignments/base-URL construction only.",
+    "precredential_reverification": "The local-readiness receipt records these source identities, and production external-run natively re-verifies them before credential read and again before the exact capability constructor is used.",
+    "bounded_claim": "This closes the inspected default local import/constructor source path against same-version drift. It is not proof against a compromised Python import system, monkeypatching after verification, or coordinated rewrite of every retained local anchor."
+  },
+  "urllib3_transport_identity": {
+    "distribution": "urllib3",
+    "version": "2.6.3",
+    "distribution_metadata_file_sha256": "e91390cc9af49b019738f1d739b5cd925130c32e9d3e6acc0863c21c5d9882ef",
+    "source_file_sha256": {
+      "urllib3/util/retry.py": "58e7081d56b129ff9d55bf3d9546e9bdca5e33bacd605fefb0ab0238ac35d19f",
+      "urllib3/connectionpool.py": "64486e76c6bc048b9b0f63345e8c4106c8f16ec5f0320512707ee843d8be8f56",
+      "urllib3/poolmanager.py": "3583f9be429f69d19d75a05a71493acfabbcad33fdc200851868d5b5fd6691c7"
+    },
+    "requests_adapter_static_law": "The already-bound requests/adapters.py defines DEFAULT_RETRIES=0 and HTTPAdapter.__init__ assigns Retry(0, read=False) when max_retries equals that default.",
+    "closure_law": "The local readiness receipt binds and re-verifies urllib3 version, distribution METADATA, all named source bytes, and the requests adapter zero-retry AST pattern without importing the Databento client.",
+    "bounded_claim": "The inspected default Databento 0.77.0 -> requests 2.33.1 -> urllib3 2.6.3 source path configures zero automatic retries. This is a static local source-identity claim, not a guarantee against monkeypatching, vendor duplication, network intermediaries, or coordinated artifact rewrite."
+  },
+  "local_readiness_v3_delta": {
+    "artifact_type_unchanged": "JOB50_LOCAL_READINESS_RECEIPT_V1",
+    "pass_status_unchanged": "JOB50_LOCAL_RUNNER_READY_ONLY",
+    "effective_contract_binding": "V3 semantic self-hash and raw-file SHA-256",
+    "preserved_contract_bindings": [
+      "V2 semantic self-hash and raw-file SHA-256",
+      "V1 semantic self-hash and raw-file SHA-256"
+    ],
+    "synthetic_execution_identity": "V3 self_hash.value",
+    "transport_bindings": "Databento export/client constructor/endpoint/http, requests API/session/adapter, and urllib3 retry/connection/pool source identities",
+    "local_credential_zero_definition": "Local receipt credentials_read=0 means no real or stored vendor secret, .env value, keychain value, or process credential was read. Tests may use an explicitly in-memory fake DATABENTO_API_KEY mapping and a private monkeypatched fake-construction seam; those are identified as synthetic test inputs, never counted as a vendor credential read, and cannot emit externally_supplied response, nested-parser, or external PASS evidence.",
+    "required_tests_added_to_v2": [
+      "test_nested_parser_receipt_is_attempt_local_durable_and_bound",
+      "test_external_integrity_and_authorized_client_capability_are_exact",
+      "test_owner_attestations_are_explicit_manual_governance_inputs",
+      "test_urllib3_default_retry_identity_is_bound"
+    ],
+    "required_test_total": 26,
+    "external_preflight_achieved": false,
+    "authorization_effect": "NONE"
+  },
+  "terminal_law": {
+    "local_pass": "JOB50_LOCAL_RUNNER_READY_ONLY",
+    "state_after_local_pass": "BLOCKED_AWAITING_JOB50_METADATA_VENDOR_CALL_AUTHORIZATION",
+    "external_pass": "JOB50_EXTERNAL_METADATA_PREFLIGHT_PASS_ONLY",
+    "state_after_external_pass": "BLOCKED_AWAITING_SEPARATE_ACQUISITION_DECISION",
+    "vendor_call_authorized_now": false,
+    "data_acquisition_authorized": false,
+    "economic_conclusion_available": false,
+    "model_capture_or_order_authority_available": false
+  },
+  "self_hash": {
+    "algorithm": "sha256",
+    "canonicalization": "json.dumps(object,sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False).encode(\"utf-8\")",
+    "value": "a8528c0311d38a2539c7493cd380967beca707b24ef83ac7eae440662c824451",
+    "status": "SEALED",
+    "normalized_status_for_hash": "NORMALIZED_FOR_HASH",
+    "procedure": "Parse this file as strict JSON, copy the complete object, set copied self_hash.value to null and copied self_hash.status to NORMALIZED_FOR_HASH, serialize the copy with json.dumps(sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False,allow_nan=False), hash the UTF-8 bytes with SHA-256, then store the lowercase digest in self_hash.value and set stored self_hash.status to SEALED. Verification repeats the same normalization."
+  }
+}
